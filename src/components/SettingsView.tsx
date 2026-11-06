@@ -108,12 +108,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const testArabicTts = () => {
-    audioService.speakAlert('مرحباً بك! نظام التذكير الصوتي والمساعد الشخصي الذكي جاهز ويعمل بكفاءة تامة من أجلك.', {
-      volume: audioSettings.masterVolume,
-      rate: audioSettings.ttsRate,
-      pitch: audioSettings.ttsPitch,
-      voiceURI: audioSettings.ttsVoiceURI,
-    });
+    audioService.playDoctorWelcome(audioSettings.masterVolume);
   };
 
   return (
@@ -164,11 +159,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <button
           type="button"
-          onClick={() => audioService.speakAlert('أهلاً بك يا دكتور عبد العزيز. جميع إعدادات التخصيص والصوت تعمل بدقة عالية من أجلك.')}
-          className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          onClick={() => audioService.playDoctorWelcome(audioSettings.masterVolume)}
+          className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
         >
           <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-          <span>تجربة نداء التنبيه</span>
+          <span>تجربة نداء التنبيه: «يا دكتور عبد العزيز»</span>
         </button>
       </div>
 

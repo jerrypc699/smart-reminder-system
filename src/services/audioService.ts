@@ -273,7 +273,82 @@ class AudioService {
   }
 
   /**
-   * Speak Alert with guaranteed personal prefix: "يا دكتور عبد العزيز، [التنبيه]"
+   * Play crystal clear dedicated Arabic audio for "يا دكتور عبد العزيز"
+   */
+  public playDoctorCall(volume: number = 0.95, onEnd?: () => void): void {
+    this.playAudioFile('/audio/dr_abdelaziz_call.mp3', volume, onEnd);
+  }
+
+  /**
+   * Play crystal clear welcome demo for Dr. Abdelaziz
+   */
+  public playDoctorWelcome(volume: number = 0.95, onEnd?: () => void): void {
+    this.playAudioFile('/audio/dr_abdelaziz_welcome.mp3', volume, onEnd);
+  }
+
+  /**
+   * Play crystal clear task alert for Dr. Abdelaziz
+   */
+  public playDoctorTaskAlert(volume: number = 0.95, onEnd?: () => void): void {
+    this.playAudioFile('/audio/dr_abdelaziz_task_alert.mp3', volume, onEnd);
+  }
+
+  /**
+   * Play crystal clear clinic alert for Dr. Abdelaziz
+   */
+  public playDoctorClinicAlert(volume: number = 0.95, onEnd?: () => void): void {
+    this.playAudioFile('/audio/dr_abdelaziz_clinic_alert.mp3', volume, onEnd);
+  }
+
+  /**
+   * Play crystal clear pre-Azan alert for Dr. Abdelaziz
+   */
+  public playDoctorPreAzan(volume: number = 0.95, onEnd?: () => void): void {
+    this.playAudioFile('/audio/dr_abdelaziz_pre_azan.mp3', volume, onEnd);
+  }
+
+  private playAudioFile(url: string, volume: number = 0.95, onEnd?: () => void): void {
+    if (typeof window === 'undefined') {
+      onEnd?.();
+      return;
+    }
+    this.stopAll();
+    this.initAudioContext();
+
+    const audio = new Audio(url);
+    audio.volume = Math.max(0, Math.min(1, volume));
+    this.currentCustomAudio = audio;
+
+    audio.onplay = () => {
+      this.notifySpeaking(true);
+    };
+
+    audio.onended = () => {
+      this.notifySpeaking(false);
+      if (this.currentCustomAudio === audio) {
+        this.currentCustomAudio = null;
+      }
+      onEnd?.();
+    };
+
+    audio.onerror = (e) => {
+      console.warn('Playback error for', url, e);
+      this.notifySpeaking(false);
+      if (this.currentCustomAudio === audio) {
+        this.currentCustomAudio = null;
+      }
+      onEnd?.();
+    };
+
+    audio.play().catch((err) => {
+      console.warn('Audio play blocked:', err);
+      this.notifySpeaking(false);
+      onEnd?.();
+    });
+  }
+
+  /**
+   * Speak Alert with guaranteed crystal-clear personal prefix: "يا دكتور عبد العزيز"
    */
   public speakAlert(
     text: string,
@@ -286,11 +361,45 @@ class AudioService {
     } = {}
   ): void {
     const clean = text.trim();
-    const prefix = 'يا دكتور عبد العزيز، ';
-    const finalText = (clean.startsWith('يا دكتور عبد العزيز') || clean.startsWith('دكتور عبد العزيز'))
-      ? clean
-      : `${prefix}${clean}`;
-    this.speak(finalText, options);
+
+    // 1. If it's a welcome or readiness test, play full crystal-clear studio welcome
+    if (
+      clean.includes('جميع أنظمة التنبيه') ||
+      clean.includes('تأكيد الجاهزية') ||
+      clean.includes('مرحباً بك') ||
+      clean === 'يا دكتور عبد العزيز'
+    ) {
+      this.playDoctorWelcome(options.volume ?? 0.95, options.onEnd);
+      return;
+    }
+
+    // 2. If it's a clinic task, play dedicated clinic audio
+    if (clean.includes('عيادة') || clean.includes('كشف') || clean.includes('مرضى')) {
+      this.playDoctorClinicAlert(options.volume ?? 0.95, options.onEnd);
+      return;
+    }
+
+    // 3. If it's a pre-azan reminder
+    if (clean.includes('اقترب موعد الأذان') || clean.includes('الاستعداد للصلاة')) {
+      this.playDoctorPreAzan(options.volume ?? 0.95, options.onEnd);
+      return;
+    }
+
+    // 4. For any other alert: ALWAYS play the studio audio "يا دكتور عبد العزيز" first!
+    this.playDoctorCall(options.volume ?? 0.95, () => {
+      // Strip any duplicate "يا دكتور عبد العزيز" from the remaining text
+      const remainder = clean
+        .replace(/^(يا\s+)?دكتور\s+عبد\s*العزيز[،,\.\s]*/i, '')
+        .trim();
+
+      if (!remainder) {
+        options.onEnd?.();
+        return;
+      }
+
+      // Speak the remainder text
+      this.speak(remainder, options);
+    });
   }
 
   /**

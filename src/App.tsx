@@ -483,16 +483,8 @@ export function App() {
     audioService.initAudioContext();
     audioService.playChime('urgent', audioSettings.masterVolume);
     setTimeout(() => {
-      audioService.speakAlert(
-        'نظام التذكير الصوتي والمساعد الشخصي الذكي يعمل بكفاءة تامة وجاهز لتنبيهك بجميع المهام ومواقيت الصلاة.',
-        {
-          volume: audioSettings.masterVolume,
-          rate: audioSettings.ttsRate,
-          pitch: audioSettings.ttsPitch,
-          voiceURI: audioSettings.ttsVoiceURI,
-        }
-      );
-    }, 700);
+      audioService.playDoctorWelcome(audioSettings.masterVolume);
+    }, 600);
   };
 
   // Play Azan Preview

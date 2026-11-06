@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v1';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -12,7 +12,12 @@ const STATIC_ASSETS = [
   '/audio/makkah.mp3',
   '/audio/abdulbasit.mp3',
   '/audio/mishary.mp3',
-  '/audio/takbeerat.mp3'
+  '/audio/takbeerat.mp3',
+  '/audio/dr_abdelaziz_call.mp3',
+  '/audio/dr_abdelaziz_welcome.mp3',
+  '/audio/dr_abdelaziz_task_alert.mp3',
+  '/audio/dr_abdelaziz_clinic_alert.mp3',
+  '/audio/dr_abdelaziz_pre_azan.mp3'
 ];
 
 // Install: Cache critical shell assets

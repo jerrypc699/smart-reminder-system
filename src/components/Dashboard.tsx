@@ -16,6 +16,7 @@ import {
   Download
 } from 'lucide-react';
 import { Task, PrayerInfo, PrayerSettings, TaskPriority, TaskCategory } from '../types';
+import { audioService } from '../services/audioService';
 
 interface DashboardProps {
   prayerTimes: PrayerInfo[];
@@ -138,22 +139,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => onPreviewTaskAudio({
-                id: 'welcome-demo',
-                title: 'تأكيد الجاهزية',
-                category: 'work',
-                priority: 'medium',
-                dueDate: todayStr,
-                dueTime: '12:00',
-                reminderMinutesBefore: 0,
-                voiceMessage: 'يا دكتور عبد العزيز، جميع أنظمة التنبيه الصوتي وجدول مواعيدك تعمل بكفاءة تامة من أجلك.',
-                status: 'pending',
-                repeat: 'none',
-                createdAt: new Date().toISOString(),
-              })}
-              className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-2 transition-all cursor-pointer shadow-md"
+              onClick={() => audioService.playDoctorWelcome()}
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/40 flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/10 active:scale-95"
             >
-              <Volume2 className="w-4 h-4 text-emerald-400" />
+              <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" />
               <span>تجربة نداء: «يا دكتور عبد العزيز»</span>
             </button>
           </div>

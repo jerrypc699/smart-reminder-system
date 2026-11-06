@@ -10,7 +10,10 @@ import {
   Apple,
   Layers,
   ShieldCheck,
-  Zap
+  Zap,
+  QrCode,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 
 interface InstallAppModalProps {

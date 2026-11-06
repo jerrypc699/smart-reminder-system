@@ -1,5 +1,6 @@
 import { StoredMediaMeta, ScheduledMedia, MediaType } from '../types';
 import { cloudSyncService } from './cloudSyncService';
+import { vercelCloudSync } from './vercelCloudSync';
 
 const DB_NAME = 'SmartReminderAudioDB_v1';
 const DB_VERSION = 1;
@@ -361,6 +362,21 @@ class AudioStorageService {
     list.unshift(newItem);
     this.saveScheduledMedias(list);
 
+    // Automatic Vercel Cloud Storage upload for streaming to Mobile
+    this.getMediaBlob(newItem.mediaId).then((blob) => {
+      if (blob) {
+        vercelCloudSync.uploadMediaFile(blob, newItem.mediaName).then((url) => {
+          this.updateScheduledMedia(newItem.id, { cloudUrl: url });
+        }).catch(console.warn);
+      }
+    }).catch(console.warn);
+
+    // Sync state
+    try {
+      const tasks = JSON.parse(localStorage.getItem('smart_reminder_tasks_v2') || '[]');
+      vercelCloudSync.pushToCloud({ tasks, scheduledMedia: list }).catch(console.warn);
+    } catch {}
+
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.syncScheduledMedia(newItem);
       this.getMediaBlob(newItem.mediaId).then((blob) => {
@@ -389,6 +405,12 @@ class AudioStorageService {
     );
     this.saveScheduledMedias(list);
 
+    // Sync state to Vercel Cloud
+    try {
+      const tasks = JSON.parse(localStorage.getItem('smart_reminder_tasks_v2') || '[]');
+      vercelCloudSync.pushToCloud({ tasks, scheduledMedia: list }).catch(console.warn);
+    } catch {}
+
     if (cloudSyncService.isAvailable()) {
       const updated = list.find((i) => i.id === id);
       if (updated) {
@@ -406,6 +428,12 @@ class AudioStorageService {
   public deleteScheduledMedia(id: string): ScheduledMedia[] {
     const list = this.getScheduledMedias().filter((item) => item.id !== id);
     this.saveScheduledMedias(list);
+
+    // Sync state to Vercel Cloud
+    try {
+      const tasks = JSON.parse(localStorage.getItem('smart_reminder_tasks_v2') || '[]');
+      vercelCloudSync.pushToCloud({ tasks, scheduledMedia: list }).catch(console.warn);
+    } catch {}
 
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.deleteScheduledMedia(id);

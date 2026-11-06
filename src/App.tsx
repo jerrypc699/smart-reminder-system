@@ -12,6 +12,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { InstallAppModal } from './components/InstallAppModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { cloudSyncService } from './services/cloudSyncService';
+import { vercelCloudSync } from './services/vercelCloudSync';
 
 import type { 
   Task, 
@@ -102,6 +103,33 @@ export function App() {
       unsubMedia();
     };
   }, [isCloudConnected]);
+
+  // Automatic Zero-Config Vercel Cloud Sync (runs out of the box on PC & Mobile)
+  useEffect(() => {
+    const unsub = vercelCloudSync.subscribe((cloudData) => {
+      if (cloudData.tasks && Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
+        setTasks(cloudData.tasks);
+        taskService.saveTasks(cloudData.tasks);
+      }
+      if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia) && cloudData.scheduledMedia.length > 0) {
+        setScheduledAudios(cloudData.scheduledMedia);
+        audioStorageService.saveScheduledMedias(cloudData.scheduledMedia);
+      }
+    });
+
+    return () => unsub();
+  }, []);
+
+  const syncCurrentStateToCloud = (currentTasks?: Task[]) => {
+    const t = currentTasks || taskService.getTasks();
+    const m = audioStorageService.getScheduledMedias();
+    vercelCloudSync.pushToCloud({
+      tasks: t,
+      scheduledMedia: m,
+      prayerSettings,
+      audioSettings,
+    }).catch(console.warn);
+  };
 
   // Prayer Settings
   const [prayerSettings, setPrayerSettings] = useState<PrayerSettings>(() => {
@@ -560,11 +588,13 @@ export function App() {
   // Task Actions
   const handleAddTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
     const newTask = taskService.addTask(taskData);
-    setTasks(taskService.getTasks());
+    const all = taskService.getTasks();
+    setTasks(all);
     audioService.playChime('click', 0.5);
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.syncTask(newTask);
     }
+    syncCurrentStateToCloud(all);
     return newTask;
   };
 
@@ -575,6 +605,7 @@ export function App() {
     if (item && cloudSyncService.isAvailable()) {
       cloudSyncService.syncTask(item);
     }
+    syncCurrentStateToCloud(updated);
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -583,6 +614,7 @@ export function App() {
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.deleteTask(taskId);
     }
+    syncCurrentStateToCloud(updated);
   };
 
   const handleToggleTask = (taskId: string) => {
@@ -592,6 +624,7 @@ export function App() {
     if (item && cloudSyncService.isAvailable()) {
       cloudSyncService.syncTask(item);
     }
+    syncCurrentStateToCloud(updated);
     if (completed) {
       audioService.playChime('success', audioSettings.masterVolume);
     }

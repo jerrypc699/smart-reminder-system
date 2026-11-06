@@ -79,3 +79,17 @@ body {
 .animate-wave-5 {
   animation: soundwave 0.9s ease-in-out infinite 0.2s;
 }
+
+/* Mobile Safe Area & PWA utilities */
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}

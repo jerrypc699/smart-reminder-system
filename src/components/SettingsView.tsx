@@ -14,7 +14,8 @@ import {
   Upload,
   Globe,
   FileAudio,
-  UploadCloud
+  UploadCloud,
+  Smartphone
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
@@ -31,6 +32,7 @@ interface SettingsViewProps {
   hasNotificationPermission: boolean;
   onRequestNotification: () => void;
   onResetAllData: () => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -42,6 +44,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   hasNotificationPermission,
   onRequestNotification,
   onResetAllData,
+  onOpenInstallModal,
 }) => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -168,6 +171,34 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <span>تجربة نداء التنبيه</span>
         </button>
       </div>
+
+      {/* PWA Mobile App Card in Settings */}
+      {onOpenInstallModal && (
+        <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <Smartphone className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                تطبيق الهاتف المحمول (Android & iOS)
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                تثبيت النظام كتطبيق أصلي مستقل على هاتفك المحمول بشاشة كاملة وبدون متصفح.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenInstallModal}
+            className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>عرض تعليمات التثبيت</span>
+          </button>
+        </div>
+      )}
 
       {/* Location & Prayer Calculation Settings */}
       <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl space-y-6">

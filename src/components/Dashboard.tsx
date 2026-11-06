@@ -11,7 +11,9 @@ import {
   ArrowRight,
   TrendingUp,
   Volume2,
-  Radio
+  Radio,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { Task, PrayerInfo, PrayerSettings, TaskPriority, TaskCategory } from '../types';
 
@@ -26,6 +28,7 @@ interface DashboardProps {
   onPlayAzanPreview: () => void;
   prayerSettings: PrayerSettings;
   setActiveTab: (tab: string) => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -39,6 +42,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onPlayAzanPreview,
   prayerSettings,
   setActiveTab,
+  onOpenInstallModal,
 }) => {
   const [quickTitle, setQuickTitle] = useState('');
   const [quickTime, setQuickTime] = useState('');
@@ -155,6 +159,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* PWA Mobile App Quick Banner */}
+      {onOpenInstallModal && (
+        <div className="rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-amber-950/30 p-4 border border-emerald-500/30 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <Smartphone className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-white">تثبيت التطبيق على هاتفك المحمول (Android / iPhone)</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                  متوافق 100%
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                يمكنك تثبيت النظام كأيقونة تطبيق رسمي على شاشة جوالك ليعمل بملء الشاشة وبدون اتصال بالإنترنت.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onOpenInstallModal}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
+          >
+            <Download className="w-4 h-4" />
+            <span>تثبيت التطبيق الآن</span>
+          </button>
+        </div>
+      )}
 
       {/* Hero Section: Live Prayer Countdown & Today Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

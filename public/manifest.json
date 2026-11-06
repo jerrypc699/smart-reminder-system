@@ -1,0 +1,64 @@
+{
+  "name": "د. عبد العزيز | المساعد الشخصي الذكي",
+  "short_name": "د. عبد العزيز",
+  "description": "نظام التذكير الصوتي الذكي وجدولة الوسائط ومواقيت الصلاة المخصص للدكتور عبد العزيز",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0F19",
+  "theme_color": "#0B0F19",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "مهام العمل والعيادة",
+      "short_name": "المهام",
+      "description": "عرض مهام دكتور عبد العزيز",
+      "url": "/#tasks",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "الوسائط المجدولة",
+      "short_name": "الميديا",
+      "description": "جدولة الفيديوهات والصوتيات",
+      "url": "/#audio_scheduler",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "مواقيت الصلاة",
+      "short_name": "الصلاة",
+      "description": "مواقيت الصلاة والأذان",
+      "url": "/#prayers",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+

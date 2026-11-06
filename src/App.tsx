@@ -8,6 +8,8 @@ import { AthkarView } from './components/AthkarView';
 import { SettingsView } from './components/SettingsView';
 import { AudioSchedulerView } from './components/AudioSchedulerView';
 import { ActiveAlertModal } from './components/ActiveAlertModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { InstallAppModal } from './components/InstallAppModal';
 
 import type { 
   Task, 
@@ -39,6 +41,37 @@ export function App() {
 
   // Active Popup Alert
   const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
+    try {
+      return window.matchMedia('(display-mode: standalone)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   // Prayer Settings
   const [prayerSettings, setPrayerSettings] = useState<PrayerSettings>(() => {
@@ -563,10 +596,11 @@ export function App() {
         onRequestNotification={handleRequestNotification}
         pendingTasksCount={pendingTasksCount}
         scheduledAudiosCount={scheduledAudios.filter((s) => s.enabled).length}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-16">
         {activeTab === 'dashboard' && (
           <Dashboard
             prayerTimes={prayerCalc.prayers}
@@ -579,6 +613,7 @@ export function App() {
             onPlayAzanPreview={handlePlayAzanPreview}
             prayerSettings={prayerSettings}
             setActiveTab={setActiveTab}
+            onOpenInstallModal={() => setIsInstallModalOpen(true)}
           />
         )}
 
@@ -642,9 +677,28 @@ export function App() {
             hasNotificationPermission={hasNotificationPermission}
             onRequestNotification={handleRequestNotification}
             onResetAllData={handleResetAllData}
+            onOpenInstallModal={() => setIsInstallModalOpen(true)}
           />
         )}
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Android & iOS) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        pendingTasksCount={pendingTasksCount}
+        scheduledAudiosCount={scheduledAudios.filter((s) => s.enabled).length}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        isInstallable={!isAppInstalled}
+      />
+
+      {/* PWA Mobile Installation Guidance Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        deferredPrompt={deferredPrompt}
+        onInstallSuccess={() => setIsAppInstalled(true)}
+      />
 
       {/* Interactive Active Alert Modal */}
       <ActiveAlertModal

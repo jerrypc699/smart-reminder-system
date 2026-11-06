@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 export interface FirebaseConfigData {
@@ -10,6 +10,15 @@ export interface FirebaseConfigData {
   messagingSenderId: string;
   appId: string;
 }
+
+export const DEFAULT_FIREBASE_CONFIG: FirebaseConfigData = {
+  apiKey: "AIzaSyCQAfiG5qBAf53lfWto0xgS2kjnp1rW-gg",
+  authDomain: "abdelaziz-66501.firebaseapp.com",
+  projectId: "abdelaziz-66501",
+  storageBucket: "abdelaziz-66501.firebasestorage.app",
+  messagingSenderId: "92028880228",
+  appId: "1:92028880228:web:f6c8b7aa78e7504041e671",
+};
 
 const CONFIG_STORAGE_KEY = 'smart_reminder_firebase_config_v1';
 
@@ -23,30 +32,17 @@ class FirebaseManager {
     this.initFromSaved();
   }
 
-  public getConfig(): FirebaseConfigData | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
+  public getConfig(): FirebaseConfigData {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
     }
 
-    // Fallback to Vite environment variables if available
-    const envConfig: FirebaseConfigData = {
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-      appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-    };
-
-    if (envConfig.apiKey && envConfig.projectId) {
-      return envConfig;
-    }
-
-    return null;
+    return DEFAULT_FIREBASE_CONFIG;
   }
 
   public saveConfig(config: FirebaseConfigData): boolean {
@@ -116,4 +112,3 @@ class FirebaseManager {
 }
 
 export const firebaseManager = new FirebaseManager();
-

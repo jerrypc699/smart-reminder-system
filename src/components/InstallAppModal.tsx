@@ -226,6 +226,27 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             </div>
           )}
 
+          {/* QR Code Scanner for Instant Phone Installation */}
+          <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
+                <QrCode className="w-4 h-4 text-emerald-400" />
+                <span>مسح سريع بكاميرا الهاتف</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed max-w-[260px]">
+                افتح كاميرا هاتفك (آيفون أو أندرويد) ووجهها نحو الكود لفتح الرابط وتثبيته فوراً.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white p-1.5 rounded-xl shadow-lg ring-2 ring-emerald-500/30">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https://smart-reminder-system-nu.vercel.app"
+                alt="QR Code"
+                className="w-20 h-20"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
           {/* Benefits Feature Grid */}
           <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
             <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-300">

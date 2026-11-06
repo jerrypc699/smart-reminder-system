@@ -1,46 +1,56 @@
 @echo off
 chcp 65001 >nul
+set "PATH=%PATH%;C:\Users\Administrator\AppData\Local\Programs\Git\cmd;C:\Users\Administrator\AppData\Local\Programs\GitHubCLI"
+
 echo ========================================================
 echo    رفع نظام د. عبد العزيز للتذكير الذكي على GitHub
 echo ========================================================
 echo.
 
-where git >nul 2>nul
+echo [1/4] التحقق من Git...
+git --version
 if %errorlevel% neq 0 (
-    echo [X] تنبيه: أداة Git غير مثبتة في مسار النظام حالياً.
-    echo يمكنك تحميل وتثبيت Git بسهولة من الرابط التالي:
-    echo https://git-scm.com/download/win
-    echo أو استخدام تطبيق GitHub Desktop البسيط:
-    echo https://desktop.github.com
-    echo.
+    echo [X] تعذر العثور على أداة Git.
     pause
     exit /b
 )
 
-echo [1/4] تهيئة مستودع Git محلي...
-git init
-
-echo [2/4] إضافة وتجهيز كافة ملفات المشروع...
+echo.
+echo [2/4] تجهيز كافة ملفات المشروع والتعديلات الأخيرة...
 git add .
+git commit -m "feat(pwa): Dr. Abdelaziz Smart Reminder - Mobile PWA & Vercel deployment" 2>nul
 
-echo [3/4] إنشاء Commit بالنسخة الحالية...
-git commit -m "Release: Dr. Abdelaziz Smart Reminder & Media Scheduler System"
-
-set /p repo_url="ضع رابط مستودع GitHub هنا (مثال: https://github.com/username/repo.git): "
+echo.
+echo [3/4] المستودع الحالي المعين:
+git remote -v
+echo.
+echo إذا كان لديك مستودع جاهز على GitHub، أدخل رابطه بالأسفل:
+echo (أو اضغط Enter مباشرة للاعتماد على: https://github.com/jerrypc699/smart-reminder-system.git)
+set /p repo_url="رابط المستودع: "
 
 if "%repo_url%"=="" (
-    echo تم إنشاء المستودع المحلي بنجاح، يمكنك ربطه لاحقاً.
-    pause
-    exit /b
+    set repo_url=https://github.com/jerrypc699/smart-reminder-system.git
 )
 
-echo [4/4] جاري رفع المشروع إلى GitHub...
 git branch -M main
 git remote remove origin 2>nul
 git remote add origin %repo_url%
-git push -u origin main
 
 echo.
-echo [✓] تم رفع المشروع بنجاح إلى GitHub!
-pause
+echo [4/4] جاري رفع المشروع إلى GitHub (%repo_url%)...
+echo ملاحظة: إذا ظهرت نافذة تسجيل الدخول لـ GitHub، يرجى الموافقة عليها لإتمام الرفع.
+git push -u origin main
 
+if %errorlevel% equ 0 (
+    echo.
+    echo ========================================================
+    echo    [✓] تم رفع المشروع بنجاح إلى GitHub!
+    echo ========================================================
+) else (
+    echo.
+    echo [!] تنبيه: إذا لم يكن المستودع منشأ بعد على حسابك، يرجى إنشاؤه أولاً عبر الرابط:
+    echo     https://github.com/new
+    echo     ثم إعادة تشغيل هذا الملف.
+)
+
+pause

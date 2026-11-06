@@ -76,9 +76,11 @@ export function App() {
     };
   }, []);
 
-  // Cloud Database Sync State (Firebase)
+  // Cloud Database Sync State
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
-  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(() => cloudSyncService.isAvailable());
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(() => {
+    return vercelCloudSync.isAvailable() || cloudSyncService.isAvailable();
+  });
 
   // Subscribe to Realtime Cloud Updates for Tasks and Scheduled Media
   useEffect(() => {

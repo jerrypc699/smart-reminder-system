@@ -216,6 +216,22 @@ export const FirebaseSettingsModal: React.FC<FirebaseSettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-4 text-xs">
+          {/* Active Cloud Status Banner */}
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <div>
+                <h4 className="font-bold text-white text-xs">سحابة النظام المركزية: نشطة ومتصلة تلقائياً 🟢</h4>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  تتم المزامنة بين الكمبيوتر والموبايل تلقائياً عبر Vercel Cloud و Blob Storage.
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 shrink-0">
+              متصل الآن
+            </span>
+          </div>
+
           {errorMsg && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />

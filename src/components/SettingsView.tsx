@@ -531,6 +531,109 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
+      {/* Data Backup & Device Sync (PC & Mobile) */}
+      <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl space-y-4">
+        <div>
+          <h4 className="text-base font-bold text-white flex items-center gap-2">
+            <UploadCloud className="w-5 h-5 text-emerald-400" />
+            <span>المزامنة والنسخ الاحتياطي بين الكمبيوتر والموبايل</span>
+          </h4>
+          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+            نظراً لأن النظام يعمل محلياً بالكامل (Offline-First) حفاظاً على خصوصية د. عبد العزيز، يمكنك تصدير بياناتك ومهامك من الكمبيوتر في ملف نسخة احتياطية واستيراده على الموبايل بضغطة زر واحدة.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          {/* Export Backup */}
+          <button
+            onClick={() => {
+              try {
+                const tasks = localStorage.getItem('smart_reminder_tasks_v2') || '[]';
+                const scheduledMedia = localStorage.getItem('smart_reminder_scheduled_media_v2') || '[]';
+                const prayer = localStorage.getItem('smart_reminder_prayer_settings_v1') || '{}';
+                const audio = localStorage.getItem('smart_reminder_audio_settings_v1') || '{}';
+
+                const backupData = {
+                  version: '2.0',
+                  doctor: 'د. عبد العزيز',
+                  exportDate: new Date().toISOString(),
+                  tasks: JSON.parse(tasks),
+                  scheduledMedia: JSON.parse(scheduledMedia),
+                  prayerSettings: JSON.parse(prayer),
+                  audioSettings: JSON.parse(audio),
+                };
+
+                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute('href', dataStr);
+                downloadAnchor.setAttribute('download', `dr-abdelaziz-backup-${new Date().toISOString().split('T')[0]}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                alert('✓ تم تصدير النسخة الاحتياطية بنجاح! يمكنك الآن إرسال هذا الملف لهاتفك واستيراده هناك.');
+              } catch (err: any) {
+                alert('فشل تصدير النسخة الاحتياطية: ' + err.message);
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>تصدير نسخة احتياطية من الكمبيوتر</span>
+          </button>
+
+          {/* Import Backup */}
+          <div>
+            <input
+              id="import-backup-input"
+              type="file"
+              accept=".json,application/json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  try {
+                    const content = event.target?.result as string;
+                    const data = JSON.parse(content);
+
+                    if (data.tasks) {
+                      localStorage.setItem('smart_reminder_tasks_v2', JSON.stringify(data.tasks));
+                    }
+                    if (data.scheduledMedia) {
+                      localStorage.setItem('smart_reminder_scheduled_media_v2', JSON.stringify(data.scheduledMedia));
+                    }
+                    if (data.prayerSettings) {
+                      localStorage.setItem('smart_reminder_prayer_settings_v1', JSON.stringify(data.prayerSettings));
+                      setPrayerSettings(data.prayerSettings);
+                    }
+                    if (data.audioSettings) {
+                      localStorage.setItem('smart_reminder_audio_settings_v1', JSON.stringify(data.audioSettings));
+                      setAudioSettings(data.audioSettings);
+                    }
+
+                    alert('✓ تم استيراد وتحديث كافة البيانات والمهام بنجاح! سيتم تحديث الصفحة الآن.');
+                    window.location.reload();
+                  } catch (err: any) {
+                    alert('الملف غير صالح أو تالف: ' + err.message);
+                  }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+              }}
+              className="hidden"
+            />
+            <label
+              htmlFor="import-backup-input"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 hover:border-emerald-500/40 transition-all cursor-pointer"
+            >
+              <Upload className="w-4 h-4 text-emerald-400" />
+              <span>استيراد نسخة احتياطية على الموبايل</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       {/* Data Management & Reset */}
       <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl flex items-center justify-between">
         <div>

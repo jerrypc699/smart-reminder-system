@@ -14,7 +14,8 @@ import {
   Layers,
   Radio,
   Film,
-  Smartphone
+  Smartphone,
+  Cloud
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings } from '../types';
 
@@ -33,6 +34,8 @@ interface NavbarProps {
   pendingTasksCount: number;
   scheduledAudiosCount?: number;
   onOpenInstallModal?: () => void;
+  isCloudConnected?: boolean;
+  onOpenCloudModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -50,6 +53,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   pendingTasksCount,
   scheduledAudiosCount = 0,
   onOpenInstallModal,
+  isCloudConnected = false,
+  onOpenCloudModal,
 }) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('ar-EG', {
@@ -152,8 +157,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Controls: Audio test, mute, notifications, install */}
+          {/* Controls: Cloud sync, mobile install, audio test, mute, notifications */}
           <div className="flex items-center gap-2">
+            {onOpenCloudModal && (
+              <button
+                onClick={onOpenCloudModal}
+                title={isCloudConnected ? "السحابة متصلة وتعمل بالمزامنة الفورية بين PC والموبايل" : "ربط قاعدة البيانات السحابية (Firebase)"}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  isCloudConnected
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                }`}
+              >
+                <Cloud className={`w-3.5 h-3.5 ${isCloudConnected ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <span className="hidden sm:inline">
+                  {isCloudConnected ? 'سحابي متصل' : 'ربط السحابة'}
+                </span>
+                {isCloudConnected && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                )}
+              </button>
+            )}
+
             {onOpenInstallModal && (
               <button
                 onClick={onOpenInstallModal}

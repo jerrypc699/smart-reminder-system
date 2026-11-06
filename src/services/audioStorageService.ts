@@ -1,4 +1,5 @@
 import { StoredMediaMeta, ScheduledMedia, MediaType } from '../types';
+import { cloudSyncService } from './cloudSyncService';
 
 const DB_NAME = 'SmartReminderAudioDB_v1';
 const DB_VERSION = 1;
@@ -216,23 +217,31 @@ class AudioStorageService {
   }
 
   /**
-   * Get playable Object URL for a media file (with caching)
+   * Get playable Object URL for a media file (with local blob check & cloud URL fallback)
    */
-  public async getMediaObjectUrl(id: string): Promise<string | null> {
+  public async getMediaObjectUrl(id: string, fallbackCloudUrl?: string): Promise<string | null> {
     if (this.urlCache.has(id)) {
       return this.urlCache.get(id)!;
     }
 
     const blob = await this.getMediaBlob(id);
-    if (!blob) return null;
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      this.urlCache.set(id, url);
+      return url;
+    }
 
-    const url = URL.createObjectURL(blob);
-    this.urlCache.set(id, url);
-    return url;
+    // Fallback to cloud URL (for files uploaded from another device)
+    if (fallbackCloudUrl) {
+      this.urlCache.set(id, fallbackCloudUrl);
+      return fallbackCloudUrl;
+    }
+
+    return null;
   }
 
-  public async getAudioObjectUrl(id: string): Promise<string | null> {
-    return this.getMediaObjectUrl(id);
+  public async getAudioObjectUrl(id: string, fallbackCloudUrl?: string): Promise<string | null> {
+    return this.getMediaObjectUrl(id, fallbackCloudUrl);
   }
 
   /**
@@ -351,6 +360,19 @@ class AudioStorageService {
     };
     list.unshift(newItem);
     this.saveScheduledMedias(list);
+
+    if (cloudSyncService.isAvailable()) {
+      cloudSyncService.syncScheduledMedia(newItem);
+      this.getMediaBlob(newItem.mediaId).then((blob) => {
+        if (blob) {
+          cloudSyncService.uploadMediaFile(blob, newItem.mediaName).then((url) => {
+            this.updateScheduledMedia(newItem.id, { cloudUrl: url });
+            cloudSyncService.syncScheduledMedia({ ...newItem, cloudUrl: url });
+          }).catch(console.warn);
+        }
+      }).catch(console.warn);
+    }
+
     return newItem;
   }
 
@@ -366,6 +388,14 @@ class AudioStorageService {
       item.id === id ? { ...item, ...updates } : item
     );
     this.saveScheduledMedias(list);
+
+    if (cloudSyncService.isAvailable()) {
+      const updated = list.find((i) => i.id === id);
+      if (updated) {
+        cloudSyncService.syncScheduledMedia(updated);
+      }
+    }
+
     return list;
   }
 
@@ -376,6 +406,11 @@ class AudioStorageService {
   public deleteScheduledMedia(id: string): ScheduledMedia[] {
     const list = this.getScheduledMedias().filter((item) => item.id !== id);
     this.saveScheduledMedias(list);
+
+    if (cloudSyncService.isAvailable()) {
+      cloudSyncService.deleteScheduledMedia(id);
+    }
+
     return list;
   }
 

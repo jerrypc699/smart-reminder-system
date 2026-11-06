@@ -10,6 +10,8 @@ import { AudioSchedulerView } from './components/AudioSchedulerView';
 import { ActiveAlertModal } from './components/ActiveAlertModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { InstallAppModal } from './components/InstallAppModal';
+import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
+import { cloudSyncService } from './services/cloudSyncService';
 
 import type { 
   Task, 
@@ -72,6 +74,34 @@ export function App() {
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
+
+  // Cloud Database Sync State (Firebase)
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(() => cloudSyncService.isAvailable());
+
+  // Subscribe to Realtime Cloud Updates for Tasks and Scheduled Media
+  useEffect(() => {
+    if (!isCloudConnected) return;
+
+    const unsubTasks = cloudSyncService.subscribeTasks((cloudTasks) => {
+      if (cloudTasks && cloudTasks.length > 0) {
+        setTasks(cloudTasks);
+        taskService.saveTasks(cloudTasks);
+      }
+    });
+
+    const unsubMedia = cloudSyncService.subscribeScheduledMedia((cloudMedia) => {
+      if (cloudMedia && cloudMedia.length > 0) {
+        setScheduledAudios(cloudMedia);
+        audioStorageService.saveScheduledMedias(cloudMedia);
+      }
+    });
+
+    return () => {
+      unsubTasks();
+      unsubMedia();
+    };
+  }, [isCloudConnected]);
 
   // Prayer Settings
   const [prayerSettings, setPrayerSettings] = useState<PrayerSettings>(() => {
@@ -532,22 +562,36 @@ export function App() {
     const newTask = taskService.addTask(taskData);
     setTasks(taskService.getTasks());
     audioService.playChime('click', 0.5);
+    if (cloudSyncService.isAvailable()) {
+      cloudSyncService.syncTask(newTask);
+    }
     return newTask;
   };
 
   const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
     const updated = taskService.updateTask(taskId, updates);
     setTasks(updated);
+    const item = updated.find((t) => t.id === taskId);
+    if (item && cloudSyncService.isAvailable()) {
+      cloudSyncService.syncTask(item);
+    }
   };
 
   const handleDeleteTask = (taskId: string) => {
     const updated = taskService.deleteTask(taskId);
     setTasks(updated);
+    if (cloudSyncService.isAvailable()) {
+      cloudSyncService.deleteTask(taskId);
+    }
   };
 
   const handleToggleTask = (taskId: string) => {
     const { tasks: updated, completed } = taskService.toggleTaskStatus(taskId);
     setTasks(updated);
+    const item = updated.find((t) => t.id === taskId);
+    if (item && cloudSyncService.isAvailable()) {
+      cloudSyncService.syncTask(item);
+    }
     if (completed) {
       audioService.playChime('success', audioSettings.masterVolume);
     }
@@ -589,6 +633,8 @@ export function App() {
         pendingTasksCount={pendingTasksCount}
         scheduledAudiosCount={scheduledAudios.filter((s) => s.enabled).length}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        isCloudConnected={isCloudConnected}
+        onOpenCloudModal={() => setIsCloudModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -670,6 +716,8 @@ export function App() {
             onRequestNotification={handleRequestNotification}
             onResetAllData={handleResetAllData}
             onOpenInstallModal={() => setIsInstallModalOpen(true)}
+            isCloudConnected={isCloudConnected}
+            onOpenCloudModal={() => setIsCloudModalOpen(true)}
           />
         )}
       </main>
@@ -690,6 +738,13 @@ export function App() {
         onClose={() => setIsInstallModalOpen(false)}
         deferredPrompt={deferredPrompt}
         onInstallSuccess={() => setIsAppInstalled(true)}
+      />
+
+      {/* Firebase Cloud Database Settings Modal */}
+      <FirebaseSettingsModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        onConfigChanged={() => setIsCloudConnected(cloudSyncService.isAvailable())}
       />
 
       {/* Interactive Active Alert Modal */}

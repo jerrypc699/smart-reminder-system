@@ -15,7 +15,8 @@ import {
   Globe,
   FileAudio,
   UploadCloud,
-  Smartphone
+  Smartphone,
+  Cloud
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
@@ -33,6 +34,8 @@ interface SettingsViewProps {
   onRequestNotification: () => void;
   onResetAllData: () => void;
   onOpenInstallModal?: () => void;
+  isCloudConnected?: boolean;
+  onOpenCloudModal?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -45,6 +48,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onRequestNotification,
   onResetAllData,
   onOpenInstallModal,
+  isCloudConnected = false,
+  onOpenCloudModal,
 }) => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -529,6 +534,44 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Realtime Cloud Database (Firebase) */}
+      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 border border-emerald-500/30 p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Cloud className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-base font-bold text-white">قاعدة البيانات السحابية (Firebase Cloud)</h4>
+              {isCloudConnected ? (
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  متصل ومتزامن لحظياً 🟢
+                </span>
+              ) : (
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                  غير مربوط بالسحابة
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              مزامنة فورية وتلقائية: أي مهمة أو فيديو ترفعه على الكمبيوتر يظهر فوراً على الموبايل والعكس بدون الحاجة لنقل ملفات يدوياً.
+            </p>
+          </div>
+        </div>
+
+        {onOpenCloudModal && (
+          <button
+            type="button"
+            onClick={onOpenCloudModal}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-2 transition-all cursor-pointer shrink-0"
+          >
+            <Cloud className="w-4 h-4" />
+            <span>{isCloudConnected ? 'إدارة الاتصال السحابي' : 'ربط قاعدة بيانات Firebase'}</span>
+          </button>
+        )}
       </div>
 
       {/* Data Backup & Device Sync (PC & Mobile) */}

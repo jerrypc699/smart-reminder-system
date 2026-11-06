@@ -26,6 +26,7 @@ export interface Task {
   completedAt?: string;
   snoozeUntil?: string; // ISO string
   lastRemindedAt?: string;
+  cloudUrl?: string;
 }
 
 export interface StoredMediaMeta {
@@ -38,6 +39,7 @@ export interface StoredMediaMeta {
   thumbnail?: string;
   createdAt: string;
   category?: 'task' | 'azan' | 'scheduled' | 'custom';
+  cloudUrl?: string;
 }
 
 // Backward compatibility alias
@@ -59,6 +61,7 @@ export interface ScheduledMedia {
   enabled: boolean;
   createdAt: string;
   lastPlayedAt?: string;
+  cloudUrl?: string;
   // Aliases for compatibility
   audioId?: string;
   audioName?: string;

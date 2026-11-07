@@ -129,6 +129,7 @@ export function App() {
           });
           const merged = Array.from(map.values());
           taskService.saveTasks(merged);
+          NativeAlarmService.scheduleTasks(merged).catch(console.warn);
           return merged;
         });
       }
@@ -258,8 +259,8 @@ export function App() {
       // 1. Permanently keep background audio session active
       mobileBackgroundService.setKeepAliveMode(true);
 
-      // 2. Initialize native exact alarms if running on Android/iOS app
-      NativeAlarmService.initAndSchedulePrayers().catch(console.warn);
+      // 2. Initialize native exact alarms (Prayers + Tasks) if running on Android/iOS app
+      NativeAlarmService.syncAll(tasks).catch(console.warn);
 
       // 3. Auto-check & auto-subscribe to push notifications
       if ('Notification' in window) {
@@ -325,6 +326,30 @@ export function App() {
       }
     }
   }, [prayerSettings.azanReciter, audioSettings.masterVolume]);
+
+  // Handle Native Android / iOS Hardware Alarm Taps
+  useEffect(() => {
+    const handleNativeTap = (e: any) => {
+      const extra = e.detail;
+      if (extra?.type === 'task') {
+        audioService.initAudioContext();
+        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+        if (extra.title) {
+          setTimeout(() => {
+            audioService.speakAlert(`يا دكتور عبد العزيز: حان الآن موعد تنفيذ مهمة ${extra.title}`, {
+              volume: audioSettings.masterVolume,
+            });
+          }, 1500);
+        }
+      } else if (extra?.type === 'azan') {
+        const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;
+        audioService.initAudioContext();
+        audioService.playAzan(reciter as any, audioSettings.masterVolume);
+      }
+    };
+    window.addEventListener('native_notification_tapped', handleNativeTap);
+    return () => window.removeEventListener('native_notification_tapped', handleNativeTap);
+  }, [audioSettings.masterVolume, prayerSettings.azanReciter]);
 
   // Update clock every second
   useEffect(() => {
@@ -719,6 +744,30 @@ export function App() {
     }
   }, [prayerSettings.azanReciter, audioSettings.masterVolume]);
 
+  // Handle Native Android / iOS Hardware Alarm Taps
+  useEffect(() => {
+    const handleNativeTap = (e: any) => {
+      const extra = e.detail;
+      if (extra?.type === 'task') {
+        audioService.initAudioContext();
+        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+        if (extra.title) {
+          setTimeout(() => {
+            audioService.speakAlert(`يا دكتور عبد العزيز: حان الآن موعد تنفيذ مهمة ${extra.title}`, {
+              volume: audioSettings.masterVolume,
+            });
+          }, 1500);
+        }
+      } else if (extra?.type === 'azan') {
+        const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;
+        audioService.initAudioContext();
+        audioService.playAzan(reciter as any, audioSettings.masterVolume);
+      }
+    };
+    window.addEventListener('native_notification_tapped', handleNativeTap);
+    return () => window.removeEventListener('native_notification_tapped', handleNativeTap);
+  }, [audioSettings.masterVolume, prayerSettings.azanReciter]);
+
   // Preview individual task audio
   const handlePreviewTaskAudio = async (task: Task) => {
     audioService.initAudioContext();
@@ -760,6 +809,7 @@ export function App() {
       const updated = [newTask, ...prev];
       taskService.saveTasks(updated);
       syncCurrentStateToCloud(updated);
+      NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });
 
@@ -772,6 +822,7 @@ export function App() {
       const updated = prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t));
       taskService.saveTasks(updated);
       syncCurrentStateToCloud(updated);
+      NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });
   };
@@ -781,6 +832,7 @@ export function App() {
       const updated = prev.filter((t) => t.id !== taskId);
       taskService.saveTasks(updated);
       syncCurrentStateToCloud(updated);
+      NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });
   };
@@ -803,6 +855,7 @@ export function App() {
 
       taskService.saveTasks(updated);
       syncCurrentStateToCloud(updated);
+      NativeAlarmService.scheduleTasks(updated).catch(console.warn);
 
       if (isCompleted) {
         audioService.playChime('success', audioSettings.masterVolume);
@@ -822,6 +875,7 @@ export function App() {
       );
       taskService.saveTasks(updated);
       syncCurrentStateToCloud(updated);
+      NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });
     audioService.speakAlert(`تم تأجيل التنبيه لمدة ${minutes} دقائق.`, {

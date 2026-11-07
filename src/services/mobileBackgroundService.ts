@@ -1,4 +1,5 @@
 // Mobile Background & Web Push Service for Dr. Abdelaziz
+import { getApiUrl } from '../config/api';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -129,7 +130,7 @@ class MobileBackgroundService {
       let publicKey = (import.meta as any).env?.VITE_VAPID_PUBLIC_KEY;
       if (!publicKey) {
         try {
-          const resp = await fetch('/api/push-subscribe');
+          const resp = await fetch(getApiUrl('/api/push-subscribe'));
           if (resp.ok) {
             const data = await resp.json();
             publicKey = data.publicKey;
@@ -155,7 +156,7 @@ class MobileBackgroundService {
       }
 
       // 5. Send subscription to our Vercel Blob backend
-      const saveResp = await fetch('/api/push-subscribe', {
+      const saveResp = await fetch(getApiUrl('/api/push-subscribe'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub.toJSON()),
@@ -202,7 +203,7 @@ class MobileBackgroundService {
    */
   public async sendTestPush(): Promise<{ success: boolean; message: string }> {
     try {
-      const resp = await fetch('/api/push-broadcast', {
+      const resp = await fetch(getApiUrl('/api/push-broadcast'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

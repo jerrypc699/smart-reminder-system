@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-ipa:
     name: Build iOS IPA Package
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
       - name: Checkout Code
@@ -32,14 +32,9 @@ jobs:
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
-      - name: Copy Notification Audio to iOS Bundle
-        run: |
-          cp public/audio/mishary.mp3 ios/App/App/mishary.mp3 || true
-          cp public/audio/dr_abdelaziz_task_alert.mp3 ios/App/App/dr_abdelaziz_task_alert.mp3 || true
-
       - name: Build iOS Archive (xcodebuild)
         run: |
-          xcodebuild -project ios/App/App.xcodeproj \
+          xcodebuild -workspace ios/App/App.xcworkspace \
                      -scheme App \
                      -configuration Release \
                      -destination 'generic/platform=iOS' \
@@ -47,8 +42,7 @@ jobs:
                      archive \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGN_IDENTITY="" \
-                     AD_HOC_CODE_SIGNING_ALLOWED=YES
+                     CODE_SIGN_IDENTITY=""
 
       - name: Package Payload into IPA
         run: |
@@ -70,9 +64,10 @@ jobs:
           tag_name: v1.0.0
           name: "Dr. Abdelaziz Smart Reminder App v1.0.0"
           body: |
-            تطبيق نظام التذكير الصوتي الذكي ومواقيت الصلاة للدكتور عبد العزيز
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز
             - متاح بصيغة Android APK لأجهزة الأندرويد.
             - متاح بصيغة iOS IPA لأجهزة الآيفون والآيباد (تثبيت عبر Sideloadly أو AltStore).
           files: DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

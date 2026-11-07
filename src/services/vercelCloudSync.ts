@@ -1,5 +1,6 @@
 import { Task, ScheduledMedia, PrayerSettings, AudioSettings } from '../types';
 import { upload } from '@vercel/blob/client';
+import { getApiUrl } from '../config/api';
 
 export interface CloudSyncPayload {
   tasks: Task[];
@@ -78,7 +79,7 @@ class VercelCloudSyncService {
     if (this.isSyncing) return null;
 
     try {
-      const res = await fetch(`/api/sync?t=${Date.now()}`, {
+      const res = await fetch(getApiUrl(`/api/sync?t=${Date.now()}`), {
         headers: { 
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache'
@@ -106,7 +107,7 @@ class VercelCloudSyncService {
   public async pushToCloud(payload: Omit<CloudSyncPayload, 'updatedAt'>): Promise<boolean> {
     this.isSyncing = true;
     try {
-      const res = await fetch('/api/sync', {
+      const res = await fetch(getApiUrl('/api/sync'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
@@ -155,7 +156,7 @@ class VercelCloudSyncService {
     try {
       const newBlob = await upload(`dr-abdelaziz/media/${Date.now()}_${safeFilename}`, file, {
         access: 'public',
-        handleUploadUrl: '/api/blob-upload',
+        handleUploadUrl: getApiUrl('/api/blob-upload'),
         onUploadProgress: (progress) => {
           onProgress?.(Math.round(progress.percentage));
         },
@@ -167,7 +168,7 @@ class VercelCloudSyncService {
 
     // 2. Second attempt: Serverless binary upload fallback
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(getApiUrl('/api/upload'), {
         method: 'POST',
         headers: {
           'x-filename': encodeURIComponent(safeFilename),

@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-ipa:
     name: Build iOS IPA Package
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Code
@@ -34,7 +34,7 @@ jobs:
 
       - name: Build iOS Archive (xcodebuild)
         run: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
+          xcodebuild -project ios/App/App.xcodeproj \
                      -scheme App \
                      -configuration Release \
                      -destination 'generic/platform=iOS' \

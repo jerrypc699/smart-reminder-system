@@ -14,7 +14,7 @@ export class NativeAlarmService {
   }
 
   /**
-   * Initialize notification channels (Azan & Tasks)
+   * Initialize high-priority notification channels (Azan & Tasks)
    */
   public static async initChannels(): Promise<boolean> {
     if (!this.isNative()) return false;
@@ -28,42 +28,68 @@ export class NativeAlarmService {
         }
       }
 
-      // 1. Azan High-Priority Channel with Mishary sound
+      // Delete older channels to force Android to discard any cached silent settings
+      const oldChannelIds = ['azan_channel', 'task_channel', 'sound_mishary', 'sound_dr_abdelaziz_task_alert', 'dr_abdelaziz_tasks_v5', 'dr_abdelaziz_azan_v5'];
+      for (const id of oldChannelIds) {
+        await LocalNotifications.deleteChannel({ id }).catch(() => {});
+      }
+
+      // 1. Azan High-Priority Channel (Importance 5 = Heads-up with sound)
       await LocalNotifications.createChannel({
-        id: 'azan_channel',
-        name: 'أذان الصلاة (د. عبد العزيز)',
+        id: 'dr_abdelaziz_azan_v6',
+        name: 'أذان الصلاة الرسمي (د. عبد العزيز)',
         description: 'إطلاق صوت الأذان كاملاً في مواعيد الصلاة حتى لو كان الهاتف مقفلاً',
-        importance: 5, // Max importance (heads-up / alarm)
+        importance: 5,
         visibility: 1,
-        sound: 'mishary.mp3',
+        sound: 'mishary',
         vibration: true,
         lights: true,
         lightColor: '#D4AF37'
       });
 
-      // 2. Task High-Priority Channel with Doctor voice sound
+      // 2. Task High-Priority Channel (Importance 5 = Heads-up with doctor voice)
       await LocalNotifications.createChannel({
-        id: 'task_channel',
+        id: 'dr_abdelaziz_tasks_v6',
         name: 'تنبيهات المهام والعيادة (د. عبد العزيز)',
         description: 'تنبيهات صوتية فورية لمهام العمل والعيادة بصوت الدكتور عبد العزيز',
-        importance: 5, // Max importance (alarm sound & vibration)
+        importance: 5,
         visibility: 1,
-        sound: 'dr_abdelaziz_task_alert.mp3',
+        sound: 'dr_abdelaziz_task_alert',
         vibration: true,
         lights: true,
         lightColor: '#10B981'
       });
 
       if (!this.isInitialized) {
-        LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
-          console.log('[NativeAlarmService] Notification tapped:', notificationAction);
-          // Broadcast to window if needed
+        // Handle when notification is tapped
+        LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+          console.log('[NativeAlarmService] Notification tapped:', action);
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('native_notification_tapped', {
-              detail: notificationAction.notification.extra
+              detail: action.notification.extra
             }));
           }
         });
+
+        // Handle when notification is triggered/received while app is running/background
+        LocalNotifications.addListener('localNotificationReceived', (notification) => {
+          console.log('[NativeAlarmService] Notification fired live:', notification);
+          try {
+            const extra = notification.extra;
+            if (extra?.type === 'task') {
+              const audio = new Audio('/audio/dr_abdelaziz_task_alert.mp3');
+              audio.volume = 1.0;
+              audio.play().catch(console.warn);
+            } else if (extra?.type === 'azan') {
+              const audio = new Audio('/audio/mishary.mp3');
+              audio.volume = 1.0;
+              audio.play().catch(console.warn);
+            }
+          } catch (e) {
+            console.warn('Live notification sound play error:', e);
+          }
+        });
+
         this.isInitialized = true;
       }
 
@@ -137,8 +163,9 @@ export class NativeAlarmService {
                 allowWhileIdle: true
               },
               sound: 'mishary.mp3',
-              channelId: 'azan_channel',
+              channelId: 'dr_abdelaziz_azan_v6',
               actionTypeId: 'AZAN_ACTION',
+              foreground: true,
               extra: {
                 prayer: p.name,
                 type: 'azan'
@@ -165,7 +192,6 @@ export class NativeAlarmService {
   public static async scheduleTasks(tasks: Task[]): Promise<void> {
     if (!this.isNative()) return;
     try {
-      // 1. Cancel previous task notifications (range 2000+)
       const pending = await LocalNotifications.getPending();
       const taskNotifs = pending.notifications.filter(n => n.id >= 2000);
       if (taskNotifs.length > 0) {
@@ -185,12 +211,10 @@ export class NativeAlarmService {
         if (task.status === 'snoozed' && task.snoozeUntil) {
           targetDate = new Date(task.snoozeUntil);
         } else if (task.dueDate && task.dueTime) {
-          // Parse YYYY-MM-DD and HH:mm
           const [year, month, day] = task.dueDate.split('-').map(Number);
           const [hour, min] = task.dueTime.split(':').map(Number);
           const baseDate = new Date(year, month - 1, day, hour, min, 0, 0);
 
-          // Subtract reminder minutes before
           const reminderMinutes = task.reminderMinutesBefore || 0;
           targetDate = new Date(baseDate.getTime() - reminderMinutes * 60 * 1000);
         }
@@ -205,9 +229,10 @@ export class NativeAlarmService {
               at: targetDate,
               allowWhileIdle: true
             },
-            channelId: 'task_channel',
+            channelId: 'dr_abdelaziz_tasks_v6',
             sound: 'dr_abdelaziz_task_alert.mp3',
             actionTypeId: 'TASK_ACTION',
+            foreground: true,
             extra: {
               taskId: task.id,
               type: 'task',

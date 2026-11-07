@@ -77,7 +77,8 @@ export class NativeAlarmService {
           try {
             const extra = notification.extra;
             if (extra?.type === 'task') {
-              const audio = new Audio('/audio/dr_abdelaziz_task_alert.mp3');
+              const audioSrc = extra.cloudUrl || '/audio/dr_abdelaziz_task_alert.mp3';
+              const audio = new Audio(audioSrc);
               audio.volume = 1.0;
               audio.play().catch(console.warn);
             } else if (extra?.type === 'azan') {
@@ -224,7 +225,7 @@ export class NativeAlarmService {
           notificationsToSchedule.push({
             id: numericId,
             title: `📋 تذكير بمهمة: ${task.title}`,
-            body: `يا دكتور عبد العزيز: ${task.description || task.voiceMessage || 'حان موعد تنفيذ ومتابعة هذه المهمة الآن.'}`,
+            body: task.voiceMessage || `يا دكتور عبد العزيز: ${task.description || 'حان موعد تنفيذ ومتابعة هذه المهمة الآن.'}`,
             schedule: {
               at: targetDate,
               allowWhileIdle: true
@@ -236,7 +237,10 @@ export class NativeAlarmService {
             extra: {
               taskId: task.id,
               type: 'task',
-              title: task.title
+              title: task.title,
+              voiceMessage: task.voiceMessage || '',
+              customAudioId: task.customAudioId || '',
+              cloudUrl: task.cloudUrl || ''
             }
           });
         }

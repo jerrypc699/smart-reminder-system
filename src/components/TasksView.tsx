@@ -23,6 +23,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Task, TaskPriority, TaskCategory, PrayerInfo, TaskAudioMode, StoredAudioMeta } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
+import { vercelCloudSync } from '../services/vercelCloudSync';
 
 interface TasksViewProps {
   tasks: Task[];
@@ -63,6 +64,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [audioMode, setAudioMode] = useState<TaskAudioMode>('tts');
   const [customAudioId, setCustomAudioId] = useState<string>('');
   const [customAudioName, setCustomAudioName] = useState<string>('');
+  const [taskCloudUrl, setTaskCloudUrl] = useState<string>('');
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
   const [audioLibrary, setAudioLibrary] = useState<StoredAudioMeta[]>([]);
   const [isRecordingInTask, setIsRecordingInTask] = useState(false);
   const [taskRecordSeconds, setTaskRecordSeconds] = useState(0);
@@ -86,6 +89,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0) return;
     try {
+      setIsUploadingMedia(true);
       const file = files[0];
       const meta = await audioStorageService.saveMediaFile(file, file.name.replace(/\.[^/.]+$/, ''), 'task');
       setCustomAudioId(meta.id);
@@ -93,9 +97,18 @@ export const TasksView: React.FC<TasksViewProps> = ({
       setAudioMode('custom');
       const updatedLib = await audioStorageService.getAllMediaMeta();
       setAudioLibrary(updatedLib);
+
+      // Upload to Vercel Blob so it's accessible across PC, Mobile, and Native App
+      try {
+        const cloudUrl = await vercelCloudSync.uploadMediaFile(file, file.name);
+        setTaskCloudUrl(cloudUrl);
+      } catch (uploadErr) {
+        console.warn('Task audio upload to cloud warning:', uploadErr);
+      }
     } catch (err: any) {
       alert('فشل رفع الملف: ' + err.message);
     } finally {
+      setIsUploadingMedia(false);
       e.target.value = '';
     }
   };
@@ -122,6 +135,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
         const updatedLib = await audioStorageService.getAllAudioMeta();
         setAudioLibrary(updatedLib);
         stream.getTracks().forEach((t) => t.stop());
+
+        // Background upload to cloud storage
+        try {
+          const cloudUrl = await vercelCloudSync.uploadMediaFile(blob, `${name}.webm`);
+          setTaskCloudUrl(cloudUrl);
+        } catch (uploadErr) {
+          console.warn('Recorded task voice cloud upload warning:', uploadErr);
+        }
       };
 
       mr.start();
@@ -174,6 +195,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setAudioMode('tts');
     setCustomAudioId('');
     setCustomAudioName('');
+    setTaskCloudUrl('');
     setEditingTask(null);
   };
 
@@ -190,6 +212,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setAudioMode(task.audioMode || (task.customAudioId ? 'custom' : 'tts'));
     setCustomAudioId(task.customAudioId || '');
     setCustomAudioName(task.customAudioName || '');
+    setTaskCloudUrl(task.cloudUrl || '');
     setIsAddModalOpen(true);
   };
 
@@ -221,6 +244,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         audioMode,
         customAudioId: audioMode === 'custom' ? customAudioId : undefined,
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
+        cloudUrl: audioMode === 'custom' ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
       });
     } else {
       onAddTask({
@@ -236,6 +260,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         audioMode,
         customAudioId: audioMode === 'custom' ? customAudioId : undefined,
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
+        cloudUrl: audioMode === 'custom' ? taskCloudUrl : undefined,
       });
     }
 

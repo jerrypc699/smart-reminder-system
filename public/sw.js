@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v6';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v7';
 
 const STATIC_ASSETS = [
   '/',
@@ -132,33 +132,52 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  // Azan vibration rhythm pattern: Takbeerat beat
-  const vibrationPattern = data.type === 'azan'
+  const isAzan = data.type === 'azan';
+  const isTask = data.type === 'task';
+
+  // Distinct vibration rhythms
+  const vibrationPattern = isAzan
     ? [500, 200, 500, 200, 1000, 300, 500, 200, 1000]
     : [300, 150, 300, 150, 500];
+
+  // Specific action buttons for Prayer vs Task
+  const actions = isAzan
+    ? [
+        { action: 'play_azan', title: 'سماع الأذان الآن 🕌' },
+        { action: 'open_app', title: 'فتح التطبيق 📱' }
+      ]
+    : [
+        { action: 'play_task', title: 'سماع صوت التنبيه 🔊' },
+        { action: 'open_app', title: 'فتح المهمة 📋' }
+      ];
+
+  const defaultUrl = isAzan 
+    ? `/?play_azan=true&prayer=${data.prayerId || 'now'}` 
+    : `/?play_task=${data.taskId || ''}`;
 
   const notificationOptions = {
     body: data.body,
     icon: data.icon || '/pwa-192x192.png',
     badge: data.badge || '/pwa-192x192.png',
-    sound: data.type === 'azan' ? '/audio/mishary.mp3' : '/audio/dr_abdelaziz_task_alert.mp3',
+    sound: isAzan ? '/audio/mishary.mp3' : (data.audioUrl || '/audio/dr_abdelaziz_task_alert.mp3'),
     vibrate: vibrationPattern,
-    tag: data.tag || (data.type === 'azan' ? 'prayer-azan-alert' : 'task-alert'),
+    tag: data.tag || (isAzan ? 'prayer-azan-alert' : `task-${data.taskId || Date.now()}`),
     renotify: true,
     requireInteraction: true,
     silent: false,
     dir: 'rtl',
     lang: 'ar',
     data: {
-      url: data.url || '/?play_azan=true',
-      type: data.type || 'azan',
+      url: data.url || defaultUrl,
+      type: data.type || (isAzan ? 'azan' : 'task'),
       prayerId: data.prayerId || 'now',
+      taskId: data.taskId,
+      audioUrl: data.audioUrl,
+      voiceMessage: data.voiceMessage,
+      title: data.title,
       timestamp: Date.now()
     },
-    actions: [
-      { action: 'play_azan', title: 'سماع الأذان الآن 🕌' },
-      { action: 'open_app', title: 'فتح التطبيق 📱' }
-    ]
+    actions: actions
   };
 
   event.waitUntil(
@@ -166,8 +185,16 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(data.title, notificationOptions),
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
         for (const client of clientList) {
-          if (data.type === 'azan') {
+          if (isAzan) {
             client.postMessage({ type: 'TRIGGER_AZAN', prayerId: data.prayerId });
+          } else if (isTask) {
+            client.postMessage({
+              type: 'TRIGGER_TASK_ALERT',
+              taskId: data.taskId,
+              title: data.title,
+              voiceMessage: data.voiceMessage,
+              audioUrl: data.audioUrl
+            });
           }
         }
       })
@@ -180,7 +207,12 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
   const isPlayAzan = event.action === 'play_azan' || data.type === 'azan';
-  const targetUrl = data.url || (isPlayAzan ? '/?play_azan=true' : '/');
+  const isPlayTask = event.action === 'play_task' || data.type === 'task';
+
+  const defaultTargetUrl = isPlayAzan
+    ? '/?play_azan=true'
+    : (data.taskId ? `/?play_task=${data.taskId}` : '/#tasks');
+  const targetUrl = data.url || defaultTargetUrl;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
@@ -188,6 +220,14 @@ self.addEventListener('notificationclick', (event) => {
         if (client.url && 'focus' in client) {
           if (isPlayAzan) {
             client.postMessage({ type: 'TRIGGER_AZAN', prayerId: data.prayerId });
+          } else if (isPlayTask) {
+            client.postMessage({
+              type: 'TRIGGER_TASK_ALERT',
+              taskId: data.taskId,
+              title: data.title,
+              voiceMessage: data.voiceMessage,
+              audioUrl: data.audioUrl
+            });
           }
           return client.focus();
         }

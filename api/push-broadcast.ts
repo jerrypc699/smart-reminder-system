@@ -25,10 +25,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const payload = req.body || {};
-    const title = payload.title || 'حان الآن موعد الأذان والصلاة 🕌';
-    const body = payload.body || 'يا دكتور عبد العزيز، حان الآن موعد الصلاة حسب توقيت القاهرة. اضغط لسماع الأذان.';
     const type = payload.type || 'azan';
     const prayerId = payload.prayerId || 'now';
+    const taskId = payload.taskId;
+    const title = payload.title || (type === 'azan' ? 'حان الآن موعد الأذان والصلاة 🕌' : 'يا دكتور عبد العزيز: تذكير بمهمة 📋');
+    const body = payload.body || (type === 'azan' ? 'يا دكتور عبد العزيز، حان الآن موعد الصلاة حسب توقيت القاهرة. اضغط لسماع الأذان.' : 'تذكير بمهمة عمل مستحقة الآن.');
+
+    // Determine destination URL and sound based on notification type
+    const defaultUrl = type === 'task' 
+      ? `/?play_task=${taskId || ''}` 
+      : `/?play_azan=true&prayer=${prayerId}`;
+    const defaultSound = type === 'task' 
+      ? '/audio/dr_abdelaziz_task_alert.mp3' 
+      : '/audio/mishary.mp3';
 
     // Retrieve subscriptions from Vercel Blob
     let subscriptions: any[] = [];
@@ -57,8 +66,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body,
       type,
       prayerId,
-      url: `/?play_azan=true&prayer=${prayerId}`,
-      sound: '/audio/mishary.mp3',
+      taskId,
+      url: payload.url || defaultUrl,
+      sound: payload.sound || defaultSound,
+      audioUrl: payload.audioUrl || '',
+      voiceMessage: payload.voiceMessage || '',
       timestamp: Date.now(),
     });
 

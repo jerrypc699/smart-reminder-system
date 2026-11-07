@@ -287,7 +287,81 @@ export function App() {
     return unsub;
   }, []);
 
-  // Handle Incoming Azan Play Requests from Push Notification Click or SW Message
+  // Dedicated Voice Alert Trigger for Tasks (Plays recorded voice note, audio recording, voiceMessage TTS, or doctor chime)
+  const handleTriggerTaskVoiceAlert = async (params: {
+    taskId?: string;
+    title?: string;
+    voiceMessage?: string;
+    audioUrl?: string;
+    customAudioId?: string;
+  }) => {
+    try {
+      audioService.initAudioContext();
+
+      const allTasks = taskService.getTasks();
+      const task = params.taskId ? allTasks.find((t) => t.id === params.taskId) : null;
+
+      const audioUrl = params.audioUrl || task?.cloudUrl;
+      const customAudioId = params.customAudioId || task?.customAudioId;
+      const voiceMsg = params.voiceMessage || task?.voiceMessage;
+      const taskTitle = params.title || task?.title || 'مهمة عمل';
+
+      // Switch to tasks tab so the user sees the active task
+      setActiveTab('tasks');
+
+      // Display Active Alert Modal
+      setActiveAlert({
+        id: `alert-task-${params.taskId || Date.now()}`,
+        type: 'task',
+        title: `يا دكتور عبد العزيز: ${taskTitle}`,
+        message: voiceMsg || task?.description || 'حان وقت تنفيذ ومتابعة هذه المهمة الآن.',
+        priority: task?.priority || 'medium',
+        timestamp: new Date().toISOString(),
+        taskId: params.taskId || task?.id,
+        audioName: task?.customAudioName,
+        isCustomAudio: !!(audioUrl || customAudioId),
+        canSnooze: true,
+      });
+
+      // 1. If there is a cloud audio URL (uploaded recorded voice note), play it immediately!
+      if (audioUrl) {
+        await audioService.playCustomAudio(audioUrl, audioSettings.masterVolume);
+        return;
+      }
+
+      // 2. If there is an indexedDB audio (recorded locally on this device), play it!
+      if (customAudioId) {
+        const localBlobUrl = await audioStorageService.getAudioObjectUrl(customAudioId, audioUrl);
+        if (localBlobUrl) {
+          await audioService.playCustomAudio(localBlobUrl, audioSettings.masterVolume);
+          return;
+        }
+      }
+
+      // 3. Play luxury doctor task alert chime
+      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+
+      // 4. Speak the recorded voice message or personalized title alert
+      if (audioSettings.enableTts) {
+        const textToSpeak = voiceMsg
+          ? (voiceMsg.startsWith('يا دكتور') ? voiceMsg : `يا دكتور عبد العزيز: ${voiceMsg}`)
+          : `يا دكتور عبد العزيز: حان الآن موعد تنفيذ مهمة ${taskTitle}. يرجى المتابعة الآن.`;
+
+        setTimeout(() => {
+          audioService.speakAlert(textToSpeak, {
+            volume: audioSettings.masterVolume,
+            rate: audioSettings.ttsRate,
+            pitch: audioSettings.ttsPitch,
+            voiceURI: audioSettings.ttsVoiceURI,
+          });
+        }, 1600);
+      }
+    } catch (err) {
+      console.warn('handleTriggerTaskVoiceAlert error:', err);
+    }
+  };
+
+  // Handle Incoming Azan and Task Alerts (Push notification clicks, query params, SW messages, Native Alarms)
   useEffect(() => {
     const triggerInstantAzan = () => {
       audioService.initAudioContext();
@@ -307,16 +381,34 @@ export function App() {
 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
+      // Case A: Opened from Azan notification
       if (params.get('play_azan') === 'true') {
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, '', cleanUrl);
-        setTimeout(triggerInstantAzan, 300);
+        setTimeout(triggerInstantAzan, 400);
+      }
+      // Case B: Opened from Task notification
+      else if (params.get('play_task') !== null) {
+        const taskId = params.get('play_task') || undefined;
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        setTimeout(() => {
+          handleTriggerTaskVoiceAlert({ taskId });
+        }, 500);
       }
 
+      // Listen for Service Worker postMessage
       if ('serviceWorker' in navigator) {
         const handleSwMessage = (event: MessageEvent) => {
           if (event.data?.type === 'TRIGGER_AZAN') {
             triggerInstantAzan();
+          } else if (event.data?.type === 'TRIGGER_TASK_ALERT') {
+            handleTriggerTaskVoiceAlert({
+              taskId: event.data.taskId,
+              title: event.data.title,
+              voiceMessage: event.data.voiceMessage,
+              audioUrl: event.data.audioUrl,
+            });
           }
         };
         navigator.serviceWorker.addEventListener('message', handleSwMessage);
@@ -325,22 +417,20 @@ export function App() {
         };
       }
     }
-  }, [prayerSettings.azanReciter, audioSettings.masterVolume]);
+  }, [prayerSettings.azanReciter, audioSettings.masterVolume, audioSettings.enableTts]);
 
   // Handle Native Android / iOS Hardware Alarm Taps
   useEffect(() => {
     const handleNativeTap = (e: any) => {
       const extra = e.detail;
       if (extra?.type === 'task') {
-        audioService.initAudioContext();
-        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
-        if (extra.title) {
-          setTimeout(() => {
-            audioService.speakAlert(`يا دكتور عبد العزيز: حان الآن موعد تنفيذ مهمة ${extra.title}`, {
-              volume: audioSettings.masterVolume,
-            });
-          }, 1500);
-        }
+        handleTriggerTaskVoiceAlert({
+          taskId: extra.taskId,
+          title: extra.title,
+          voiceMessage: extra.voiceMessage,
+          audioUrl: extra.cloudUrl,
+          customAudioId: extra.customAudioId,
+        });
       } else if (extra?.type === 'azan') {
         const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;
         audioService.initAudioContext();
@@ -349,7 +439,7 @@ export function App() {
     };
     window.addEventListener('native_notification_tapped', handleNativeTap);
     return () => window.removeEventListener('native_notification_tapped', handleNativeTap);
-  }, [audioSettings.masterVolume, prayerSettings.azanReciter]);
+  }, [audioSettings.masterVolume, prayerSettings.azanReciter, audioSettings.enableTts]);
 
   // Update clock every second
   useEffect(() => {
@@ -552,53 +642,13 @@ export function App() {
 
           // Play Audio chime & Speech or Custom Audio
           if (!audioSettings.soundMuted) {
-            if (task.customAudioId) {
-              audioStorageService.getAudioObjectUrl(task.customAudioId).then((customUrl) => {
-                if (customUrl) {
-                  audioService.playCustomAudio(customUrl, audioSettings.masterVolume);
-                } else {
-                  // Fallback to chime and speech
-                  const chimeType = task.priority === 'urgent' ? 'urgent' : 'task';
-                  audioService.playChime(chimeType, audioSettings.masterVolume);
-                  if (audioSettings.enableTts) {
-                    const speechText =
-                      task.voiceMessage ||
-                      `تنبيه لمهمة عمل: ${task.title}. ${
-                        task.priority === 'urgent' ? 'هذه المهمة عاجلة جداً.' : ''
-                      } يرجى المتابعة الآن.`;
-
-                    setTimeout(() => {
-                      audioService.speakAlert(speechText, {
-                        volume: audioSettings.masterVolume,
-                        rate: audioSettings.ttsRate,
-                        pitch: audioSettings.ttsPitch,
-                        voiceURI: audioSettings.ttsVoiceURI,
-                      });
-                    }, 600);
-                  }
-                }
-              });
-            } else {
-              const chimeType = task.priority === 'urgent' ? 'urgent' : 'task';
-              audioService.playChime(chimeType, audioSettings.masterVolume);
-
-              if (audioSettings.enableTts) {
-                const speechText =
-                  task.voiceMessage ||
-                  `تنبيه لمهمة عمل: ${task.title}. ${
-                    task.priority === 'urgent' ? 'هذه المهمة عاجلة جداً.' : ''
-                  } يرجى المتابعة الآن.`;
-
-                setTimeout(() => {
-                  audioService.speakAlert(speechText, {
-                    volume: audioSettings.masterVolume,
-                    rate: audioSettings.ttsRate,
-                    pitch: audioSettings.ttsPitch,
-                    voiceURI: audioSettings.ttsVoiceURI,
-                  });
-                }, 600);
-              }
-            }
+            handleTriggerTaskVoiceAlert({
+              taskId: task.id,
+              title: task.title,
+              voiceMessage: task.voiceMessage,
+              audioUrl: task.cloudUrl,
+              customAudioId: task.customAudioId,
+            });
           }
         }
       });
@@ -717,78 +767,38 @@ export function App() {
     }
   };
 
-  // Trigger Azan automatically if opened from mobile push notification or SW action
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('play_azan') === 'true') {
-        const timer = setTimeout(() => {
-          handlePlayAzanPreview();
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-    } catch {
-      // Ignored
-    }
 
-    if ('serviceWorker' in navigator) {
-      const handleSwMessage = (e: MessageEvent) => {
-        if (e.data && e.data.type === 'TRIGGER_AZAN') {
-          handlePlayAzanPreview();
-        }
-      };
-      navigator.serviceWorker.addEventListener('message', handleSwMessage);
-      return () => {
-        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
-      };
-    }
-  }, [prayerSettings.azanReciter, audioSettings.masterVolume]);
-
-  // Handle Native Android / iOS Hardware Alarm Taps
-  useEffect(() => {
-    const handleNativeTap = (e: any) => {
-      const extra = e.detail;
-      if (extra?.type === 'task') {
-        audioService.initAudioContext();
-        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
-        if (extra.title) {
-          setTimeout(() => {
-            audioService.speakAlert(`يا دكتور عبد العزيز: حان الآن موعد تنفيذ مهمة ${extra.title}`, {
-              volume: audioSettings.masterVolume,
-            });
-          }, 1500);
-        }
-      } else if (extra?.type === 'azan') {
-        const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;
-        audioService.initAudioContext();
-        audioService.playAzan(reciter as any, audioSettings.masterVolume);
-      }
-    };
-    window.addEventListener('native_notification_tapped', handleNativeTap);
-    return () => window.removeEventListener('native_notification_tapped', handleNativeTap);
-  }, [audioSettings.masterVolume, prayerSettings.azanReciter]);
 
   // Preview individual task audio
   const handlePreviewTaskAudio = async (task: Task) => {
     audioService.initAudioContext();
+    if (task.cloudUrl) {
+      audioService.playCustomAudio(task.cloudUrl, audioSettings.masterVolume);
+      return;
+    }
     if (task.customAudioId) {
-      const url = await audioStorageService.getAudioObjectUrl(task.customAudioId);
+      const url = await audioStorageService.getAudioObjectUrl(task.customAudioId, task.cloudUrl);
       if (url) {
         audioService.playCustomAudio(url, audioSettings.masterVolume);
         return;
       }
     }
 
-    audioService.playChime(task.priority === 'urgent' ? 'urgent' : 'task', audioSettings.masterVolume);
-    setTimeout(() => {
-      const msg = task.voiceMessage || `تذكير بمهمة: ${task.title}. يرجى المتابعة الآن.`;
-      audioService.speakAlert(msg, {
-        volume: audioSettings.masterVolume,
-        rate: audioSettings.ttsRate,
-        pitch: audioSettings.ttsPitch,
-        voiceURI: audioSettings.ttsVoiceURI,
-      });
-    }, 500);
+    audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+    if (audioSettings.enableTts) {
+      const msg = task.voiceMessage
+        ? (task.voiceMessage.startsWith('يا دكتور') ? task.voiceMessage : `يا دكتور عبد العزيز: ${task.voiceMessage}`)
+        : `يا دكتور عبد العزيز: تذكير بمهمة ${task.title}. يرجى المتابعة الآن.`;
+
+      setTimeout(() => {
+        audioService.speakAlert(msg, {
+          volume: audioSettings.masterVolume,
+          rate: audioSettings.ttsRate,
+          pitch: audioSettings.ttsPitch,
+          voiceURI: audioSettings.ttsVoiceURI,
+        });
+      }, 1600);
+    }
   };
 
   // Stop all audio

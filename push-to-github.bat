@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-set "PATH=%PATH%;C:\Users\Administrator\AppData\Local\Programs\Git\cmd"
+set "PATH=%PATH%;C:\Users\Administrator\AppData\Local\GitHubDesktop\app-3.6.10\resources\app\git\cmd;C:\Users\Administrator\AppData\Local\Programs\Git\cmd"
 
 echo ========================================================
 echo    رفع نظام د. عبد العزيز للتذكير الذكي على GitHub

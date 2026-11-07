@@ -216,12 +216,14 @@ function checkTasks() {
 
       log(`تنبيه مهمة مستحقة: ${task.title}`);
 
-      const alertAudio = path.join(AUDIO_DIR, 'dr_abdelaziz_task_alert.mp3');
+      const bodyText = task.voiceMessage || `${task.title}${task.priority === 'urgent' ? ' (عاجل جداً)' : ''}`;
+      const alertAudio = task.cloudUrl || path.join(AUDIO_DIR, 'dr_abdelaziz_task_alert.mp3');
+
       playAudioAndNotify(
         alertAudio,
         `يا دكتور عبد العزيز: تذكير بمهمة 📋`,
-        `${task.title}${task.priority === 'urgent' ? ' (عاجل جداً)' : ''}`,
-        20
+        bodyText,
+        25
       );
 
       // Broadcast task notification to mobile
@@ -231,9 +233,12 @@ function checkTasks() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: `يا دكتور عبد العزيز: تذكير بمهمة 📋`,
-            body: `${task.title}${task.priority === 'urgent' ? ' (عاجل جداً)' : ''}`,
+            body: bodyText,
             type: 'task',
-            url: '/#tasks',
+            taskId: task.id,
+            voiceMessage: task.voiceMessage || '',
+            audioUrl: task.cloudUrl || '',
+            url: `/?play_task=${task.id}`,
           }),
         }).catch(() => { });
       } catch (err) { }

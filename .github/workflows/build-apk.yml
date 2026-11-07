@@ -22,19 +22,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Node Dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Build Web Application
         run: npm run build
@@ -48,7 +44,7 @@ jobs:
       - name: Build Android APK (assembleDebug)
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -61,14 +57,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.0-apk
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.0 (Android APK)"
+          tag_name: v1.0.0
+          name: "Dr. Abdelaziz Smart Reminder App (Android APK)"
           body: |
             تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز
-            - يعمل الأذان بصوت الشيخ مشاري العفاسي في مواقيت الصلاة حتى لو كان الهاتف مقفلاً.
-            - تنبيهات مهام العمل والعيادة.
-            - تشغيل أصلي عبر نظام منبهات أندرويد المباشر (Exact Alarm).
+            - يعمل الأذان بصوت الشيخ مشاري العفاسي في مواقيت الصلاة تلقائياً والشاشة مغلقة.
+            - بدون الحاجة لفتح التطبيق أو الضغط على الهاتف.
+            - يعمل بدون إنترنت على منبه الهاتف الداخلي.
           files: android/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

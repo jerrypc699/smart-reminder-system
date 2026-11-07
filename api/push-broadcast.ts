@@ -34,10 +34,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Determine destination URL and sound based on notification type
     const defaultUrl = type === 'task' 
       ? `/?play_task=${taskId || ''}` 
-      : `/?play_azan=true&prayer=${prayerId}`;
+      : (type === 'pre_azan' ? `/?play_pre_azan=true&prayer=${prayerId}` : `/?play_azan=true&prayer=${prayerId}`);
     const defaultSound = type === 'task' 
       ? '/audio/dr_abdelaziz_task_alert.mp3' 
-      : '/audio/mishary.mp3';
+      : (type === 'pre_azan' ? '/audio/dr_abdelaziz_pre_azan.mp3' : '/audio/mishary.mp3');
 
     // Retrieve subscriptions from Vercel Blob
     let subscriptions: any[] = [];

@@ -175,6 +175,22 @@ function checkPrayers() {
         `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayer.name}.`,
         15
       );
+
+      // Broadcast pre-azan notification to mobile
+      try {
+        fetch('https://smart-reminder-system-nu.vercel.app/api/push-broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `اقترب موعد صلاة ${prayer.name} ⏳`,
+            body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayer.name}.`,
+            type: 'pre_azan',
+            sound: '/audio/dr_abdelaziz_pre_azan.mp3',
+            prayerId: prayer.id,
+            url: `/?play_pre_azan=true&prayer=${prayer.id}`,
+          }),
+        }).catch(() => { });
+      } catch (err) { }
     }
   }
 

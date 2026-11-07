@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v7';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v8';
 
 const STATIC_ASSETS = [
   '/',
@@ -133,6 +133,7 @@ self.addEventListener('push', (event) => {
   }
 
   const isAzan = data.type === 'azan';
+  const isPreAzan = data.type === 'pre_azan';
   const isTask = data.type === 'task';
 
   // Distinct vibration rhythms
@@ -140,28 +141,40 @@ self.addEventListener('push', (event) => {
     ? [500, 200, 500, 200, 1000, 300, 500, 200, 1000]
     : [300, 150, 300, 150, 500];
 
-  // Specific action buttons for Prayer vs Task
-  const actions = isAzan
-    ? [
-        { action: 'play_azan', title: 'سماع الأذان الآن 🕌' },
-        { action: 'open_app', title: 'فتح التطبيق 📱' }
-      ]
-    : [
-        { action: 'play_task', title: 'سماع صوت التنبيه 🔊' },
-        { action: 'open_app', title: 'فتح المهمة 📋' }
-      ];
+  // Specific action buttons for Prayer vs Pre-Azan vs Task
+  let actions = [];
+  if (isAzan) {
+    actions = [
+      { action: 'play_azan', title: 'سماع الأذان الآن 🕌' },
+      { action: 'open_app', title: 'فتح التطبيق 📱' }
+    ];
+  } else if (isPreAzan) {
+    actions = [
+      { action: 'play_pre_azan', title: 'سماع التنبيه ⏳' },
+      { action: 'open_app', title: 'فتح التطبيق 📱' }
+    ];
+  } else {
+    actions = [
+      { action: 'play_task', title: 'سماع صوت التنبيه 🔊' },
+      { action: 'open_app', title: 'فتح المهمة 📋' }
+    ];
+  }
 
   const defaultUrl = isAzan 
     ? `/?play_azan=true&prayer=${data.prayerId || 'now'}` 
-    : `/?play_task=${data.taskId || ''}`;
+    : (isPreAzan ? `/?play_pre_azan=true&prayer=${data.prayerId || 'now'}` : `/?play_task=${data.taskId || ''}`);
+
+  const notificationSound = isAzan 
+    ? '/audio/mishary.mp3' 
+    : (isPreAzan ? '/audio/dr_abdelaziz_pre_azan.mp3' : (data.audioUrl || '/audio/dr_abdelaziz_task_alert.mp3'));
 
   const notificationOptions = {
     body: data.body,
     icon: data.icon || '/pwa-192x192.png',
     badge: data.badge || '/pwa-192x192.png',
-    sound: isAzan ? '/audio/mishary.mp3' : (data.audioUrl || '/audio/dr_abdelaziz_task_alert.mp3'),
+    sound: notificationSound,
     vibrate: vibrationPattern,
-    tag: data.tag || (isAzan ? 'prayer-azan-alert' : `task-${data.taskId || Date.now()}`),
+    tag: data.tag || (isAzan ? 'prayer-azan-alert' : (isPreAzan ? 'pre-azan-alert' : `task-${data.taskId || Date.now()}`)),
     renotify: true,
     requireInteraction: true,
     silent: false,
@@ -169,7 +182,7 @@ self.addEventListener('push', (event) => {
     lang: 'ar',
     data: {
       url: data.url || defaultUrl,
-      type: data.type || (isAzan ? 'azan' : 'task'),
+      type: data.type || (isAzan ? 'azan' : (isPreAzan ? 'pre_azan' : 'task')),
       prayerId: data.prayerId || 'now',
       taskId: data.taskId,
       audioUrl: data.audioUrl,
@@ -187,6 +200,8 @@ self.addEventListener('push', (event) => {
         for (const client of clientList) {
           if (isAzan) {
             client.postMessage({ type: 'TRIGGER_AZAN', prayerId: data.prayerId });
+          } else if (isPreAzan) {
+            client.postMessage({ type: 'TRIGGER_PRE_AZAN', prayerId: data.prayerId });
           } else if (isTask) {
             client.postMessage({
               type: 'TRIGGER_TASK_ALERT',
@@ -207,11 +222,12 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
   const isPlayAzan = event.action === 'play_azan' || data.type === 'azan';
+  const isPlayPreAzan = event.action === 'play_pre_azan' || data.type === 'pre_azan';
   const isPlayTask = event.action === 'play_task' || data.type === 'task';
 
   const defaultTargetUrl = isPlayAzan
     ? '/?play_azan=true'
-    : (data.taskId ? `/?play_task=${data.taskId}` : '/#tasks');
+    : (isPlayPreAzan ? `/?play_pre_azan=true&prayer=${data.prayerId || 'now'}` : (data.taskId ? `/?play_task=${data.taskId}` : '/#tasks'));
   const targetUrl = data.url || defaultTargetUrl;
 
   event.waitUntil(
@@ -220,6 +236,8 @@ self.addEventListener('notificationclick', (event) => {
         if (client.url && 'focus' in client) {
           if (isPlayAzan) {
             client.postMessage({ type: 'TRIGGER_AZAN', prayerId: data.prayerId });
+          } else if (isPlayPreAzan) {
+            client.postMessage({ type: 'TRIGGER_PRE_AZAN', prayerId: data.prayerId });
           } else if (isPlayTask) {
             client.postMessage({
               type: 'TRIGGER_TASK_ALERT',

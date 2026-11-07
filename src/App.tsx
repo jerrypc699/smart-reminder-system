@@ -396,12 +396,41 @@ export function App() {
           handleTriggerTaskVoiceAlert({ taskId });
         }, 500);
       }
+      // Case C: Opened from Pre-Azan notification
+      else if (params.get('play_pre_azan') === 'true') {
+        const prayerName = params.get('prayer') || '';
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        setTimeout(() => {
+          audioService.initAudioContext();
+          audioService.playCustomAudio('/audio/dr_abdelaziz_pre_azan.mp3', audioSettings.masterVolume);
+          setActiveAlert({
+            id: `alert-pre-azan-push-${Date.now()}`,
+            type: 'azan',
+            title: `اقترب موعد صلاة ${prayerName} ⏳`,
+            message: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayerName}. تقبل الله منا ومنكم صالح الأعمال.`,
+            timestamp: new Date().toISOString(),
+            canSnooze: false,
+          });
+        }, 400);
+      }
 
       // Listen for Service Worker postMessage
       if ('serviceWorker' in navigator) {
         const handleSwMessage = (event: MessageEvent) => {
           if (event.data?.type === 'TRIGGER_AZAN') {
             triggerInstantAzan();
+          } else if (event.data?.type === 'TRIGGER_PRE_AZAN') {
+            audioService.initAudioContext();
+            audioService.playCustomAudio('/audio/dr_abdelaziz_pre_azan.mp3', audioSettings.masterVolume);
+            setActiveAlert({
+              id: `alert-pre-azan-sw-${Date.now()}`,
+              type: 'azan',
+              title: `اقترب موعد الصلاة ⏳`,
+              message: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد الأذان. تقبل الله منا ومنكم.`,
+              timestamp: new Date().toISOString(),
+              canSnooze: false,
+            });
           } else if (event.data?.type === 'TRIGGER_TASK_ALERT') {
             handleTriggerTaskVoiceAlert({
               taskId: event.data.taskId,
@@ -430,6 +459,17 @@ export function App() {
           voiceMessage: extra.voiceMessage,
           audioUrl: extra.cloudUrl,
           customAudioId: extra.customAudioId,
+        });
+      } else if (extra?.type === 'pre_azan') {
+        audioService.initAudioContext();
+        audioService.playCustomAudio('/audio/dr_abdelaziz_pre_azan.mp3', audioSettings.masterVolume);
+        setActiveAlert({
+          id: `alert-pre-azan-${Date.now()}`,
+          type: 'azan',
+          title: `اقترب موعد صلاة ${extra.prayer || ''} ⏳`,
+          message: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${extra.prayer || ''}. تقبل الله منا ومنكم صالح الأعمال.`,
+          timestamp: new Date().toISOString(),
+          canSnooze: false,
         });
       } else if (extra?.type === 'azan') {
         const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;

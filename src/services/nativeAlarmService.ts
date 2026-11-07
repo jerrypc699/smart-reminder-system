@@ -14,7 +14,7 @@ export class NativeAlarmService {
   }
 
   /**
-   * Initialize high-priority notification channels (Azan & Tasks)
+   * Initialize maximum-priority notification channels (Azan, Pre-Azan, and Tasks)
    */
   public static async initChannels(): Promise<boolean> {
     if (!this.isNative()) return false;
@@ -29,14 +29,24 @@ export class NativeAlarmService {
       }
 
       // Delete older channels to force Android to discard any cached silent settings
-      const oldChannelIds = ['azan_channel', 'task_channel', 'sound_mishary', 'sound_dr_abdelaziz_task_alert', 'dr_abdelaziz_tasks_v5', 'dr_abdelaziz_azan_v5'];
+      const oldChannelIds = [
+        'azan_channel', 
+        'task_channel', 
+        'sound_mishary', 
+        'sound_dr_abdelaziz_task_alert', 
+        'dr_abdelaziz_tasks_v5', 
+        'dr_abdelaziz_azan_v5',
+        'dr_abdelaziz_tasks_v6',
+        'dr_abdelaziz_azan_v6',
+        'dr_abdelaziz_pre_azan_v6'
+      ];
       for (const id of oldChannelIds) {
         await LocalNotifications.deleteChannel({ id }).catch(() => {});
       }
 
       // 1. Azan High-Priority Channel (Importance 5 = Heads-up with sound)
       await LocalNotifications.createChannel({
-        id: 'dr_abdelaziz_azan_v6',
+        id: 'dr_abdelaziz_azan_v7',
         name: 'أذان الصلاة الرسمي (د. عبد العزيز)',
         description: 'إطلاق صوت الأذان كاملاً في مواعيد الصلاة حتى لو كان الهاتف مقفلاً',
         importance: 5,
@@ -47,9 +57,22 @@ export class NativeAlarmService {
         lightColor: '#D4AF37'
       });
 
-      // 2. Task High-Priority Channel (Importance 5 = Heads-up with doctor voice)
+      // 2. Pre-Azan Alert Channel (5 minutes before prayer with Dr. Abdelaziz voice)
       await LocalNotifications.createChannel({
-        id: 'dr_abdelaziz_tasks_v6',
+        id: 'dr_abdelaziz_pre_azan_v7',
+        name: 'تنبيه ما قبل الأذان بـ 5 دقائق (د. عبد العزيز)',
+        description: 'تنبيه صوتي قبل موعد الصلاة بـ 5 دقائق بصوت الدكتور عبد العزيز',
+        importance: 5,
+        visibility: 1,
+        sound: 'dr_abdelaziz_pre_azan',
+        vibration: true,
+        lights: true,
+        lightColor: '#3B82F6'
+      });
+
+      // 3. Task High-Priority Channel (Importance 5 = Heads-up with doctor voice)
+      await LocalNotifications.createChannel({
+        id: 'dr_abdelaziz_tasks_v7',
         name: 'تنبيهات المهام والعيادة (د. عبد العزيز)',
         description: 'تنبيهات صوتية فورية لمهام العمل والعيادة بصوت الدكتور عبد العزيز',
         importance: 5,
@@ -81,6 +104,10 @@ export class NativeAlarmService {
               const audio = new Audio(audioSrc);
               audio.volume = 1.0;
               audio.play().catch(console.warn);
+            } else if (extra?.type === 'pre_azan') {
+              const audio = new Audio('/audio/dr_abdelaziz_pre_azan.mp3');
+              audio.volume = 1.0;
+              audio.play().catch(console.warn);
             } else if (extra?.type === 'azan') {
               const audio = new Audio('/audio/mishary.mp3');
               audio.volume = 1.0;
@@ -102,7 +129,7 @@ export class NativeAlarmService {
   }
 
   /**
-   * Schedule both prayers and all user tasks into hardware AlarmManager
+   * Schedule both prayers (with pre-azan) and all user tasks into hardware AlarmManager
    */
   public static async syncAll(tasks?: Task[]): Promise<boolean> {
     if (!this.isNative()) return false;
@@ -120,7 +147,7 @@ export class NativeAlarmService {
   }
 
   /**
-   * Schedule Cairo prayer times for 3 days in advance (IDs 1000 - 1050)
+   * Schedule Cairo prayer times and 5-min pre-alerts for 3 days in advance (IDs 1000 - 1999)
    */
   public static async schedulePrayers(): Promise<void> {
     if (!this.isNative()) return;
@@ -138,6 +165,7 @@ export class NativeAlarmService {
       const notificationsToSchedule: any[] = [];
       const now = new Date();
       let notifId = 1000;
+      let preNotifId = 1500;
 
       for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
         const targetDate = new Date();
@@ -154,6 +182,29 @@ export class NativeAlarmService {
         ];
 
         for (const p of prayers) {
+          // 1. Pre-Azan Voice Alert (5 minutes before Azan)
+          const preDate = new Date(p.date.getTime() - 5 * 60 * 1000);
+          if (preDate.getTime() > now.getTime()) {
+            notificationsToSchedule.push({
+              id: preNotifId++,
+              title: `اقترب موعد صلاة ${p.name} ⏳`,
+              body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${p.name} حسب توقيت القاهرة.`,
+              schedule: {
+                at: preDate,
+                allowWhileIdle: true
+              },
+              sound: 'dr_abdelaziz_pre_azan.mp3',
+              channelId: 'dr_abdelaziz_pre_azan_v7',
+              actionTypeId: 'PRE_AZAN_ACTION',
+              foreground: true,
+              extra: {
+                prayer: p.name,
+                type: 'pre_azan'
+              }
+            });
+          }
+
+          // 2. Full Main Azan Alarm (Exact prayer time)
           if (p.date.getTime() > now.getTime()) {
             notificationsToSchedule.push({
               id: notifId++,
@@ -164,7 +215,7 @@ export class NativeAlarmService {
                 allowWhileIdle: true
               },
               sound: 'mishary.mp3',
-              channelId: 'dr_abdelaziz_azan_v6',
+              channelId: 'dr_abdelaziz_azan_v7',
               actionTypeId: 'AZAN_ACTION',
               foreground: true,
               extra: {
@@ -180,7 +231,7 @@ export class NativeAlarmService {
         await LocalNotifications.schedule({
           notifications: notificationsToSchedule
         });
-        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} prayer alerts.`);
+        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} prayer and pre-azan alerts.`);
       }
     } catch (err) {
       console.error('[NativeAlarmService] schedulePrayers error:', err);
@@ -189,6 +240,7 @@ export class NativeAlarmService {
 
   /**
    * Schedule all active tasks into native hardware AlarmManager (IDs 2000+)
+   * Ensures alarms fire AT EXACT DUE TIME and optionally at pre-reminder time!
    */
   public static async scheduleTasks(tasks: Task[]): Promise<void> {
     if (!this.isNative()) return;
@@ -207,42 +259,96 @@ export class NativeAlarmService {
       for (const task of tasks) {
         if (task.status === 'completed') continue;
 
-        let targetDate: Date | null = null;
+        const numericId = NativeAlarmService.getNumericIdForTask(task.id);
 
+        // Case A: Snoozed Task
         if (task.status === 'snoozed' && task.snoozeUntil) {
-          targetDate = new Date(task.snoozeUntil);
-        } else if (task.dueDate && task.dueTime) {
-          const [year, month, day] = task.dueDate.split('-').map(Number);
-          const [hour, min] = task.dueTime.split(':').map(Number);
-          const baseDate = new Date(year, month - 1, day, hour, min, 0, 0);
-
-          const reminderMinutes = task.reminderMinutesBefore || 0;
-          targetDate = new Date(baseDate.getTime() - reminderMinutes * 60 * 1000);
+          const snoozeDate = new Date(task.snoozeUntil);
+          if (snoozeDate.getTime() > now.getTime()) {
+            notificationsToSchedule.push({
+              id: numericId + 500000,
+              title: `📋 تذكير بمهمة مؤجلة: ${task.title}`,
+              body: task.voiceMessage || `يا دكتور عبد العزيز: حان موعد متابعة مهمة ${task.title}.`,
+              schedule: {
+                at: snoozeDate,
+                allowWhileIdle: true
+              },
+              channelId: 'dr_abdelaziz_tasks_v7',
+              sound: 'dr_abdelaziz_task_alert.mp3',
+              actionTypeId: 'TASK_ACTION',
+              foreground: true,
+              extra: {
+                taskId: task.id,
+                type: 'task',
+                title: task.title,
+                voiceMessage: task.voiceMessage || '',
+                customAudioId: task.customAudioId || '',
+                cloudUrl: task.cloudUrl || ''
+              }
+            });
+          }
+          continue;
         }
 
-        if (targetDate && targetDate.getTime() > now.getTime()) {
-          const numericId = NativeAlarmService.getNumericIdForTask(task.id);
-          notificationsToSchedule.push({
-            id: numericId,
-            title: `📋 تذكير بمهمة: ${task.title}`,
-            body: task.voiceMessage || `يا دكتور عبد العزيز: ${task.description || 'حان موعد تنفيذ ومتابعة هذه المهمة الآن.'}`,
-            schedule: {
-              at: targetDate,
-              allowWhileIdle: true
-            },
-            channelId: 'dr_abdelaziz_tasks_v6',
-            sound: 'dr_abdelaziz_task_alert.mp3',
-            actionTypeId: 'TASK_ACTION',
-            foreground: true,
-            extra: {
-              taskId: task.id,
-              type: 'task',
-              title: task.title,
-              voiceMessage: task.voiceMessage || '',
-              customAudioId: task.customAudioId || '',
-              cloudUrl: task.cloudUrl || ''
+        // Case B: Standard Task with dueDate and dueTime
+        if (task.dueDate && task.dueTime) {
+          const [year, month, day] = task.dueDate.split('-').map(Number);
+          const [hour, min] = task.dueTime.split(':').map(Number);
+          const exactDueDate = new Date(year, month - 1, day, hour, min, 0, 0);
+
+          // 1. Primary Alarm AT EXACT DUE TIME
+          if (exactDueDate.getTime() > now.getTime()) {
+            notificationsToSchedule.push({
+              id: numericId,
+              title: `📋 موعد مهمة: ${task.title}`,
+              body: task.voiceMessage || `يا دكتور عبد العزيز: ${task.description || 'حان الآن موعد تنفيذ ومتابعة هذه المهمة.'}`,
+              schedule: {
+                at: exactDueDate,
+                allowWhileIdle: true
+              },
+              channelId: 'dr_abdelaziz_tasks_v7',
+              sound: 'dr_abdelaziz_task_alert.mp3',
+              actionTypeId: 'TASK_ACTION',
+              foreground: true,
+              extra: {
+                taskId: task.id,
+                type: 'task',
+                title: task.title,
+                voiceMessage: task.voiceMessage || '',
+                customAudioId: task.customAudioId || '',
+                cloudUrl: task.cloudUrl || ''
+              }
+            });
+          }
+
+          // 2. Pre-Reminder Alarm (if reminderMinutesBefore > 0 and still in the future)
+          const reminderMinutes = task.reminderMinutesBefore || 0;
+          if (reminderMinutes > 0) {
+            const preReminderDate = new Date(exactDueDate.getTime() - reminderMinutes * 60 * 1000);
+            if (preReminderDate.getTime() > now.getTime()) {
+              notificationsToSchedule.push({
+                id: numericId + 1000000,
+                title: `⏳ اقترب موعد مهمة: ${task.title}`,
+                body: `يا دكتور عبد العزيز: باقي ${reminderMinutes} دقائق على موعد ${task.title}.`,
+                schedule: {
+                  at: preReminderDate,
+                  allowWhileIdle: true
+                },
+                channelId: 'dr_abdelaziz_tasks_v7',
+                sound: 'dr_abdelaziz_task_alert.mp3',
+                actionTypeId: 'TASK_ACTION',
+                foreground: true,
+                extra: {
+                  taskId: task.id,
+                  type: 'task',
+                  title: task.title,
+                  voiceMessage: task.voiceMessage || '',
+                  customAudioId: task.customAudioId || '',
+                  cloudUrl: task.cloudUrl || ''
+                }
+              });
             }
-          });
+          }
         }
       }
 
@@ -250,7 +356,7 @@ export class NativeAlarmService {
         await LocalNotifications.schedule({
           notifications: notificationsToSchedule
         });
-        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} task alerts in AlarmManager.`);
+        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} task alarms in AlarmManager.`);
       }
     } catch (err) {
       console.error('[NativeAlarmService] scheduleTasks error:', err);
@@ -258,7 +364,7 @@ export class NativeAlarmService {
   }
 
   /**
-   * Generate a unique 31-bit integer ID for a task string ID (range 2000 - 2147483647)
+   * Generate a unique 31-bit integer ID for a task string ID (range 2000 - 2000000)
    */
   private static getNumericIdForTask(taskId: string): number {
     let hash = 0;
@@ -267,6 +373,6 @@ export class NativeAlarmService {
       hash |= 0;
     }
     const positiveHash = Math.abs(hash);
-    return 2000 + (positiveHash % 2000000);
+    return 2000 + (positiveHash % 1000000);
   }
 }

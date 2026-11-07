@@ -21,6 +21,7 @@ export interface SyncResult {
 
 class VercelCloudSyncService {
   private lastKnownUpdate: string = '';
+  private lastPayload: CloudSyncPayload | null = null;
   private pollingInterval: any = null;
   private isSyncing: boolean = false;
   private listeners: Set<(payload: CloudSyncPayload) => void> = new Set();
@@ -51,6 +52,15 @@ class VercelCloudSyncService {
   public subscribe(callback: (payload: CloudSyncPayload) => void): () => void {
     this.listeners.add(callback);
 
+    // Deliver already cached cloud payload immediately to the new subscriber
+    if (this.lastPayload) {
+      try {
+        callback(this.lastPayload);
+      } catch (err) {
+        console.warn('Initial subscriber callback error:', err);
+      }
+    }
+
     if (!this.pollingInterval && typeof window !== 'undefined') {
       // Immediate fetch on mount
       this.fetchFromCloud();
@@ -61,6 +71,8 @@ class VercelCloudSyncService {
           this.fetchFromCloud();
         }
       }, 2500);
+    } else {
+      this.fetchFromCloud();
     }
 
     return () => {
@@ -89,6 +101,7 @@ class VercelCloudSyncService {
       if (!res.ok) return null;
 
       const data: CloudSyncPayload = await res.json();
+      this.lastPayload = data;
 
       if (data && data.updatedAt && data.updatedAt !== this.lastKnownUpdate) {
         this.lastKnownUpdate = data.updatedAt;

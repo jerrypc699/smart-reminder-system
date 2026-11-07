@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v2';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v5';
 
 const STATIC_ASSETS = [
   '/',
@@ -55,8 +55,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // For media blobs or range requests, let browser handle directly
-  if (url.protocol === 'blob:' || request.headers.has('range')) {
+  // Bypass SW completely for APIs, storage blobs, range video streams
+  if (
+    url.pathname.startsWith('/api/') || 
+    url.hostname.includes('blob.vercel-storage.com') || 
+    url.protocol === 'blob:' || 
+    request.headers.has('range')
+  ) {
     return;
   }
 
@@ -108,18 +113,86 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle Push Notifications / Clicks
+// Handle Incoming Web Push Notifications (works when phone is locked or app is closed)
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'تنبيه موعد الصلاة 🕌',
+    body: 'يا دكتور عبد العزيز، حان الآن موعد الصلاة حسب توقيت القاهرة.',
+    icon: '/pwa-192x192.png',
+    badge: '/pwa-192x192.png',
+    type: 'azan',
+    url: '/?play_azan=true'
+  };
+
+  if (event.data) {
+    try {
+      data = Object.assign(data, event.data.json());
+    } catch {
+      data.body = event.data.text() || data.body;
+    }
+  }
+
+  // Azan vibration rhythm pattern: Takbeerat beat
+  const vibrationPattern = data.type === 'azan'
+    ? [500, 200, 500, 200, 1000, 300, 500, 200, 1000]
+    : [300, 150, 300, 150, 500];
+
+  const notificationOptions = {
+    body: data.body,
+    icon: data.icon || '/pwa-192x192.png',
+    badge: data.badge || '/pwa-192x192.png',
+    vibrate: vibrationPattern,
+    tag: data.tag || (data.type === 'azan' ? 'prayer-azan-alert' : 'task-alert'),
+    renotify: true,
+    requireInteraction: true,
+    silent: false,
+    dir: 'rtl',
+    lang: 'ar',
+    data: {
+      url: data.url || '/?play_azan=true',
+      type: data.type || 'azan',
+      prayerId: data.prayerId || 'now',
+      timestamp: Date.now()
+    },
+    actions: [
+      { action: 'play_azan', title: 'سماع الأذان الآن 🕌' },
+      { action: 'open_app', title: 'فتح التطبيق 📱' }
+    ]
+  };
+
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(data.title, notificationOptions),
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (data.type === 'azan') {
+            client.postMessage({ type: 'TRIGGER_AZAN', prayerId: data.prayerId });
+          }
+        }
+      })
+    ])
+  );
+});
+
+// Handle Push Notifications / Clicks & Actions
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const data = event.notification.data || {};
+  const isPlayAzan = event.action === 'play_azan' || data.type === 'azan';
+  const targetUrl = data.url || (isPlayAzan ? '/?play_azan=true' : '/');
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
+          if (isPlayAzan) {
+            client.postMessage({ type: 'TRIGGER_AZAN', prayerId: data.prayerId });
+          }
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );

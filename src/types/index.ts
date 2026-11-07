@@ -120,7 +120,7 @@ export interface AudioSettings {
 
 export interface ActiveAlert {
   id: string;
-  type: 'task' | 'azan' | 'pre_azan' | 'pomodoro' | 'scheduled_audio' | 'scheduled_media';
+  type: 'task' | 'azan' | 'pre_azan' | 'scheduled_audio' | 'scheduled_media';
   title: string;
   message: string;
   priority?: TaskPriority;
@@ -136,14 +136,6 @@ export interface ActiveAlert {
   audioUrl?: string;
   isCustomAudio?: boolean;
   canSnooze?: boolean;
-}
-
-export interface PomodoroSettings {
-  workMinutes: number;
-  shortBreakMinutes: number;
-  longBreakMinutes: number;
-  cyclesBeforeLongBreak: number;
-  autoPauseOnPrayer: boolean;
 }
 
 export interface AthkarItem {

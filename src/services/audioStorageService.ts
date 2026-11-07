@@ -124,7 +124,8 @@ class AudioStorageService {
   public async saveMediaFile(
     file: Blob | File,
     name: string,
-    category: 'task' | 'azan' | 'scheduled' | 'custom' = 'custom'
+    category: 'task' | 'azan' | 'scheduled' | 'custom' = 'custom',
+    cloudUrl?: string
   ): Promise<StoredMediaMeta> {
     const db = await this.getDB();
     const isVideo = file.type.startsWith('video') ||
@@ -156,6 +157,7 @@ class AudioStorageService {
       thumbnail,
       createdAt: new Date().toISOString(),
       category,
+      cloudUrl,
     };
 
     const record = {
@@ -225,14 +227,40 @@ class AudioStorageService {
       return this.urlCache.get(id)!;
     }
 
-    const blob = await this.getMediaBlob(id);
+    if (id && (id.startsWith('http://') || id.startsWith('https://'))) {
+      this.urlCache.set(id, id);
+      return id;
+    }
+
+    // 1. Direct ID lookup in local IndexedDB
+    let blob = id ? await this.getMediaBlob(id) : null;
+
+    // 2. If not found, look up scheduled items to resolve alternative mediaId/audioId or cloudUrl
+    if (id) {
+      const sched = this.getScheduledMedias().find(
+        (s) => s.id === id || s.mediaId === id || s.audioId === id
+      );
+      if (sched) {
+        if (!blob && sched.audioId && sched.audioId !== id) {
+          blob = await this.getMediaBlob(sched.audioId);
+        }
+        if (!blob && sched.mediaId && sched.mediaId !== id) {
+          blob = await this.getMediaBlob(sched.mediaId);
+        }
+        if (!fallbackCloudUrl && sched.cloudUrl) {
+          fallbackCloudUrl = sched.cloudUrl;
+        }
+      }
+    }
+
+    // 3. If local blob is available, use object URL (instant local playback)
     if (blob) {
       const url = URL.createObjectURL(blob);
       this.urlCache.set(id, url);
       return url;
     }
 
-    // Fallback to cloud URL (for files uploaded from another device)
+    // 4. Fallback to streaming Cloud URL (for other devices)
     if (fallbackCloudUrl) {
       this.urlCache.set(id, fallbackCloudUrl);
       return fallbackCloudUrl;
@@ -247,17 +275,19 @@ class AudioStorageService {
 
   /**
    * Retrieve list of all uploaded media files metadata
+   * (Merges local IndexedDB files with any Cloud Synced media)
    */
   public async getAllMediaMeta(): Promise<StoredMediaMeta[]> {
+    const list: StoredMediaMeta[] = [];
     try {
       const db = await this.getDB();
-      return new Promise((resolve, reject) => {
+      const localItems: StoredMediaMeta[] = await new Promise((resolve) => {
         const transaction = db.transaction(BLOB_STORE, 'readonly');
         const store = transaction.objectStore(BLOB_STORE);
         const req = store.getAll();
 
         req.onsuccess = () => {
-          const list: StoredMediaMeta[] = (req.result || []).map((r) => ({
+          const res: StoredMediaMeta[] = (req.result || []).map((r) => ({
             id: r.id,
             name: r.name,
             size: r.size,
@@ -267,17 +297,41 @@ class AudioStorageService {
             thumbnail: r.thumbnail,
             createdAt: r.createdAt,
             category: r.category,
+            cloudUrl: r.cloudUrl,
           }));
-          resolve(list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+          resolve(res);
         };
 
         req.onerror = () => {
-          reject(req.error);
+          resolve([]);
         };
       });
+      list.push(...localItems);
     } catch {
-      return [];
+      // Local DB unavailable
     }
+
+    // Also include any media synced via cloud scheduled items if not in local list
+    const scheduled = this.getScheduledMedias();
+    scheduled.forEach((s) => {
+      const mediaId = s.mediaId || s.id;
+      if (!list.some((item) => item.id === mediaId)) {
+        list.push({
+          id: mediaId,
+          name: s.mediaName,
+          size: 0,
+          type: s.mediaType === 'video' ? 'video/mp4' : 'audio/mpeg',
+          mediaType: s.mediaType,
+          duration: s.duration,
+          thumbnail: s.thumbnail,
+          createdAt: s.createdAt,
+          category: 'scheduled',
+          cloudUrl: s.cloudUrl,
+        });
+      }
+    });
+
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   public async getAllAudioMeta(): Promise<StoredMediaMeta[]> {

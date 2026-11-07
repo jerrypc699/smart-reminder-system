@@ -39,9 +39,9 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
   const isUrgent = alert.priority === 'urgent';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
       <div 
-        className={`relative w-full ${isVideo ? 'max-w-2xl' : 'max-w-lg'} p-6 sm:p-8 rounded-3xl bg-slate-900 border shadow-2xl transition-all duration-300 ${
+        className={`relative w-full ${isVideo ? 'max-w-2xl' : 'max-w-lg'} p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-900 border shadow-2xl transition-all duration-300 ${
           isPrayer
             ? 'border-emerald-500/50 glow-emerald'
             : isVideo
@@ -55,7 +55,7 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
       >
         {/* Glow decoration */}
         <div 
-          className={`absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full flex items-center justify-center shadow-xl ring-4 ring-slate-900 ${
+          className={`absolute -top-10 sm:-top-12 left-1/2 -translate-x-1/2 w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center shadow-xl ring-4 ring-slate-900 ${
             isPrayer 
               ? 'bg-gradient-to-tr from-emerald-600 to-teal-400' 
               : isVideo

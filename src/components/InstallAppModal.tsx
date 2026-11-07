@@ -29,7 +29,8 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
   deferredPrompt,
   onInstallSuccess,
 }) => {
-  const [activePlatform, setActivePlatform] = useState<'android' | 'ios'>('android');
+  const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const [activePlatform, setActivePlatform] = useState<'android' | 'ios'>(isIOSDevice ? 'ios' : 'android');
   const [isInstalling, setIsInstalling] = useState(false);
 
   if (!isOpen) return null;
@@ -53,16 +54,17 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header with Luxury Doctor Emblem */}
-        <div className="relative p-6 bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="relative p-4 sm:p-6 bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-emerald-500 to-teal-400 p-[2px] shadow-lg shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center text-center">
-                <span className="text-[9px] font-black text-amber-400">دكتور</span>
-                <span className="text-[10px] font-black text-white">عبد العزيز</span>
-              </div>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-200 to-amber-500 p-[2px] shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/40 overflow-hidden shrink-0">
+              <img
+                src="/logo.png"
+                alt="شعار د. عبد العزيز الرسمي"
+                className="w-full h-full object-cover rounded-[14px] bg-slate-950"
+              />
             </div>
             <div>
               <h2 className="text-lg font-black text-white flex items-center gap-2">

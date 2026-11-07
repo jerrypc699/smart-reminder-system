@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">د. عبد العزيز</string>
+    <string name="title_activity_main">د. عبد العزيز</string>
+    <string name="package_name">com.drabdelaziz.smartreminder</string>
+    <string name="custom_url_scheme">com.drabdelaziz.smartreminder</string>
+</resources>

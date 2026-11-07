@@ -7,6 +7,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -17,7 +20,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         const meta = await head(STATE_PATH);
         if (meta && meta.url) {
-          const cloudRes = await fetch(meta.url, { cache: 'no-store' });
+          // Add timestamp cache buster because Vercel Blob public CDN caches fixed URLs
+          const fetchUrl = `${meta.url}?t=${Date.now()}`;
+          const cloudRes = await fetch(fetchUrl, { 
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+          });
           if (cloudRes.ok) {
             const data = await cloudRes.json();
             return res.status(200).json(data);
@@ -30,7 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const body = req.body || {};
+      const rawBody = req.body;
+      const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : (rawBody || {});
       const payload = {
         ...body,
         updatedAt: new Date().toISOString(),
@@ -39,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const blob = await put(STATE_PATH, JSON.stringify(payload), {
         access: 'public',
         addRandomSuffix: false,
+        allowOverwrite: true,
       });
 
       return res.status(200).json({ success: true, url: blob.url, updatedAt: payload.updatedAt });

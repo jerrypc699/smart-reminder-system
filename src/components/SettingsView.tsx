@@ -16,13 +16,15 @@ import {
   FileAudio,
   UploadCloud,
   Smartphone,
-  Cloud
+  Cloud,
+  Send
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
 import { audioService } from '../services/audioService';
 import { audioStorageService } from '../services/audioStorageService';
 import { notificationService } from '../services/notificationService';
+import { mobileBackgroundService } from '../services/mobileBackgroundService';
 
 interface SettingsViewProps {
   prayerSettings: PrayerSettings;
@@ -507,32 +509,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* Windows Desktop Notifications */}
-      <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
+      {/* Windows & Mobile Notifications & Web Push */}
+      <div className="rounded-2xl sm:rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-6">
+        <div className="space-y-1 text-center sm:text-right">
+          <h3 className="text-base font-bold text-white flex items-center justify-center sm:justify-start gap-2">
             <Bell className="w-5 h-5 text-emerald-400" />
-            إشعارات سطح المكتب (Windows Notifications)
+            إشعارات الهاتف المحمول والكمبيوتر (Mobile Web Push & Desktop)
           </h3>
           <p className="text-xs text-slate-400">
-            تضمن استلام التنبيهات المنبثقة حتى لو كان المتصفح مصغراً أو في الخلفية أثناء العمل.
+            تضمن استلام إشعارات الأذان والمهام حتى لو كان الهاتف مقفلاً أو التطبيق في الخلفية.
           </p>
         </div>
 
-        <div className="shrink-0">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 shrink-0 w-full sm:w-auto">
           {hasNotificationPermission ? (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
               <Check className="w-4 h-4" />
-              <span>مفعلة على هذا الجهاز</span>
+              <span>الإشعارات مفعلة ✓</span>
             </div>
           ) : (
             <button
               onClick={onRequestNotification}
-              className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-600/20 transition-all cursor-pointer animate-pulse"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-600/20 transition-all cursor-pointer animate-pulse"
             >
-              منح الإذن الآن
+              منح إذن الإشعارات الآن
             </button>
           )}
+
+          <button
+            onClick={async () => {
+              const res = await mobileBackgroundService.sendTestPush();
+              alert(res.message);
+            }}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Send className="w-3.5 h-3.5 text-emerald-400" />
+            <span>تجربة إشعار الهاتف</span>
+          </button>
         </div>
       </div>
 

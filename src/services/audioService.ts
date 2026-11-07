@@ -53,7 +53,7 @@ class AudioService {
    * Synthesize harmonic chime using Web Audio API
    */
   public playChime(
-    type: 'task' | 'urgent' | 'pre_azan' | 'success' | 'click' | 'pomodoro_start' | 'pomodoro_break',
+    type: 'task' | 'urgent' | 'pre_azan' | 'success' | 'click',
     volume: number = 0.8
   ): void {
     try {
@@ -160,26 +160,6 @@ class AudioService {
 
           osc.start(startTime);
           osc.stop(startTime + 0.65);
-        });
-      } else if (type === 'pomodoro_start' || type === 'pomodoro_break') {
-        // Pleasant bell chime
-        const notes = type === 'pomodoro_start' ? [523.25, 659.25, 783.99] : [783.99, 659.25, 523.25];
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const startTime = now + idx * 0.15;
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, startTime);
-
-          gain.gain.setValueAtTime(0, startTime);
-          gain.gain.linearRampToValueAtTime(0.3, startTime + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
-
-          osc.connect(gain);
-          gain.connect(masterGain);
-
-          osc.start(startTime);
-          osc.stop(startTime + 0.85);
         });
       }
     } catch (err) {

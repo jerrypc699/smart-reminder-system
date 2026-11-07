@@ -21,10 +21,13 @@ import {
   Sliders,
   Film,
   Video,
-  Eye
+  Eye,
+  RefreshCw,
+  Cloud
 } from 'lucide-react';
 import { ScheduledMedia, StoredMediaMeta, TaskRepeat, MediaType } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
+import { vercelCloudSync } from '../services/vercelCloudSync';
 
 interface AudioSchedulerViewProps {
   scheduledAudios: ScheduledMedia[];
@@ -60,6 +63,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
 
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -123,16 +127,31 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
         throw new Error('يرجى اختيار ملف صالح (فيديو: MP4, WebM, MOV أو صوت: MP3, WAV, M4A).');
       }
 
+      setIsUploading(true);
+      setUploadError(null);
+      setUploadSuccess(`جاري فحص ${isVideo ? 'مقطع الفيديو' : 'الملف الصوتي'} والرفع إلى السحابة...`);
+
+      // 1. Upload to Cloud directly (supports large phone videos via @vercel/blob/client)
+      let cloudUrl: string | undefined = undefined;
+      try {
+        cloudUrl = await vercelCloudSync.uploadMediaFile(file, file.name, (pct) => {
+          setUploadSuccess(`جاري رفع ${isVideo ? 'الفيديو' : 'الصوت'} للسحابة: ${pct}%`);
+        });
+      } catch (uploadErr: any) {
+        console.warn('Initial cloud upload warning, will retry in background:', uploadErr);
+      }
+
       const meta = await audioStorageService.saveMediaFile(
         file,
         file.name.replace(/\.[^/.]+$/, ''),
-        'scheduled'
+        'scheduled',
+        cloudUrl
       );
 
       await loadLibrary();
       setSelectedMediaId(meta.id);
       setTitle(file.name.replace(/\.[^/.]+$/, ''));
-      setUploadSuccess(`تم رفع ${meta.mediaType === 'video' ? 'مقطع الفيديو' : 'الملف الصوتي'} "${meta.name}" بنجاح!`);
+      setUploadSuccess(`تم رفع ومزامنة ${meta.mediaType === 'video' ? 'مقطع الفيديو' : 'الملف الصوتي'} "${meta.name}" بنجاح!`);
       
       // Auto open schedule modal
       setIsScheduleModalOpen(true);
@@ -201,7 +220,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   };
 
   // Audio Playback / Preview
-  const handleToggleAudioPlay = async (audioId: string) => {
+  const handleToggleAudioPlay = async (audioId: string, cloudUrl?: string) => {
     if (playingAudioId === audioId) {
       if (activeAudioElRef.current) {
         activeAudioElRef.current.pause();
@@ -216,7 +235,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
       activeAudioElRef.current = null;
     }
 
-    const url = await audioStorageService.getMediaObjectUrl(audioId);
+    const url = await audioStorageService.getMediaObjectUrl(audioId, cloudUrl);
     if (!url) {
       alert('لم يتم العثور على الملف.');
       return;
@@ -243,14 +262,14 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   };
 
   // Video Preview Handler
-  const handleOpenVideoPreview = async (mediaId: string, videoTitle: string) => {
+  const handleOpenVideoPreview = async (mediaId: string, videoTitle: string, cloudUrl?: string) => {
     if (activeAudioElRef.current) {
       activeAudioElRef.current.pause();
       setPlayingAudioId(null);
     }
-    const url = await audioStorageService.getMediaObjectUrl(mediaId);
+    const url = await audioStorageService.getMediaObjectUrl(mediaId, cloudUrl);
     if (!url) {
-      alert('لم يتم العثور على ملف الفيديو.');
+      alert('لم يكتمل رفع هذا الفيديو إلى السحابة بعد من الجهاز الأصلي. يرجى الضغط على زر «مزامنة السحابة الآن» في الهاتف أو الجهاز الذي قمت برفع الفيديو منه.');
       return;
     }
     setPreviewVideo({ url, title: videoTitle });
@@ -273,6 +292,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
       mediaType,
       duration: mediaMeta?.duration,
       thumbnail: mediaMeta?.thumbnail,
+      cloudUrl: mediaMeta?.cloudUrl,
       scheduledDate,
       scheduledTime,
       repeat,
@@ -385,7 +405,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:flex items-center gap-2 sm:gap-2.5 w-full md:w-auto">
           {/* Hidden File Inputs */}
           <input
             id="video-upload-input"
@@ -406,19 +426,19 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
           {/* Upload Video Button */}
           <label
             htmlFor="video-upload-input"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all cursor-pointer ring-1 ring-purple-400/30"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all cursor-pointer ring-1 ring-purple-400/30 text-center"
           >
-            <Video className="w-4 h-4 text-purple-200" />
-            <span>رفع مقطع فيديو (MP4)</span>
+            <Video className="w-4 h-4 text-purple-200 shrink-0" />
+            <span className="truncate">رفع فيديو (MP4)</span>
           </label>
 
           {/* Upload Audio Button */}
           <label
             htmlFor="audio-upload-input"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer text-center"
           >
-            <UploadCloud className="w-4 h-4" />
-            <span>رفع ملف صوتي (MP3)</span>
+            <UploadCloud className="w-4 h-4 shrink-0" />
+            <span className="truncate">رفع صوت (MP3)</span>
           </label>
 
           {/* Voice Record Button */}
@@ -429,10 +449,10 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
               setRecordingSeconds(0);
               setIsRecordingModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-all cursor-pointer text-center"
           >
-            <Mic className="w-4 h-4 text-emerald-400" />
-            <span>تسجيل صوتي فوري</span>
+            <Mic className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">تسجيل صوتي</span>
           </button>
 
           {/* Schedule Button */}
@@ -444,10 +464,40 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
               }
               setIsScheduleModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer text-center"
           >
-            <Plus className="w-4 h-4" />
-            <span>جدولة تشغيل تلقائي</span>
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="truncate">جدولة تشغيل</span>
+          </button>
+
+          {/* Cloud Sync Button */}
+          <button
+            onClick={async () => {
+              setIsSyncingCloud(true);
+              setUploadSuccess('جاري فحص ورفع الوسائط والمزامنة مع السحابة...');
+              try {
+                const res = await vercelCloudSync.syncAllLocalToCloud((msg) => {
+                  setUploadSuccess(msg);
+                });
+                if (res.success) {
+                  await loadLibrary();
+                  onRefreshScheduled();
+                  setUploadSuccess(`🎉 تمت المزامنة السحابية بنجاح! متطابق الآن: ${res.scheduledCount} وسائط مجدولة و ${res.tasksCount} مهمة.`);
+                } else {
+                  setUploadError(res.error || 'تعذرت المزامنة السحابية.');
+                }
+              } catch (err: any) {
+                setUploadError(err.message || 'حدث خطأ أثناء المزامنة السحابية.');
+              } finally {
+                setIsSyncingCloud(false);
+              }
+            }}
+            disabled={isSyncingCloud}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-500/40 hover:border-cyan-400 font-bold text-xs shadow-lg shadow-cyan-500/10 transition-all cursor-pointer disabled:opacity-50"
+            title="مزامنة فورية ورفع الفيديو والمهام للسحابة لتظهر على الموبايل وجميع الأجهزة"
+          >
+            <RefreshCw className={`w-4 h-4 text-cyan-400 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+            <span>{isSyncingCloud ? 'جاري المزامنة...' : 'مزامنة السحابة الآن'}</span>
           </button>
         </div>
       </div>
@@ -650,6 +700,18 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                               {isVideo ? 'فيديو' : 'صوت'}
                             </span>
 
+                            {/* Cloud Status Badge */}
+                            {item.cloudUrl ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                <Cloud className="w-2.5 h-2.5 text-emerald-400" />
+                                سحابي متزامن
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                محلي فقط
+                              </span>
+                            )}
+
                             {item.repeat !== 'none' && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 border border-slate-700 font-medium">
                                 <Repeat className="w-2.5 h-2.5" />
@@ -697,7 +759,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                           )}
 
                           <button
-                            onClick={() => handleOpenVideoPreview(item.mediaId, item.title)}
+                            onClick={() => handleOpenVideoPreview(item.mediaId, item.title, item.cloudUrl)}
                             className="absolute inset-0 bg-black/40 hover:bg-black/20 flex items-center justify-center transition-all cursor-pointer"
                           >
                             <div className="w-10 h-10 rounded-full bg-purple-600/90 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
@@ -724,7 +786,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                           </div>
 
                           <button
-                            onClick={() => handleToggleAudioPlay(item.mediaId)}
+                            onClick={() => handleToggleAudioPlay(item.mediaId, item.cloudUrl)}
                             className={`p-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                               isPlayingAudio
                                 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
@@ -839,7 +901,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                           )}
 
                           <button
-                            onClick={() => handleOpenVideoPreview(item.id, item.name)}
+                            onClick={() => handleOpenVideoPreview(item.id, item.name, item.cloudUrl)}
                             className="absolute inset-0 bg-black/40 hover:bg-black/20 flex items-center justify-center transition-all cursor-pointer"
                           >
                             <div className="w-10 h-10 rounded-full bg-purple-600/90 hover:bg-purple-500 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
@@ -888,7 +950,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                     <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-800/80">
                       {isVideo ? (
                         <button
-                          onClick={() => handleOpenVideoPreview(item.id, item.name)}
+                          onClick={() => handleOpenVideoPreview(item.id, item.name, item.cloudUrl)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 transition-all cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -896,7 +958,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleToggleAudioPlay(item.id)}
+                          onClick={() => handleToggleAudioPlay(item.id, item.cloudUrl)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                             isPlaying
                               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'

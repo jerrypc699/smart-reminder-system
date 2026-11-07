@@ -3,7 +3,6 @@ import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { PrayerTimesView } from './components/PrayerTimesView';
 import { TasksView } from './components/TasksView';
-import { PomodoroView } from './components/PomodoroView';
 import { AthkarView } from './components/AthkarView';
 import { SettingsView } from './components/SettingsView';
 import { AudioSchedulerView } from './components/AudioSchedulerView';
@@ -13,13 +12,17 @@ import { InstallAppModal } from './components/InstallAppModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { cloudSyncService } from './services/cloudSyncService';
 import { vercelCloudSync } from './services/vercelCloudSync';
+import { mobileBackgroundService } from './services/mobileBackgroundService';
+import { NativeAlarmService } from './services/nativeAlarmService';
 
 import type { 
   Task, 
+  TaskStatus,
   PrayerSettings, 
   AudioSettings, 
   ActiveAlert,
-  ScheduledAudio
+  ScheduledAudio,
+  ScheduledMedia
 } from './types';
 import { 
   prayerService, 
@@ -106,21 +109,73 @@ export function App() {
     };
   }, [isCloudConnected]);
 
+  const [isManualSyncing, setIsManualSyncing] = useState<boolean>(false);
+
   // Automatic Zero-Config Vercel Cloud Sync (runs out of the box on PC & Mobile)
   useEffect(() => {
+    // 1. Initial background scan & upload of any un-uploaded local media
+    const initialSyncTimer = setTimeout(() => {
+      vercelCloudSync.syncAllLocalToCloud().catch(console.warn);
+    }, 1500);
+
+    // 2. Subscribe to incoming cloud updates with smart merge
     const unsub = vercelCloudSync.subscribe((cloudData) => {
       if (cloudData.tasks && Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
-        setTasks(cloudData.tasks);
-        taskService.saveTasks(cloudData.tasks);
+        setTasks((prev) => {
+          const map = new Map<string, Task>();
+          cloudData.tasks.forEach((t) => map.set(t.id, t));
+          prev.forEach((t) => {
+            if (!map.has(t.id)) map.set(t.id, t);
+          });
+          const merged = Array.from(map.values());
+          taskService.saveTasks(merged);
+          return merged;
+        });
       }
       if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia) && cloudData.scheduledMedia.length > 0) {
-        setScheduledAudios(cloudData.scheduledMedia);
-        audioStorageService.saveScheduledMedias(cloudData.scheduledMedia);
+        setScheduledAudios((prev) => {
+          const map = new Map<string, ScheduledMedia>();
+          cloudData.scheduledMedia.forEach((m) => map.set(m.id, m));
+          prev.forEach((m) => {
+            if (!map.has(m.id)) {
+              map.set(m.id, m);
+            } else {
+              const incoming = map.get(m.id)!;
+              if (!incoming.cloudUrl && m.cloudUrl) {
+                map.set(m.id, { ...incoming, cloudUrl: m.cloudUrl });
+              }
+            }
+          });
+          const merged = Array.from(map.values());
+          audioStorageService.saveScheduledMedias(merged);
+          return merged;
+        });
       }
     });
 
-    return () => unsub();
+    return () => {
+      clearTimeout(initialSyncTimer);
+      unsub();
+    };
   }, []);
+
+  const handleManualSync = async () => {
+    setIsManualSyncing(true);
+    try {
+      const res = await vercelCloudSync.syncAllLocalToCloud();
+      if (res.success) {
+        setTasks(taskService.getTasks());
+        setScheduledAudios(audioStorageService.getScheduledMedias());
+        notificationService.showNotification('✅ تمت المزامنة السحابية بنجاح', {
+          body: `تم تحديث ${res.scheduledCount} ملف مجدول و ${res.tasksCount} مهمة وتطابقها بين الكمبيوتر والموبايل.`,
+        });
+      }
+    } catch (e) {
+      console.warn('Manual sync error:', e);
+    } finally {
+      setIsManualSyncing(false);
+    }
+  };
 
   const syncCurrentStateToCloud = (currentTasks?: Task[]) => {
     const t = currentTasks || taskService.getTasks();
@@ -196,11 +251,37 @@ export function App() {
     }
   }, [audioSettings]);
 
-  // Subscribe to speaking events
+  // Subscribe to speaking events and permanently auto-enable notifications & audio keep-alive
   useEffect(() => {
     const unsub = audioService.subscribeSpeakingChange(setIsSpeaking);
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setHasNotificationPermission(Notification.permission === 'granted');
+    if (typeof window !== 'undefined') {
+      // 1. Permanently keep background audio session active
+      mobileBackgroundService.setKeepAliveMode(true);
+
+      // 2. Initialize native exact alarms if running on Android/iOS app
+      NativeAlarmService.initAndSchedulePrayers().catch(console.warn);
+
+      // 3. Auto-check & auto-subscribe to push notifications
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          setHasNotificationPermission(true);
+          mobileBackgroundService.subscribeToPush();
+        } else if (Notification.permission === 'default') {
+          // On user's first touch anywhere, request and subscribe without manual button clicking
+          const autoRequestOnInteraction = () => {
+            notificationService.requestPermission().then((granted) => {
+              setHasNotificationPermission(granted);
+              if (granted) {
+                mobileBackgroundService.subscribeToPush();
+              }
+            });
+            window.removeEventListener('click', autoRequestOnInteraction);
+            window.removeEventListener('touchstart', autoRequestOnInteraction);
+          };
+          window.addEventListener('click', autoRequestOnInteraction, { once: true });
+          window.addEventListener('touchstart', autoRequestOnInteraction, { once: true });
+        }
+      }
     }
     return unsub;
   }, []);
@@ -259,7 +340,11 @@ export function App() {
               canSnooze: false,
             });
 
-            // Trigger Audio Azan
+            // Trigger Audio Azan (auto plays loudly without pressing anything)
+            audioService.initAudioContext();
+            const chosenFile = `/audio/${prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter}.mp3`;
+            mobileBackgroundService.playAzanDirectly(chosenFile, audioSettings.masterVolume);
+
             if (prayerSettings.azanReciter === 'custom' && prayerSettings.customAzanAudioId) {
               audioStorageService.getAudioObjectUrl(prayerSettings.customAzanAudioId).then((customUrl) => {
                 audioService.playAzan(
@@ -490,7 +575,8 @@ export function App() {
             setScheduledAudios(audioStorageService.getScheduledMedias());
 
             const isVideo = item.mediaType === 'video';
-            const mediaUrl = await audioStorageService.getMediaObjectUrl(item.mediaId);
+            const mediaUrl = await audioStorageService.getMediaObjectUrl(item.mediaId, item.cloudUrl);
+            const playUrl = mediaUrl || item.cloudUrl;
 
             notificationService.showNotification(
               isVideo ? `🎬 تشغيل فيديو تلقائي: ${item.title}` : `📻 تشغيل صوتي تلقائي: ${item.title}`,
@@ -509,14 +595,14 @@ export function App() {
               scheduledMediaId: item.id,
               mediaName: item.mediaName,
               mediaType: item.mediaType,
-              videoUrl: isVideo ? (mediaUrl || undefined) : undefined,
+              videoUrl: isVideo ? (playUrl || undefined) : undefined,
               audioName: item.mediaName,
               isCustomAudio: !isVideo,
               canSnooze: false,
             });
 
-            if (!isVideo && !audioSettings.soundMuted && mediaUrl) {
-              audioService.playCustomAudio(mediaUrl, (item.volume ?? 0.9) * audioSettings.masterVolume);
+            if (!isVideo && !audioSettings.soundMuted && playUrl) {
+              audioService.playCustomAudio(playUrl, (item.volume ?? 0.9) * audioSettings.masterVolume);
             }
           }
         }
@@ -527,14 +613,21 @@ export function App() {
     return () => clearInterval(interval);
   }, [prayerSettings, audioSettings, prayerCalc]);
 
-  // Request Windows Desktop Notification permission
+  // Request Notification permission and subscribe to Mobile Web Push
   const handleRequestNotification = async () => {
     const granted = await notificationService.requestPermission();
     setHasNotificationPermission(granted);
     if (granted) {
-      notificationService.showNotification('🎉 تم تفعيل إشعارات ويندوز بنجاح', {
-        body: 'ستصلك كافة تنبيهات العمل ومواقيت الأذان فور حلولها.',
+      notificationService.showNotification('🎉 تم تفعيل إشعارات د. عبد العزيز بنجاح', {
+        body: 'ستصلك كافة تنبيهات العمل ومواقيت الأذان فور حلولها على هاتفك وحاسوبك.',
       });
+      // Register Web Push for mobile
+      try {
+        const { mobileBackgroundService } = await import('./services/mobileBackgroundService');
+        await mobileBackgroundService.subscribeToPush();
+      } catch (err) {
+        console.warn('Auto push subscribe error:', err);
+      }
     }
   };
 
@@ -558,6 +651,33 @@ export function App() {
       audioService.playAzan(chosenReciter, audioSettings.masterVolume);
     }
   };
+
+  // Trigger Azan automatically if opened from mobile push notification or SW action
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('play_azan') === 'true') {
+        const timer = setTimeout(() => {
+          handlePlayAzanPreview();
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Ignored
+    }
+
+    if ('serviceWorker' in navigator) {
+      const handleSwMessage = (e: MessageEvent) => {
+        if (e.data && e.data.type === 'TRIGGER_AZAN') {
+          handlePlayAzanPreview();
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      };
+    }
+  }, [prayerSettings.azanReciter, audioSettings.masterVolume]);
 
   // Preview individual task audio
   const handlePreviewTaskAudio = async (task: Task) => {
@@ -589,52 +709,81 @@ export function App() {
 
   // Task Actions
   const handleAddTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
-    const newTask = taskService.addTask(taskData);
-    const all = taskService.getTasks();
-    setTasks(all);
+    const newTask: Task = {
+      ...taskData,
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    setTasks((prev) => {
+      const updated = [newTask, ...prev];
+      taskService.saveTasks(updated);
+      syncCurrentStateToCloud(updated);
+      return updated;
+    });
+
     audioService.playChime('click', 0.5);
-    if (cloudSyncService.isAvailable()) {
-      cloudSyncService.syncTask(newTask);
-    }
-    syncCurrentStateToCloud(all);
     return newTask;
   };
 
   const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
-    const updated = taskService.updateTask(taskId, updates);
-    setTasks(updated);
-    const item = updated.find((t) => t.id === taskId);
-    if (item && cloudSyncService.isAvailable()) {
-      cloudSyncService.syncTask(item);
-    }
-    syncCurrentStateToCloud(updated);
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t));
+      taskService.saveTasks(updated);
+      syncCurrentStateToCloud(updated);
+      return updated;
+    });
   };
 
   const handleDeleteTask = (taskId: string) => {
-    const updated = taskService.deleteTask(taskId);
-    setTasks(updated);
-    if (cloudSyncService.isAvailable()) {
-      cloudSyncService.deleteTask(taskId);
-    }
-    syncCurrentStateToCloud(updated);
+    setTasks((prev) => {
+      const updated = prev.filter((t) => t.id !== taskId);
+      taskService.saveTasks(updated);
+      syncCurrentStateToCloud(updated);
+      return updated;
+    });
   };
 
   const handleToggleTask = (taskId: string) => {
-    const { tasks: updated, completed } = taskService.toggleTaskStatus(taskId);
-    setTasks(updated);
-    const item = updated.find((t) => t.id === taskId);
-    if (item && cloudSyncService.isAvailable()) {
-      cloudSyncService.syncTask(item);
-    }
-    syncCurrentStateToCloud(updated);
-    if (completed) {
-      audioService.playChime('success', audioSettings.masterVolume);
-    }
+    setTasks((prev) => {
+      let isCompleted = false;
+      const updated = prev.map((t) => {
+        if (t.id === taskId) {
+          const nextStatus: TaskStatus = t.status === 'completed' ? 'pending' : 'completed';
+          isCompleted = nextStatus === 'completed';
+          return {
+            ...t,
+            status: nextStatus,
+            completedAt: isCompleted ? new Date().toISOString() : undefined,
+          };
+        }
+        return t;
+      });
+
+      taskService.saveTasks(updated);
+      syncCurrentStateToCloud(updated);
+
+      if (isCompleted) {
+        audioService.playChime('success', audioSettings.masterVolume);
+      }
+
+      return updated;
+    });
   };
 
   const handleSnoozeTask = (taskId: string, minutes: number) => {
-    const updated = taskService.snoozeTask(taskId, minutes);
-    setTasks(updated);
+    const snoozeTime = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+    setTasks((prev) => {
+      const updated = prev.map((t) =>
+        t.id === taskId
+          ? { ...t, status: 'snoozed' as TaskStatus, snoozeUntil: snoozeTime }
+          : t
+      );
+      taskService.saveTasks(updated);
+      syncCurrentStateToCloud(updated);
+      return updated;
+    });
     audioService.speakAlert(`تم تأجيل التنبيه لمدة ${minutes} دقائق.`, {
       volume: audioSettings.masterVolume,
       rate: 1,
@@ -670,6 +819,8 @@ export function App() {
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
         isCloudConnected={isCloudConnected}
         onOpenCloudModal={() => setIsCloudModalOpen(true)}
+        onManualSync={handleManualSync}
+        isManualSyncing={isManualSyncing}
       />
 
       {/* Main Container */}
@@ -728,13 +879,6 @@ export function App() {
               }
             }}
             masterVolume={audioSettings.masterVolume}
-          />
-        )}
-
-        {activeTab === 'pomodoro' && (
-          <PomodoroView
-            nextPrayerArabicName={prayerCalc.nextPrayer.arabicName}
-            nextPrayerTimeFormatted={prayerCalc.nextPrayer.formatted12h}
           />
         )}
 

@@ -111,36 +111,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
       {/* Doctor Abdelaziz Welcome Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 p-6 sm:p-7 border border-emerald-500/25 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 p-4 sm:p-7 border border-emerald-500/25 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 via-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20 shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] font-bold text-amber-400 leading-none">دكتور</span>
-                <span className="text-xs font-black text-white leading-tight">عبد العزيز</span>
-              </div>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-200 to-amber-500 p-0.5 shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/40 overflow-hidden shrink-0">
+              <img
+                src="/logo.png"
+                alt="شعار د. عبد العزيز الرسمي"
+                className="w-full h-full object-cover rounded-[14px] bg-slate-950"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black text-white">
+                <h2 className="text-xl sm:text-2xl font-black text-white">
                   أهلاً بك يا دكتور عبد العزيز 👋
                 </h2>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold hidden sm:inline-flex">
+                <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold hidden sm:inline-flex">
                   المساعد الشخصي نشط
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
                 جميع التنبيهات الصوتية ومواقيت الصلاة ومواعيدك اليومية مضبوطة بدقة ومنسقة باسمك.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center w-full sm:w-auto">
             <button
               onClick={() => audioService.playDoctorWelcome()}
-              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/40 flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/10 active:scale-95"
+              className="w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/40 flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/10 active:scale-95"
             >
               <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" />
               <span>تجربة نداء: «يا دكتور عبد العزيز»</span>
@@ -152,7 +153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* PWA Mobile App Quick Banner */}
       {onOpenInstallModal && (
         <div className="rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-amber-950/30 p-4 border border-emerald-500/30 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-3.5 w-full sm:w-auto">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
               <Smartphone className="w-5 h-5 text-emerald-400" />
             </div>
@@ -179,45 +180,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Hero Section: Live Prayer Countdown & Today Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         
         {/* Next Prayer Countdown Card */}
-        <div className="lg:col-span-2 relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950/40 p-6 sm:p-8 border border-emerald-500/30 shadow-2xl glow-emerald">
+        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950/40 p-5 sm:p-8 border border-emerald-500/30 shadow-2xl glow-emerald">
           <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -translate-x-1/2 -translate-y-1/2"></div>
           
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-3 text-center md:text-right">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
-                <Compass className="w-4 h-4 text-emerald-400" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6">
+            <div className="space-y-3 text-center md:text-right w-full md:w-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
+                <Compass className="w-3.5 h-3.5 text-emerald-400" />
                 <span>الصلاة القادمة بمشيئة الله</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-white">
                 صلاة {nextPrayer.arabicName}
               </h2>
-              <p className="text-slate-300 text-sm">
-                في تمام الساعة <span className="font-bold text-emerald-400 font-mono text-base">{nextPrayer.formatted12h}</span> حسب توقيت {prayerSettings.cityName}
+              <p className="text-slate-300 text-xs sm:text-sm">
+                في تمام الساعة <span className="font-bold text-emerald-400 font-mono text-sm sm:text-base">{nextPrayer.formatted12h}</span> حسب توقيت {prayerSettings.cityName}
               </p>
               
-              <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
+              <div className="pt-2 grid grid-cols-2 gap-2.5 w-full sm:flex sm:w-auto justify-center md:justify-start">
                 <button
                   onClick={onPlayAzanPreview}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>سماع الأذان الآن</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('prayers')}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all cursor-pointer"
                 >
-                  <span>جدول كافة الصلوات</span>
+                  <span>جدول الصلوات</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             {/* Glowing Digital Countdown Dial */}
-            <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-slate-900/80 border border-slate-700/80 shadow-inner min-w-[240px]">
+            <div className="flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/80 border border-slate-700/80 shadow-inner w-full md:w-auto md:min-w-[240px]">
               <span className="text-xs text-slate-400 font-medium mb-1">الوقت المتبقي للأذان</span>
               <div className="text-3xl sm:text-4xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 tracking-wider">
                 {remainingTime.formatted}
@@ -379,27 +380,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </form>
           </div>
 
-          {/* Quick Focus Mode Card */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-950/40 to-slate-900 p-6 border border-indigo-500/30 shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">مؤقت بومودورو الذكي</span>
-              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
-            </div>
-            <h4 className="text-base font-bold text-white mb-2">
-              جلسات التركيز وإنجاز المهام
-            </h4>
-            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              انطلق في جلسة عمل مركزة مدتها 25 دقيقة مع صوت مدرب صوتي ذكي يوجهك للاستراحة، ويتوقف تلقائياً عند مواقيت الصلاة.
-            </p>
-            <button
-              onClick={() => setActiveTab('pomodoro')}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <span>فتح مؤقت التركيز</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
           {/* Quick Media Scheduler Card */}
           <div className="rounded-3xl bg-gradient-to-br from-purple-950/40 via-cyan-950/30 to-slate-900 p-6 border border-purple-500/30 shadow-xl">
             <div className="flex items-center justify-between mb-3">
@@ -426,34 +406,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Right: Unified Chronological Timeline (Prayers + Tasks) */}
-        <div className="lg:col-span-2 rounded-3xl bg-slate-900 p-6 sm:p-8 border border-slate-800 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
+        <div className="lg:col-span-2 rounded-2xl sm:rounded-3xl bg-slate-900 p-4 sm:p-8 border border-slate-800 shadow-xl">
+          <div className="flex items-center justify-between mb-5 sm:mb-6">
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
                 الجدول الزمني الموحد لليوم (الصلاة والعمل)
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
                 تنسيق متناغم يربط بين واجباتك الدينية والتزاماتك المهنية دون تعارض
               </p>
             </div>
             <button
               onClick={() => setActiveTab('tasks')}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 cursor-pointer"
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 cursor-pointer shrink-0"
             >
-              <span>إدارة جميع المهام</span>
+              <span>جميع المهام</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="relative border-r-2 border-slate-800 mr-4 space-y-6">
+          <div className="relative border-r-2 border-slate-800 mr-2 sm:mr-4 space-y-4 sm:space-y-6">
             {timelineItems.map((item) => {
               const isPrayer = item.type === 'prayer';
               const prayer = isPrayer ? (item.raw as PrayerInfo) : null;
               const task = !isPrayer ? (item.raw as Task) : null;
 
               return (
-                <div key={item.id} className="relative pr-8 group">
+                <div key={item.id} className="relative pr-5 sm:pr-8 group">
                   {/* Timeline Dot */}
                   <div
                     className={`absolute -right-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-slate-900 transition-all ${

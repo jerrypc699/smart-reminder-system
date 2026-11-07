@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Compass, 
   Volume2, 
@@ -12,9 +12,15 @@ import {
   Sunset, 
   Sunrise,
   Play,
-  Square
+  Square,
+  Smartphone,
+  Radio,
+  Send,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { PrayerInfo, PrayerSettings, PrayerId } from '../types';
+import { mobileBackgroundService } from '../services/mobileBackgroundService';
 
 interface PrayerTimesViewProps {
   prayerTimes: PrayerInfo[];
@@ -39,6 +45,57 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
   isSpeaking,
   qiblaDirection,
 }) => {
+  const [isKeepAlive, setIsKeepAlive] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isTestingPush, setIsTestingPush] = useState(false);
+  const [testResultMsg, setTestResultMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Keep-Alive is permanently enabled by default
+    mobileBackgroundService.setKeepAliveMode(true);
+    setIsKeepAlive(true);
+
+    // Auto-check and auto-initiate push subscription
+    mobileBackgroundService.isSubscribed().then((sub) => {
+      setIsSubscribed(sub);
+      if (!sub) {
+        mobileBackgroundService.autoInitPush().then((success) => {
+          if (success) setIsSubscribed(true);
+        });
+      }
+    });
+  }, []);
+
+  const handleToggleKeepAlive = () => {
+    const nextVal = !isKeepAlive;
+    setIsKeepAlive(nextVal);
+    mobileBackgroundService.setKeepAliveMode(nextVal);
+  };
+
+  const handleSubscribePush = async () => {
+    setIsSubscribing(true);
+    setTestResultMsg(null);
+    try {
+      const res = await mobileBackgroundService.subscribeToPush();
+      setIsSubscribed(res.success);
+      setTestResultMsg(res.message);
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setIsTestingPush(true);
+    setTestResultMsg(null);
+    try {
+      const res = await mobileBackgroundService.sendTestPush();
+      setTestResultMsg(res.message);
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
+
   const getPrayerIcon = (id: PrayerId) => {
     switch (id) {
       case 'fajr':
@@ -111,6 +168,114 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
                 <span>سماع الأذان ({prayerSettings.azanReciter === 'takbeerat' ? 'تكبيرات سريعة' : 'أذان كامل'})</span>
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Background Azan & Web Push Control Center */}
+      <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-cyan-950/30 p-5 sm:p-6 border border-emerald-500/30 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md shadow-emerald-500/20 shrink-0">
+              <Smartphone className="w-5 h-5 text-slate-950 font-bold" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-white">
+                  تنبيه الأذان التلقائي على الهاتف المقفل
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                  Android & iPhone
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                تصلك تنبيهات الأذان والاهتزاز ويرن الهاتف بمجرد دخول وقت الصلاة حتى لو كان الجهاز مقفلاً أو التطبيق مغلقاً.
+              </p>
+            </div>
+          </div>
+
+          {/* Test Push Button */}
+          <button
+            onClick={handleTestPush}
+            disabled={isTestingPush}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 hover:border-emerald-500/40 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {isTestingPush ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+            ) : (
+              <Send className="w-4 h-4 text-emerald-400" />
+            )}
+            <span>إرسال أذان تجريبي الآن للهاتف</span>
+          </button>
+        </div>
+
+        {/* Status message */}
+        {testResultMsg && (
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2 animate-fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{testResultMsg}</span>
+          </div>
+        )}
+
+        {/* 2 Symmetrical Feature Toggle Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* Card 1: Cloud Push Subscription */}
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex flex-col justify-between gap-3">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-emerald-400" />
+                  إشعارات السحابة الفورية (Web Push)
+                </span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  {isSubscribed ? 'مفعل دائماً في السحابة ✓' : 'مفعل تلقائياً ✓'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                يقوم خادم السحابة بإيقاظ الهاتف وإرسال إشعار باهتزاز وتكبيرات الأذان عند حلول وقت الصلاة بدقة دون الحاجة لفتح التطبيق.
+              </p>
+            </div>
+
+            <button
+              onClick={handleSubscribePush}
+              disabled={isSubscribing}
+              className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 transition-all cursor-pointer shadow-sm shadow-emerald-500/10"
+            >
+              {isSubscribing ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              )}
+              <span>{isSubscribed ? 'الإشعارات السحابية مفعلة بنجاح ✓' : 'تأكيد تفعيل إشعارات الهاتف الآن'}</span>
+            </button>
+          </div>
+
+          {/* Card 2: Background Audio Keep-Alive */}
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex flex-col justify-between gap-3">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                  تشغيل صوت الأذان في الخلفية (تلقائي بدون ضغط)
+                </span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                  نشط دائماً (بدون ضغط) ✓
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                يبقي مسار الصوت نشطاً في الهاتف حتى لو كانت الشاشة مقفلة، ليطلق الأذان فوراً بصوت مسموع بدون الحاجة للضغط على أي شيء.
+              </p>
+            </div>
+
+            <button
+              onClick={handleToggleKeepAlive}
+              className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 transition-all cursor-pointer shadow-sm shadow-cyan-500/10"
+            >
+              <Radio className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{isKeepAlive ? 'الصوت يعمل تلقائياً وبشكل دائم ✓' : 'تشغيل وضع الأذان التلقائي'}</span>
+            </button>
           </div>
         </div>
       </div>

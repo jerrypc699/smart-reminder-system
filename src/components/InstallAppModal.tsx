@@ -117,6 +117,26 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
         <div className="p-6 overflow-y-auto space-y-5 text-sm">
           {activePlatform === 'android' ? (
             <div className="space-y-4">
+              {/* Native APK Direct Download for automatic Azan without opening app */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-600/15 border border-amber-500/40 text-center space-y-3 shadow-lg shadow-amber-500/10">
+                <div className="flex items-center justify-center gap-2 text-amber-300 font-bold text-sm">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>تطبيق أندرويد الأصلي (APK) للأذان التلقائي 24/7</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  للأذان بصوت الشيخ مشاري كاملاً وتلقائياً والشاشة مقفلة وبدون الحاجة لفتح التطبيق، نوصي بتحميل ملف الـ APK الأصلي:
+                </p>
+                <a
+                  href="https://github.com/jerrypc699/smart-reminder-system/releases/download/v1.0.0/app-debug.apk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer no-underline"
+                >
+                  <Download className="w-4 h-4 text-slate-950" />
+                  <span>تحميل ملف التطبيق الأصلي (DrAbdelaziz.apk)</span>
+                </a>
+              </div>
+
               {deferredPrompt ? (
                 <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
@@ -174,6 +194,26 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Native iOS IPA Download */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-500/15 via-sky-400/10 to-sky-600/15 border border-sky-500/40 text-center space-y-3 shadow-lg shadow-sky-500/10">
+                <div className="flex items-center justify-center gap-2 text-sky-300 font-bold text-sm">
+                  <Apple className="w-4 h-4 text-sky-400" />
+                  <span>تطبيق آيفون الأصلي (iOS IPA)</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  إذا أردت تثبيت ملف التطبيق الأصلي عبر الكمبيوتر (ببرنامج Sideloadly أو AltStore مجاناً):
+                </p>
+                <a
+                  href="https://github.com/jerrypc699/smart-reminder-system/releases/download/v1.0.0/DrAbdelaziz-Reminder.ipa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-black text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer no-underline"
+                >
+                  <Download className="w-4 h-4 text-white" />
+                  <span>تحميل ملف الآيفون (DrAbdelaziz.ipa)</span>
+                </a>
+              </div>
+
               <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3">
                 <Apple className="w-5 h-5 text-amber-400 shrink-0" />
                 <p className="text-xs text-amber-200">

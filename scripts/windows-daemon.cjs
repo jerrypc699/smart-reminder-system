@@ -246,6 +246,15 @@ function checkTasks() {
   }
 }
 
+// Process Error Guards
+process.on('uncaughtException', (err) => {
+  log(`[Uncaught Exception]: ${err.message}\n${err.stack}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  log(`[Unhandled Rejection]: ${reason}`);
+});
+
 // Startup Welcome
 log('تم بدء تشغيل حارس الخلفية لنظام د. عبد العزيز بنجاح.');
 updateStatus('active');
@@ -261,12 +270,19 @@ playAudioAndNotify(
 // Initial cloud sync
 syncFromCloud();
 
+let tickCount = 0;
+
 // Main loop every 15 seconds
 setInterval(() => {
   try {
     checkPrayers();
     checkTasks();
     updateStatus('active');
+
+    tickCount++;
+    if (tickCount % 20 === 0) { // every 5 minutes
+      log('نبضة الحارس: النظام نشط ويراقب مواقيت الصلاة والمهام في الخلفية.');
+    }
   } catch (e) {
     log(`خطأ في الدورة الدورية: ${e.message}`);
   }

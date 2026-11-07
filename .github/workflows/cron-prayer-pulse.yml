@@ -13,3 +13,4 @@ jobs:
       - name: Ping Prayer API
         run: |
           curl -sS -m 20 "https://smart-reminder-system-nu.vercel.app/api/cron-prayer-check" || true
+

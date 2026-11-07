@@ -286,6 +286,46 @@ export function App() {
     return unsub;
   }, []);
 
+  // Handle Incoming Azan Play Requests from Push Notification Click or SW Message
+  useEffect(() => {
+    const triggerInstantAzan = () => {
+      audioService.initAudioContext();
+      const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;
+      audioService.playAzan(reciter as any, audioSettings.masterVolume);
+      mobileBackgroundService.playAzanDirectly(`/audio/${reciter}.mp3`, audioSettings.masterVolume);
+
+      setActiveAlert({
+        id: `alert-azan-push-${Date.now()}`,
+        type: 'azan',
+        title: 'حان الآن موعد الأذان 🕌',
+        message: 'الله أكبر، الله أكبر. نداء الحق يرتفع الآن بصوت الشيخ مشاري العفاسي.. تقبل الله منا ومنكم صالح الأعمال.',
+        timestamp: new Date().toISOString(),
+        canSnooze: false,
+      });
+    };
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('play_azan') === 'true') {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        setTimeout(triggerInstantAzan, 300);
+      }
+
+      if ('serviceWorker' in navigator) {
+        const handleSwMessage = (event: MessageEvent) => {
+          if (event.data?.type === 'TRIGGER_AZAN') {
+            triggerInstantAzan();
+          }
+        };
+        navigator.serviceWorker.addEventListener('message', handleSwMessage);
+        return () => {
+          navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+        };
+      }
+    }
+  }, [prayerSettings.azanReciter, audioSettings.masterVolume]);
+
   // Update clock every second
   useEffect(() => {
     const timer = setInterval(() => {

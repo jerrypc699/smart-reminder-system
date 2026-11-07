@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v5';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v6';
 
 const STATIC_ASSETS = [
   '/',
@@ -141,6 +141,7 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: data.icon || '/pwa-192x192.png',
     badge: data.badge || '/pwa-192x192.png',
+    sound: data.type === 'azan' ? '/audio/mishary.mp3' : '/audio/dr_abdelaziz_task_alert.mp3',
     vibrate: vibrationPattern,
     tag: data.tag || (data.type === 'azan' ? 'prayer-azan-alert' : 'task-alert'),
     renotify: true,

@@ -1,9 +1,11 @@
 package com.drabdelaziz.smartreminder;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
@@ -16,6 +18,15 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupAlarmNotificationChannels();
+        requestAudioPermissions();
+    }
+
+    private void requestAudioPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 101);
+            }
+        }
     }
 
     /**

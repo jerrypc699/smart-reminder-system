@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Task, TaskPriority, TaskCategory } from '../types';
 import { parseArabicVoiceTask, ParsedVoiceTask } from '../utils/arabicVoiceParser';
+import { universalSpeechService } from '../services/speechRecognitionService';
 
 interface VoiceTaskModalProps {
   isOpen: boolean;
@@ -63,41 +64,18 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
     };
   }, [isOpen]);
 
-  const startListening = () => {
+  const startListening = async () => {
     setErrorMsg('');
     setTranscript('');
     setParsed(null);
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setErrorMsg('المتصفح أو الجهاز الحالي لا يدعم التعرف الصوتي المباشر. يمكنك استخدام زر التسجيل الصوتي أو إدخال المهمة يدوياً.');
-      return;
-    }
-
-    try {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-
-      const rec = new SpeechRecognition();
-      rec.lang = 'ar-EG'; // Egyptian Arabic
-      rec.continuous = false;
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-
-      rec.onstart = () => {
+    await universalSpeechService.startListening({
+      onStart: () => {
         setIsListening(true);
-      };
-
-      rec.onresult = (event: any) => {
-        let currentText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentText += event.results[i][0].transcript;
-        }
+        setErrorMsg('');
+      },
+      onResult: (currentText: string) => {
         setTranscript(currentText);
-
-        // Live parse
         if (currentText.trim()) {
           const result = parseArabicVoiceTask(currentText);
           setParsed(result);
@@ -108,38 +86,19 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
           setCategory(result.category);
           setVoiceMessage(result.voiceMessage);
         }
-      };
-
-      rec.onerror = (e: any) => {
-        console.warn('Speech recognition notice:', e.error);
+      },
+      onError: (err: string) => {
         setIsListening(false);
-        if (e.error === 'not-allowed') {
-          setErrorMsg('يرجى السماح بالوصول إلى الميكروفون للتعرف على صوتك.');
-        } else if (e.error === 'no-speech') {
-          setErrorMsg('لم يتم التقاط أي صوت. اضغط على الميكروفون للتحدث مرة أخرى.');
-        }
-      };
-
-      rec.onend = () => {
+        setErrorMsg(err);
+      },
+      onEnd: () => {
         setIsListening(false);
-      };
-
-      recognitionRef.current = rec;
-      rec.start();
-    } catch (err: any) {
-      console.warn('Speech start error:', err);
-      setIsListening(false);
-      setErrorMsg('تعذر تشغيل الميكروفون: ' + err.message);
-    }
+      },
+    });
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-      recognitionRef.current = null;
-    }
+    universalSpeechService.stopListening();
     setIsListening(false);
   };
 
@@ -227,9 +186,19 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
 
         {/* Error message if any */}
         {errorMsg && (
-          <div className="p-3 rounded-2xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{errorMsg}</span>
+          <div className="p-3.5 rounded-2xl bg-rose-950/50 border border-rose-800/50 text-xs text-rose-300 space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{errorMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={startListening}
+              className="w-full py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span>إعادة طلب إذن الميكروفون والتشغيل 🎙️</span>
+            </button>
           </div>
         )}
 

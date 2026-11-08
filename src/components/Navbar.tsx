@@ -13,7 +13,6 @@ import {
   Layers,
   Radio,
   Film,
-  Smartphone,
   Cloud,
   RefreshCw
 } from 'lucide-react';
@@ -192,17 +191,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isManualSyncing ? 'animate-spin' : ''}`} />
                 <span className="hidden md:inline">{isManualSyncing ? 'مزامنة...' : 'مزامنة الآن'}</span>
-              </button>
-            )}
-
-            {onOpenInstallModal && (
-              <button
-                onClick={onOpenInstallModal}
-                title="تثبيت التطبيق على الهاتف (Android / iPhone)"
-                className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 border border-emerald-500/40 shadow-sm transition-all cursor-pointer"
-              >
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">تثبيت التطبيق</span>
               </button>
             )}
 

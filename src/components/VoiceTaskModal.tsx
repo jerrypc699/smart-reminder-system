@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Mic, 
   MicOff, 
@@ -9,12 +9,7 @@ import {
   Calendar, 
   AlertCircle, 
   Volume2, 
-  Briefcase, 
-  RotateCcw,
-  Stethoscope,
-  Users,
-  Code2,
-  Home
+  RotateCcw
 } from 'lucide-react';
 import { Task, TaskPriority, TaskCategory } from '../types';
 import { parseArabicVoiceTask, ParsedVoiceTask } from '../utils/arabicVoiceParser';
@@ -31,6 +26,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
   onClose,
   onAddTask,
 }) => {
+  const [isStarting, setIsStarting] = useState<boolean>(false);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
   const [parsed, setParsed] = useState<ParsedVoiceTask | null>(null);
@@ -44,62 +40,81 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
   const [category, setCategory] = useState<TaskCategory>('work');
   const [voiceMessage, setVoiceMessage] = useState<string>('');
 
-  const recognitionRef = useRef<any>(null);
-
-  // Initialize Speech Recognition
+  // Modal lifecycle
   useEffect(() => {
     if (!isOpen) {
       stopListening();
       setTranscript('');
       setParsed(null);
       setErrorMsg('');
+      setIsStarting(false);
       return;
     }
 
-    // Auto-start listening on modal open for instant experience
-    startListening();
-
+    // Modal is opened: ready for Dr. Abdelaziz to press the mic button deliberately
     return () => {
       stopListening();
     };
   }, [isOpen]);
 
   const startListening = async () => {
+    if (isStarting || isListening) return;
+
+    setIsStarting(true);
     setErrorMsg('');
     setTranscript('');
     setParsed(null);
 
-    await universalSpeechService.startListening({
-      onStart: () => {
-        setIsListening(true);
-        setErrorMsg('');
-      },
-      onResult: (currentText: string) => {
-        setTranscript(currentText);
-        if (currentText.trim()) {
-          const result = parseArabicVoiceTask(currentText);
-          setParsed(result);
-          setTitle(result.title);
-          setDueDate(result.dueDate);
-          setDueTime(result.dueTime);
-          setPriority(result.priority);
-          setCategory(result.category);
-          setVoiceMessage(result.voiceMessage);
-        }
-      },
-      onError: (err: string) => {
-        setIsListening(false);
-        setErrorMsg(err);
-      },
-      onEnd: () => {
-        setIsListening(false);
-      },
-    });
+    try {
+      await universalSpeechService.startListening({
+        onStart: () => {
+          setIsListening(true);
+          setIsStarting(false);
+          setErrorMsg('');
+        },
+        onResult: (currentText: string) => {
+          setTranscript(currentText);
+          if (currentText.trim()) {
+            const result = parseArabicVoiceTask(currentText);
+            setParsed(result);
+            setTitle(result.title);
+            setDueDate(result.dueDate);
+            setDueTime(result.dueTime);
+            setPriority(result.priority);
+            setCategory(result.category);
+            setVoiceMessage(result.voiceMessage);
+          }
+        },
+        onError: (err: string) => {
+          setIsListening(false);
+          setIsStarting(false);
+          setErrorMsg(err);
+        },
+        onEnd: () => {
+          setIsListening(false);
+          setIsStarting(false);
+        },
+      });
+    } catch (e: any) {
+      setIsListening(false);
+      setIsStarting(false);
+      setErrorMsg(e?.message || 'تعذر بدء التعرف الصوتي');
+    }
   };
 
-  const stopListening = () => {
-    universalSpeechService.stopListening();
+  const stopListening = async () => {
+    setIsStarting(false);
     setIsListening(false);
+    await universalSpeechService.stopListening();
+  };
+
+  const toggleListening = () => {
+    if (isStarting) return;
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
   };
 
   const handleSave = () => {
@@ -163,20 +178,34 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
               </>
             )}
             <button
-              onClick={isListening ? stopListening : startListening}
+              type="button"
+              onClick={toggleListening}
+              disabled={isStarting}
               className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer ${
-                isListening
+                isStarting
+                  ? 'bg-slate-700 text-slate-300 opacity-80 cursor-wait'
+                  : isListening
                   ? 'bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-rose-500/30 scale-105'
                   : 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-emerald-500/30 hover:scale-105'
               }`}
             >
-              {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+              {isStarting ? (
+                <div className="w-8 h-8 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              ) : isListening ? (
+                <MicOff className="w-8 h-8" />
+              ) : (
+                <Mic className="w-8 h-8" />
+              )}
             </button>
           </div>
 
           <div className="text-center">
-            <span className={`text-sm font-bold ${isListening ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`}>
-              {isListening ? '🎙️ جاري الاستماع إلى دكتور عبد العزيز الآن...' : 'اضغط على الميكروفون للتحدث'}
+            <span className={`text-sm font-bold ${isStarting ? 'text-teal-400 animate-pulse' : isListening ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`}>
+              {isStarting
+                ? '⏳ جاري تجهيز الميكروفون...'
+                : isListening
+                ? '🎙️ جاري الاستماع إلى دكتور عبد العزيز الآن... تفضل بالحديث'
+                : 'اضغط على الميكروفون للتحدث'}
             </span>
             <p className="text-[11px] text-slate-500 mt-1">
               مثال: "مقابلة الجيار غداً الساعة خمسة مساءً" أو "كشف العيادة اليوم الساعة 7 مساء عاجل"
@@ -194,10 +223,11 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
             <button
               type="button"
               onClick={startListening}
-              className="w-full py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              disabled={isStarting}
+              className="w-full py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <Mic className="w-3.5 h-3.5" />
-              <span>إعادة طلب إذن الميكروفون والتشغيل 🎙️</span>
+              <span>إعادة المحاولة وطلب إذن الميكروفون 🎙️</span>
             </button>
           </div>
         )}
@@ -334,4 +364,3 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
     </div>
   );
 };
-

@@ -61,7 +61,9 @@ public class MainActivity extends BridgeActivity {
             azanChannel.setSound(misharyUri, alarmAttributes);
             azanChannel.enableVibration(true);
             azanChannel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 1000});
-            azanChannel.setBypassDnd(true);
+            try {
+                NotificationChannel.class.getMethod("setBypassDnd", boolean.class).invoke(azanChannel, true);
+            } catch (Exception ignored) {}
             azanChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(azanChannel);
 
@@ -76,7 +78,9 @@ public class MainActivity extends BridgeActivity {
             preAzanChannel.setSound(preAzanUri, alarmAttributes);
             preAzanChannel.enableVibration(true);
             preAzanChannel.setVibrationPattern(new long[]{0, 300, 150, 300, 150, 500});
-            preAzanChannel.setBypassDnd(true);
+            try {
+                NotificationChannel.class.getMethod("setBypassDnd", boolean.class).invoke(preAzanChannel, true);
+            } catch (Exception ignored) {}
             preAzanChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(preAzanChannel);
 
@@ -91,7 +95,9 @@ public class MainActivity extends BridgeActivity {
             taskChannel.setSound(taskUri, alarmAttributes);
             taskChannel.enableVibration(true);
             taskChannel.setVibrationPattern(new long[]{0, 300, 150, 300, 150, 500});
-            taskChannel.setBypassDnd(true);
+            try {
+                NotificationChannel.class.getMethod("setBypassDnd", boolean.class).invoke(taskChannel, true);
+            } catch (Exception ignored) {}
             taskChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(taskChannel);
         }

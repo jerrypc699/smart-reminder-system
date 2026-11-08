@@ -38,7 +38,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       badge: scheduledAudiosCount > 0 ? scheduledAudiosCount : undefined,
     },
     { id: 'prayers', label: 'الصلاة', icon: Compass },
-    { id: 'athkar', label: 'الأذكار', icon: Sparkles },
+    { id: 'athkar', label: 'أذكاري 📿', icon: Sparkles },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
   ];
 

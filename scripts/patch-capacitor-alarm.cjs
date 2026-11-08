@@ -45,3 +45,4 @@ if (fs.existsSync(lnmPath)) {
   fs.writeFileSync(lnmPath, content, 'utf8');
   console.log('[Patch] LocalNotificationManager.kt patched with CATEGORY_ALARM and PRIORITY_MAX.');
 }
+

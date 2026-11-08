@@ -84,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       icon: Film,
       badge: scheduledAudiosCount > 0 ? scheduledAudiosCount : undefined
     },
-    { id: 'athkar', label: 'الأذكار والسبحة', icon: Sparkles },
+    { id: 'athkar', label: 'أذكاري والسبحة 📿', icon: Sparkles },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
   ];
 

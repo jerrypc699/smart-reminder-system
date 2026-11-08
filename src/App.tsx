@@ -7,6 +7,7 @@ import { AthkarView } from './components/AthkarView';
 import { SettingsView } from './components/SettingsView';
 import { AudioSchedulerView } from './components/AudioSchedulerView';
 import { ActiveAlertModal } from './components/ActiveAlertModal';
+import { FloatingDhikr } from './components/FloatingDhikr';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { InstallAppModal } from './components/InstallAppModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
@@ -1087,6 +1088,9 @@ export function App() {
         onStopAudio={handleStopAudio}
         isSpeaking={isSpeaking}
       />
+
+      {/* Floating On-Screen Dhikr (Azkari App Style) */}
+      <FloatingDhikr />
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-900/60 py-6 text-center text-xs text-slate-500">

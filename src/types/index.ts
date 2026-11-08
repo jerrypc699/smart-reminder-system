@@ -138,11 +138,29 @@ export interface ActiveAlert {
   canSnooze?: boolean;
 }
 
+export type AthkarCategory = 
+  | 'all'
+  | 'morning' 
+  | 'evening' 
+  | 'prayer' 
+  | 'sleep' 
+  | 'wake' 
+  | 'ruqyah' 
+  | 'work' 
+  | 'distress' 
+  | 'quranic' 
+  | 'custom'
+  | 'favorites';
+
 export interface AthkarItem {
   id: string;
-  category: 'morning' | 'evening' | 'work' | 'prayer';
+  category: 'morning' | 'evening' | 'prayer' | 'sleep' | 'wake' | 'ruqyah' | 'work' | 'distress' | 'quranic' | 'custom';
+  title?: string;
   text: string;
   count: number;
   reward?: string;
   reference?: string;
+  audioUrl?: string;
+  mood?: 'anxiety' | 'distress' | 'gratitude' | 'fatigue' | 'guidance';
+  isCustom?: boolean;
 }

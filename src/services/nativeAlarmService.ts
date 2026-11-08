@@ -38,20 +38,26 @@ export class NativeAlarmService {
         'dr_abdelaziz_azan_v5',
         'dr_abdelaziz_tasks_v6',
         'dr_abdelaziz_azan_v6',
-        'dr_abdelaziz_pre_azan_v6'
+        'dr_abdelaziz_pre_azan_v6',
+        'dr_abdelaziz_tasks_v7',
+        'dr_abdelaziz_azan_v7',
+        'dr_abdelaziz_pre_azan_v7',
+        'dr_abdelaziz_tasks_v8',
+        'dr_abdelaziz_azan_v8',
+        'dr_abdelaziz_pre_azan_v8'
       ];
       for (const id of oldChannelIds) {
         await LocalNotifications.deleteChannel({ id }).catch(() => {});
       }
 
-      // 1. Azan High-Priority Channel (Importance 5 = Heads-up with sound)
+      // 1. Azan High-Priority Channel (Importance 5 = Heads-up with sound, Alarm Stream)
       await LocalNotifications.createChannel({
-        id: 'dr_abdelaziz_azan_v7',
+        id: 'dr_abdelaziz_azan_v9',
         name: 'أذان الصلاة الرسمي (د. عبد العزيز)',
-        description: 'إطلاق صوت الأذان كاملاً في مواعيد الصلاة حتى لو كان الهاتف مقفلاً',
+        description: 'إطلاق صوت الأذان كاملاً في مواعيد الصلاة حتى لو كان الهاتف مقفلاً أو صامتاً',
         importance: 5,
         visibility: 1,
-        sound: 'mishary',
+        sound: 'mishary.mp3',
         vibration: true,
         lights: true,
         lightColor: '#D4AF37'
@@ -59,25 +65,25 @@ export class NativeAlarmService {
 
       // 2. Pre-Azan Alert Channel (5 minutes before prayer with Dr. Abdelaziz voice)
       await LocalNotifications.createChannel({
-        id: 'dr_abdelaziz_pre_azan_v7',
+        id: 'dr_abdelaziz_pre_azan_v9',
         name: 'تنبيه ما قبل الأذان بـ 5 دقائق (د. عبد العزيز)',
-        description: 'تنبيه صوتي قبل موعد الصلاة بـ 5 دقائق بصوت الدكتور عبد العزيز',
+        description: 'تنبيه صوتي قبل موعد الصلاة بـ 5 دقائق بصوت الدكتور عبد العزيز حتى في الوضع الصامت',
         importance: 5,
         visibility: 1,
-        sound: 'dr_abdelaziz_pre_azan',
+        sound: 'dr_abdelaziz_pre_azan.mp3',
         vibration: true,
         lights: true,
         lightColor: '#3B82F6'
       });
 
-      // 3. Task High-Priority Channel (Importance 5 = Heads-up with doctor voice)
+      // 3. Task High-Priority Channel (Importance 5 = Heads-up with doctor voice, Alarm Stream)
       await LocalNotifications.createChannel({
-        id: 'dr_abdelaziz_tasks_v7',
-        name: 'تنبيهات المهام والعيادة (د. عبد العزيز)',
-        description: 'تنبيهات صوتية فورية لمهام العمل والعيادة بصوت الدكتور عبد العزيز',
+        id: 'dr_abdelaziz_tasks_v9',
+        name: 'منبه وتنبيهات المهام والعيادة (د. عبد العزيز)',
+        description: 'تنبيهات صوتية فورية لمهام العمل والعيادة بصوت الدكتور عبد العزيز تعمل كمنبه صريح حتى في الوضع الصامت',
         importance: 5,
         visibility: 1,
-        sound: 'dr_abdelaziz_task_alert',
+        sound: 'dr_abdelaziz_task_alert.mp3',
         vibration: true,
         lights: true,
         lightColor: '#10B981'
@@ -194,7 +200,7 @@ export class NativeAlarmService {
                 allowWhileIdle: true
               },
               sound: 'dr_abdelaziz_pre_azan.mp3',
-              channelId: 'dr_abdelaziz_pre_azan_v7',
+              channelId: 'dr_abdelaziz_pre_azan_v9',
               actionTypeId: 'PRE_AZAN_ACTION',
               foreground: true,
               extra: {
@@ -215,7 +221,7 @@ export class NativeAlarmService {
                 allowWhileIdle: true
               },
               sound: 'mishary.mp3',
-              channelId: 'dr_abdelaziz_azan_v7',
+              channelId: 'dr_abdelaziz_azan_v9',
               actionTypeId: 'AZAN_ACTION',
               foreground: true,
               extra: {
@@ -273,7 +279,7 @@ export class NativeAlarmService {
                 at: snoozeDate,
                 allowWhileIdle: true
               },
-              channelId: 'dr_abdelaziz_tasks_v7',
+              channelId: 'dr_abdelaziz_tasks_v9',
               sound: 'dr_abdelaziz_task_alert.mp3',
               actionTypeId: 'TASK_ACTION',
               foreground: true,
@@ -306,7 +312,7 @@ export class NativeAlarmService {
                 at: exactDueDate,
                 allowWhileIdle: true
               },
-              channelId: 'dr_abdelaziz_tasks_v7',
+              channelId: 'dr_abdelaziz_tasks_v9',
               sound: 'dr_abdelaziz_task_alert.mp3',
               actionTypeId: 'TASK_ACTION',
               foreground: true,
@@ -334,7 +340,7 @@ export class NativeAlarmService {
                   at: preReminderDate,
                   allowWhileIdle: true
                 },
-                channelId: 'dr_abdelaziz_tasks_v7',
+                channelId: 'dr_abdelaziz_tasks_v9',
                 sound: 'dr_abdelaziz_task_alert.mp3',
                 actionTypeId: 'TASK_ACTION',
                 foreground: true,

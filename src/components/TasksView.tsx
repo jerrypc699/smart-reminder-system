@@ -24,6 +24,7 @@ import confetti from 'canvas-confetti';
 import { Task, TaskPriority, TaskCategory, PrayerInfo, TaskAudioMode, StoredAudioMeta } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
 import { vercelCloudSync } from '../services/vercelCloudSync';
+import { VoiceTaskModal } from './VoiceTaskModal';
 
 interface TasksViewProps {
   tasks: Task[];
@@ -50,6 +51,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'today' | 'urgent' | 'pending' | 'completed'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // Form State
@@ -339,16 +341,29 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            resetForm();
-            setIsAddModalOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>إضافة مهمة جديدة</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsVoiceModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 hover:from-amber-400 hover:to-rose-400 text-white font-black text-sm shadow-lg shadow-rose-500/25 transition-all cursor-pointer animate-pulse"
+            title="إضافة مهمة سريعة بالصوت للدكتور عبد العزيز"
+          >
+            <Mic className="w-4 h-4 text-white" />
+            <span>إضافة مهمة بالصوت 🎙️</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setIsAddModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة يدوية ✍️</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -859,6 +874,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Voice Task Modal for Dr. Abdelaziz */}
+      <VoiceTaskModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onAddTask={(taskData) => {
+          onAddTask(taskData);
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.7 },
+            colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899']
+          });
+        }}
+      />
     </div>
   );
 };

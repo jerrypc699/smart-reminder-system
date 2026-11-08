@@ -13,10 +13,12 @@ import {
   Volume2,
   Radio,
   Smartphone,
-  Download
+  Download,
+  Mic
 } from 'lucide-react';
 import { Task, PrayerInfo, PrayerSettings, TaskPriority, TaskCategory } from '../types';
 import { audioService } from '../services/audioService';
+import { VoiceTaskModal } from './VoiceTaskModal';
 
 interface DashboardProps {
   prayerTimes: PrayerInfo[];
@@ -49,6 +51,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [quickTime, setQuickTime] = useState('');
   const [quickPriority, setQuickPriority] = useState<TaskPriority>('medium');
   const [quickCategory, setQuickCategory] = useState<TaskCategory>('work');
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayTasks = tasks.filter((t) => t.dueDate === todayStr || !t.dueDate);
@@ -294,10 +297,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Left: Quick Task Creation Card */}
         <div className="space-y-6">
           <div className="rounded-3xl bg-slate-900 p-6 border border-slate-800 shadow-xl">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-emerald-400" />
-              إضافة تذكير عمل سريع مع نطق صوتي
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-emerald-400" />
+                تذكير عمل سريع مع نطق صوتي
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsVoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 hover:from-amber-400 hover:to-rose-400 text-white font-bold text-xs shadow-md shadow-rose-500/25 transition-all cursor-pointer animate-pulse"
+                title="إضافة مهمة بالصوت لدكتور عبد العزيز"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                <span>إضافة بالصوت 🎙️</span>
+              </button>
+            </div>
 
             <form onSubmit={handleQuickAdd} className="space-y-4">
               <div>
@@ -547,6 +561,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Voice Task Modal */}
+      <VoiceTaskModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onAddTask={onAddTask}
+      />
     </div>
   );
 };

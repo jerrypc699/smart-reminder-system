@@ -165,7 +165,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         
         {/* Next Prayer Countdown Card */}
-        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950/40 p-5 sm:p-8 border border-emerald-500/30 shadow-2xl glow-emerald">
+        <div className="lg:col-span-2 relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/95 via-slate-900/85 to-emerald-950/40 p-5 sm:p-7 border border-emerald-500/30 shadow-2xl glow-emerald flex flex-col justify-between">
           <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -translate-x-1/2 -translate-y-1/2"></div>
           
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6">
@@ -184,14 +184,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="pt-2 grid grid-cols-2 gap-2.5 w-full sm:flex sm:w-auto justify-center md:justify-start">
                 <button
                   onClick={onPlayAzanPreview}
-                  className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                  className="h-11 flex items-center justify-center gap-2 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all cursor-pointer active:scale-95"
                 >
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-3.5 h-3.5 fill-white" />
                   <span>سماع الأذان الآن</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('prayers')}
-                  className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all cursor-pointer"
+                  className="h-11 flex items-center justify-center gap-2 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all cursor-pointer active:scale-95"
                 >
                   <span>جدول الصلوات</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -200,7 +200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Glowing Digital Countdown Dial */}
-            <div className="flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/80 border border-slate-700/80 shadow-inner w-full md:w-auto md:min-w-[260px]">
+            <div className="flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-950/80 border border-slate-700/80 shadow-inner w-full md:w-auto md:min-w-[260px]">
               <span className="text-xs text-slate-400 font-medium mb-3">الوقت المتبقي للأذان</span>
               
               <div className="flex items-center justify-center gap-2 sm:gap-3" dir="ltr">
@@ -244,7 +244,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Productivity & Daily Progress Card */}
-        <div className="rounded-3xl bg-slate-900 p-6 border border-slate-800 shadow-xl flex flex-col justify-between">
+        <div className="rounded-3xl bg-gradient-to-br from-slate-900/95 via-slate-900/85 to-blue-950/30 p-5 sm:p-7 border border-blue-500/20 shadow-xl flex flex-col justify-between h-full">
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -306,7 +306,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
             <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
               <Sparkles className="w-3.5 h-3.5" />
               «إن الله يحب إذا عمل أحدكم عملاً أن يتقنه»
@@ -316,7 +316,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Main Grid: Quick Task Form & Combined Day Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         
         {/* Left: Quick Task Creation Card */}
         <div className="space-y-6">

@@ -422,7 +422,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {ADHKAR_LIST.map(([k, label, pts]) => {
                   const active = dayRecord.adhkar[k];
                   return (

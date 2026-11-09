@@ -288,7 +288,7 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
           return (
             <div
               key={prayer.id}
-              className={`relative overflow-hidden rounded-3xl p-6 border transition-all duration-300 ${
+              className={`relative overflow-hidden rounded-3xl p-6 border transition-all duration-300 flex flex-col justify-between h-full ${
                 prayer.isNext
                   ? 'bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border-emerald-500/50 glow-emerald scale-[1.02]'
                   : prayer.isPassed

@@ -352,11 +352,11 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition-all cursor-pointer"
           >
             إلغاء
           </button>
@@ -365,10 +365,10 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
             type="button"
             onClick={handleSave}
             disabled={!title.trim()}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Check className="w-4 h-4" />
-            <span>حفظ المهمة بالصوت كمنبه ✅</span>
+            <span>حفظ المهمة كمنبه ✅</span>
           </button>
         </div>
       </div>

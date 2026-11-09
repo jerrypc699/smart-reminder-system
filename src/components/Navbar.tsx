@@ -109,21 +109,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-base sm:text-xl font-black bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent">
+                  <h1 className="text-sm sm:text-xl font-black bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent truncate">
                     د. عبد العزيز
                   </h1>
-                  <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1">
+                  <span className="hidden sm:inline-flex text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold items-center gap-1 shrink-0">
                     <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
                     المساعد الذكي
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-slate-400 mt-0.5">
-                  <span className="flex items-center gap-1 font-medium text-slate-300">
-                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500" />
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-400 mt-0.5">
+                  <span className="font-medium text-slate-300 truncate max-w-[130px] sm:max-w-none">
                     {hijriDate}
                   </span>
                   <span>•</span>
-                  <span className="text-emerald-400 font-medium truncate max-w-[120px] sm:max-w-none">
+                  <span className="text-emerald-400 font-medium truncate">
                     {prayerSettings.cityName}
                   </span>
                 </div>
@@ -162,50 +161,49 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Controls: Cloud sync, mobile install, audio test, mute, notifications */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Symmetrical Action Pill Toolbar */}
+          <div className="flex items-center p-1 rounded-2xl bg-slate-950/80 border border-slate-800/80 shadow-md gap-1 shrink-0">
             {onOpenCloudModal && (
               <button
+                type="button"
                 onClick={onOpenCloudModal}
                 title={isCloudConnected ? "السحابة متصلة وتعمل بالمزامنة الفورية بين PC والموبايل" : "ربط قاعدة البيانات السحابية (Firebase)"}
-                className={`flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
                   isCloudConnected
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                    ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
-                <Cloud className={`w-3.5 h-3.5 ${isCloudConnected ? 'text-emerald-400' : 'text-slate-400'}`} />
-                <span className="hidden sm:inline">
-                  {isCloudConnected ? 'سحابي متصل' : 'ربط السحابة'}
-                </span>
+                <Cloud className="w-4 h-4" />
                 {isCloudConnected && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 )}
               </button>
             )}
 
             {onManualSync && (
               <button
+                type="button"
                 onClick={onManualSync}
                 disabled={isManualSyncing}
                 title="مزامنة فورية الآن لجميع الفيديوهات والمهام بين الكمبيوتر والموبايل"
-                className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 text-xs font-bold rounded-xl bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-cyan-400 hover:bg-cyan-500/20 transition-all cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isManualSyncing ? 'animate-spin' : ''}`} />
-                <span className="hidden md:inline">{isManualSyncing ? 'مزامنة...' : 'مزامنة الآن'}</span>
+                <RefreshCw className={`w-4 h-4 ${isManualSyncing ? 'animate-spin' : ''}`} />
               </button>
             )}
 
             <button
+              type="button"
               onClick={onTestAudio}
               title="اختبار الصوت والتنبيه الصوتي"
-              className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 hover:border-emerald-500/40 transition-all cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
             >
-              <Play className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">اختبار الصوت</span>
+              <Play className="w-4 h-4" />
             </button>
 
             <button
+              type="button"
               onClick={() =>
                 setAudioSettings((prev) => ({
                   ...prev,
@@ -213,22 +211,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }))
               }
               title={audioSettings.soundMuted ? 'إلغاء كتم الصوت' : 'كتم الصوت'}
-              className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl border transition-all cursor-pointer ${audioSettings.soundMuted
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-slate-600'
-                }`}
+              className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
+                audioSettings.soundMuted
+                  ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                  : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800'
+              }`}
             >
               {audioSettings.soundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
 
             {!hasNotificationPermission && (
               <button
+                type="button"
                 onClick={onRequestNotification}
                 title="تفعيل الإشعارات والأذان على الهاتف"
-                className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer animate-pulse"
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer animate-pulse"
               >
-                <Bell className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">تفعيل الإشعارات</span>
+                <Bell className="w-4 h-4" />
               </button>
             )}
           </div>

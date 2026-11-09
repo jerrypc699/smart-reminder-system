@@ -26,7 +26,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const primaryTabs = [
     { id: 'dashboard', label: 'الرئيسية', icon: Layers },
-    { id: 'daily_system', label: 'نظامي 📊', icon: Award },
+    { id: 'daily_system', label: 'نظامي', icon: Award },
     { id: 'prayers', label: 'الصلاة', icon: Compass },
     {
       id: 'tasks',

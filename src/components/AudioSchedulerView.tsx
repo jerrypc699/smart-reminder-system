@@ -150,9 +150,10 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
       );
 
       await loadLibrary();
+      setActiveTab('library');
       setSelectedMediaId(meta.id);
       setTitle(file.name.replace(/\.[^/.]+$/, ''));
-      setUploadSuccess(`تم رفع ومزامنة ${meta.mediaType === 'video' ? 'مقطع الفيديو' : 'الملف الصوتي'} "${meta.name}" بنجاح!`);
+      setUploadSuccess(`تم حفظ ${meta.mediaType === 'video' ? 'مقطع الفيديو' : 'الملف الصوتي'} "${meta.name}" بنجاح! ستجده معروضاً في المكتبة أدناه وجاهزاً للجدولة.`);
       
       // Auto open schedule modal
       setIsScheduleModalOpen(true);
@@ -306,9 +307,11 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
 
     NativeAlarmService.scheduleMediaItems(audioStorageService.getScheduledAudios()).catch(console.warn);
     onRefreshScheduled();
+    setActiveTab('scheduled');
     setIsScheduleModalOpen(false);
     setTitle('');
     setDescription('');
+    setUploadSuccess(`تمت جدولة تشغيل "${title.trim()}" بنجاح كمنبه هاردوير رسمي!`);
   };
 
   // Toggle enabled
@@ -720,29 +723,64 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
       {activeTab === 'scheduled' && (
         <div>
           {scheduledAudios.length === 0 ? (
-            <div className="text-center py-16 px-4 rounded-3xl bg-slate-900/50 border border-dashed border-slate-800">
-              <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4 text-slate-500">
-                <Clock className="w-8 h-8" />
+            mediaLibrary.length > 0 ? (
+              <div className="text-center py-12 px-4 rounded-3xl bg-slate-900/60 border border-purple-500/30 shadow-xl">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center mx-auto mb-3 text-purple-400">
+                  <Film className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-bold text-white mb-1">
+                  لديك {mediaLibrary.length} ملف وسائط محفوظ في مكتبتك!
+                </h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mb-5 leading-relaxed">
+                  الملفات المرفوعة محفوظة بنجاح في مكتبتك. لكي تعمل في موعد محدد كمنبه رسمي يوقظ الهاتف، اضغط على «جدولة الآن» أو استعرض الفيديوهات في تبويب المكتبة.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mediaLibrary.length > 0 && !selectedMediaId) {
+                        setSelectedMediaId(mediaLibrary[0].id);
+                      }
+                      setIsScheduleModalOpen(true);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                  >
+                    ⏰ جدولة تشغيل كمنبه الآن
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('library')}
+                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition-all cursor-pointer"
+                  >
+                    🎬 استعراض الفيديوهات في المكتبة ({videoCount})
+                  </button>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">لا توجد ملفات فيديو أو صوت مجدولة حالياً</h3>
-              <p className="text-xs text-slate-400 max-w-md mx-auto mb-6">
-                ارفع مقطع فيديو أو ملف صوتي وحدد وقتاً ليعمل تلقائياً كشاشة عرض أو تنبيه أو إذاعة
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <label
-                  htmlFor="video-upload-input"
-                  className="px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer transition-colors"
-                >
-                  رفع مقطع فيديو الآن
-                </label>
-                <label
-                  htmlFor="audio-upload-input"
-                  className="px-5 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold cursor-pointer transition-colors"
-                >
-                  رفع ملف صوتي
-                </label>
+            ) : (
+              <div className="text-center py-16 px-4 rounded-3xl bg-slate-900/50 border border-dashed border-slate-800">
+                <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4 text-slate-500">
+                  <Clock className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">لا توجد ملفات فيديو أو صوت مجدولة حالياً</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mb-6">
+                  ارفع مقطع فيديو أو ملف صوتي وحدد وقتاً ليعمل تلقائياً كشاشة عرض أو تنبيه أو إذاعة
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <label
+                    htmlFor="video-upload-input"
+                    className="px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    رفع مقطع فيديو الآن
+                  </label>
+                  <label
+                    htmlFor="audio-upload-input"
+                    className="px-5 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    رفع ملف صوتي
+                  </label>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {scheduledAudios.map((item) => {

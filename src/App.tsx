@@ -155,6 +155,9 @@ export function App() {
           return merged;
         });
       }
+      if (cloudData.mediaLibrary && Array.isArray(cloudData.mediaLibrary) && cloudData.mediaLibrary.length > 0) {
+        audioStorageService.syncRemoteMetaList(cloudData.mediaLibrary);
+      }
       if (cloudData.dailySystem) {
         dailySystemService.mergeFromCloud(cloudData.dailySystem);
       }
@@ -187,9 +190,11 @@ export function App() {
   const syncCurrentStateToCloud = (currentTasks?: Task[]) => {
     const t = currentTasks || taskService.getTasks();
     const m = audioStorageService.getScheduledMedias();
+    const mediaLib = audioStorageService.getMetaRegistry();
     vercelCloudSync.pushToCloud({
       tasks: t,
       scheduledMedia: m,
+      mediaLibrary: mediaLib,
       prayerSettings,
       audioSettings,
       dailySystem: dailySystemService.exportForCloud(),

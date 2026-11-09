@@ -1,10 +1,11 @@
-import { Task, ScheduledMedia, PrayerSettings, AudioSettings } from '../types';
+import { Task, ScheduledMedia, PrayerSettings, AudioSettings, StoredMediaMeta } from '../types';
 import { upload } from '@vercel/blob/client';
 import { getApiUrl } from '../config/api';
 
 export interface CloudSyncPayload {
   tasks: Task[];
   scheduledMedia: ScheduledMedia[];
+  mediaLibrary?: StoredMediaMeta[];
   prayerSettings?: PrayerSettings;
   audioSettings?: AudioSettings;
   dailySystem?: any;
@@ -251,9 +252,12 @@ class VercelCloudSyncService {
 
       onStatus?.('جاري تحديث السحابة...');
 
+      const mediaLibrary = audioStorageService.getMetaRegistry();
+
       const pushed = await this.pushToCloud({
         tasks,
         scheduledMedia,
+        mediaLibrary,
       });
 
       this.isSyncing = false;

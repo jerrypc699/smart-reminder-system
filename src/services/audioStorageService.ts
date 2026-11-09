@@ -8,6 +8,7 @@ const BLOB_STORE = 'audio_blobs';
 const SCHEDULED_STORE = 'scheduled_audios';
 const SCHEDULED_STORAGE_KEY = 'smart_reminder_scheduled_media_v2';
 const LEGACY_STORAGE_KEY = 'smart_reminder_scheduled_audios_v1';
+const MEDIA_META_STORAGE_KEY = 'smart_reminder_media_meta_v2';
 
 class AudioStorageService {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -72,6 +73,7 @@ class AudioStorageService {
 
   /**
    * Extract video duration and generate a video thumbnail using Canvas
+   * With safety timeout to prevent hanging on mobile videos
    */
   public async getVideoMetadata(blob: Blob): Promise<{ duration: number; thumbnail?: string }> {
     return new Promise((resolve) => {
@@ -83,12 +85,24 @@ class AudioStorageService {
         video.muted = true;
         video.playsInline = true;
 
+        let isDone = false;
+        const timer = setTimeout(() => {
+          if (!isDone) {
+            isDone = true;
+            URL.revokeObjectURL(tempUrl);
+            resolve({ duration: 0 });
+          }
+        }, 2500);
+
         video.onloadedmetadata = () => {
           const duration = Math.round(video.duration || 0);
           video.currentTime = Math.min(1, Math.max(0.1, duration / 3));
         };
 
         video.onseeked = () => {
+          if (isDone) return;
+          isDone = true;
+          clearTimeout(timer);
           try {
             const canvas = document.createElement('canvas');
             canvas.width = Math.min(video.videoWidth || 320, 320);
@@ -109,6 +123,9 @@ class AudioStorageService {
         };
 
         video.onerror = () => {
+          if (isDone) return;
+          isDone = true;
+          clearTimeout(timer);
           URL.revokeObjectURL(tempUrl);
           resolve({ duration: 0 });
         };
@@ -116,6 +133,57 @@ class AudioStorageService {
         resolve({ duration: 0 });
       }
     });
+  }
+
+  public getMetaRegistry(): StoredMediaMeta[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(MEDIA_META_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public saveMetaToRegistry(meta: StoredMediaMeta): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const list = this.getMetaRegistry();
+      const idx = list.findIndex((m) => m.id === meta.id);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...meta };
+      } else {
+        list.unshift(meta);
+      }
+      localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn('Failed to update media meta registry in localStorage:', e);
+    }
+  }
+
+  public syncRemoteMetaList(remoteList: StoredMediaMeta[]): void {
+    if (!remoteList || !Array.isArray(remoteList)) return;
+    try {
+      const local = this.getMetaRegistry();
+      const map = new Map<string, StoredMediaMeta>();
+      local.forEach((item) => map.set(item.id, item));
+      remoteList.forEach((item) => {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+        } else {
+          const existing = map.get(item.id)!;
+          if (!existing.cloudUrl && item.cloudUrl) {
+            map.set(item.id, { ...existing, cloudUrl: item.cloudUrl });
+          }
+        }
+      });
+      const merged = Array.from(map.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(merged));
+    } catch (e) {
+      console.warn('Failed to sync remote meta list:', e);
+    }
   }
 
   /**
@@ -127,7 +195,6 @@ class AudioStorageService {
     category: 'task' | 'azan' | 'scheduled' | 'custom' = 'custom',
     cloudUrl?: string
   ): Promise<StoredMediaMeta> {
-    const db = await this.getDB();
     const isVideo = file.type.startsWith('video') ||
       /\.(mp4|webm|mkv|mov|avi|wmv)$/i.test(name) ||
       (file instanceof File && /\.(mp4|webm|mkv|mov|avi|wmv)$/i.test(file.name));
@@ -160,24 +227,33 @@ class AudioStorageService {
       cloudUrl,
     };
 
-    const record = {
-      ...meta,
-      blob: file,
-    };
+    // 1. Immediately save to localStorage registry so it's guaranteed to be available instantly
+    this.saveMetaToRegistry(meta);
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(BLOB_STORE, 'readwrite');
-      const store = transaction.objectStore(BLOB_STORE);
-      const req = store.put(record);
-
-      req.onsuccess = () => {
-        resolve(meta);
+    // 2. Also save blob to IndexedDB for local offline playback
+    try {
+      const db = await this.getDB();
+      const record = {
+        ...meta,
+        blob: file,
       };
 
-      req.onerror = () => {
-        reject(req.error);
-      };
-    });
+      await new Promise<void>((resolve, reject) => {
+        try {
+          const transaction = db.transaction(BLOB_STORE, 'readwrite');
+          const store = transaction.objectStore(BLOB_STORE);
+          const req = store.put(record);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        } catch (txErr) {
+          reject(txErr);
+        }
+      });
+    } catch (idbErr) {
+      console.warn('IndexedDB save blob warning (file saved in metadata registry):', idbErr);
+    }
+
+    return meta;
   }
 
   /**
@@ -275,48 +351,63 @@ class AudioStorageService {
 
   /**
    * Retrieve list of all uploaded media files metadata
-   * (Merges local IndexedDB files with any Cloud Synced media)
+   * (Combines instant localStorage registry, IndexedDB records, and cloud items)
    */
   public async getAllMediaMeta(): Promise<StoredMediaMeta[]> {
-    const list: StoredMediaMeta[] = [];
+    // 1. Instant synchronous read from localStorage registry (never fails, 0MB memory overhead)
+    const map = new Map<string, StoredMediaMeta>();
+    const registryItems = this.getMetaRegistry();
+    registryItems.forEach((m) => map.set(m.id, m));
+
+    // 2. Also try reading from local IndexedDB if available and merge
     try {
       const db = await this.getDB();
       const localItems: StoredMediaMeta[] = await new Promise((resolve) => {
-        const transaction = db.transaction(BLOB_STORE, 'readonly');
-        const store = transaction.objectStore(BLOB_STORE);
-        const req = store.getAll();
+        try {
+          const transaction = db.transaction(BLOB_STORE, 'readonly');
+          const store = transaction.objectStore(BLOB_STORE);
+          const req = store.getAll();
 
-        req.onsuccess = () => {
-          const res: StoredMediaMeta[] = (req.result || []).map((r) => ({
-            id: r.id,
-            name: r.name,
-            size: r.size,
-            type: r.type,
-            mediaType: r.mediaType || (r.type && r.type.startsWith('video') ? 'video' : 'audio'),
-            duration: r.duration,
-            thumbnail: r.thumbnail,
-            createdAt: r.createdAt,
-            category: r.category,
-            cloudUrl: r.cloudUrl,
-          }));
-          resolve(res);
-        };
+          req.onsuccess = () => {
+            const res: StoredMediaMeta[] = (req.result || []).map((r) => ({
+              id: r.id,
+              name: r.name,
+              size: r.size,
+              type: r.type,
+              mediaType: r.mediaType || (r.type && r.type.startsWith('video') ? 'video' : 'audio'),
+              duration: r.duration,
+              thumbnail: r.thumbnail,
+              createdAt: r.createdAt,
+              category: r.category,
+              cloudUrl: r.cloudUrl,
+            }));
+            resolve(res);
+          };
 
-        req.onerror = () => {
+          req.onerror = () => {
+            resolve([]);
+          };
+        } catch {
           resolve([]);
-        };
+        }
       });
-      list.push(...localItems);
+
+      localItems.forEach((item) => {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+          this.saveMetaToRegistry(item);
+        }
+      });
     } catch {
       // Local DB unavailable
     }
 
-    // Also include any media synced via cloud scheduled items if not in local list
+    // 3. Also include any media synced via cloud scheduled items if not in local list
     const scheduled = this.getScheduledMedias();
     scheduled.forEach((s) => {
       const mediaId = s.mediaId || s.id;
-      if (!list.some((item) => item.id === mediaId)) {
-        list.push({
+      if (!map.has(mediaId)) {
+        map.set(mediaId, {
           id: mediaId,
           name: s.mediaName,
           size: 0,
@@ -331,7 +422,9 @@ class AudioStorageService {
       }
     });
 
-    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   public async getAllAudioMeta(): Promise<StoredMediaMeta[]> {
@@ -348,15 +441,26 @@ class AudioStorageService {
       this.urlCache.delete(id);
     }
 
-    const db = await this.getDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(BLOB_STORE, 'readwrite');
-      const store = transaction.objectStore(BLOB_STORE);
-      const req = store.delete(id);
+    // 1. Remove from localStorage registry
+    if (typeof window !== 'undefined') {
+      try {
+        const list = this.getMetaRegistry().filter((m) => m.id !== id);
+        localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(list));
+      } catch {}
+    }
 
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
+    // 2. Remove from IndexedDB
+    try {
+      const db = await this.getDB();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(BLOB_STORE, 'readwrite');
+        const store = transaction.objectStore(BLOB_STORE);
+        const req = store.delete(id);
+
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch {}
   }
 
   public async deleteAudioFile(id: string): Promise<void> {

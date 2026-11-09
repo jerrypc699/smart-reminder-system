@@ -235,8 +235,14 @@ export function App() {
   );
 
   const refreshScheduledAudios = () => {
-    setScheduledAudios(audioStorageService.getScheduledAudios());
+    const list = audioStorageService.getScheduledAudios();
+    setScheduledAudios(list);
+    NativeAlarmService.scheduleMediaItems(list).catch(console.warn);
   };
+
+  useEffect(() => {
+    NativeAlarmService.scheduleMediaItems(scheduledAudios).catch(console.warn);
+  }, [scheduledAudios]);
 
   // Track prayers already reminded today to prevent repeated alerts
   const remindedPrayersRef = useRef<Set<string>>(new Set());
@@ -266,8 +272,8 @@ export function App() {
       // 1. Permanently keep background audio session active
       mobileBackgroundService.setKeepAliveMode(true);
 
-      // 2. Initialize native exact alarms (Prayers + Tasks) if running on Android/iOS app
-      NativeAlarmService.syncAll(tasks).catch(console.warn);
+      // 2. Initialize native exact alarms (Prayers + Tasks + Scheduled Media) if running on Android/iOS app
+      NativeAlarmService.syncAll(tasks, scheduledAudios).catch(console.warn);
 
       // 3. Auto-check & auto-subscribe to push notifications
       if ('Notification' in window) {
@@ -482,6 +488,30 @@ export function App() {
         const reciter = prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter;
         audioService.initAudioContext();
         audioService.playAzan(reciter as any, audioSettings.masterVolume);
+      } else if (extra?.type === 'scheduled_media' || extra?.type === 'scheduled_audio') {
+        const isVideo = !!extra.isVideo || extra.mediaType === 'video';
+        audioStorageService.getMediaObjectUrl(extra.mediaId, extra.cloudUrl).then((playUrl) => {
+          const finalUrl = playUrl || extra.cloudUrl;
+          setActiveAlert({
+            id: `alert-sched-${extra.mediaId || Date.now()}-${Date.now()}`,
+            type: isVideo ? 'scheduled_media' : 'scheduled_audio',
+            title: extra.title || (isVideo ? '🎬 عرض فيديو مجدول' : '📻 تشغيل وسائط مجدولة'),
+            message: extra.description || (isVideo ? `يا دكتور عبد العزيز: حان موعد عرض فيديو ${extra.mediaName || ''}` : `يا دكتور عبد العزيز: حان موعد تشغيل ${extra.mediaName || ''}`),
+            timestamp: new Date().toISOString(),
+            scheduledMediaId: extra.mediaId,
+            mediaName: extra.mediaName,
+            mediaType: isVideo ? 'video' : 'audio',
+            videoUrl: isVideo ? (finalUrl || undefined) : undefined,
+            audioName: extra.mediaName,
+            isCustomAudio: !isVideo,
+            canSnooze: false,
+          });
+
+          if (!isVideo && !audioSettings.soundMuted && finalUrl) {
+            audioService.initAudioContext();
+            audioService.playCustomAudio(finalUrl, audioSettings.masterVolume);
+          }
+        }).catch(console.warn);
       }
     };
     window.addEventListener('native_notification_tapped', handleNativeTap);

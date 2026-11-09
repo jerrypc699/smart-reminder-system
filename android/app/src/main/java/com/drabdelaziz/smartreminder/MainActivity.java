@@ -111,6 +111,23 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception ignored) {}
             taskChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(taskChannel);
+
+            // 4. Scheduled Media & Video Alarm Channel (Runs as hardware alarm, plays video/audio)
+            NotificationChannel mediaChannel = new NotificationChannel(
+                "dr_abdelaziz_media_v9",
+                "الوسائط والفيديوهات المجدولة (د. عبد العزيز - كمنبه صريح)",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            mediaChannel.setDescription("تشغيل الفيديوهات والملفات الصوتية المجدولة كمنبه صريح حتى لو كان الهاتف في الوضع الصامت");
+            Uri mediaUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/dr_abdelaziz_task_alert");
+            mediaChannel.setSound(mediaUri, alarmAttributes);
+            mediaChannel.enableVibration(true);
+            mediaChannel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500});
+            try {
+                NotificationChannel.class.getMethod("setBypassDnd", boolean.class).invoke(mediaChannel, true);
+            } catch (Exception ignored) {}
+            mediaChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            manager.createNotificationChannel(mediaChannel);
         }
     }
 }

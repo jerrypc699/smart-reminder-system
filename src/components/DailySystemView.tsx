@@ -128,10 +128,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
     currentDateKey === todayKey
       ? 'النهارده'
       : currentDateKey === addDaysToDateKey(todayKey, -1)
-      ? 'امبارح'
-      : currentDateKey === addDaysToDateKey(todayKey, 1)
-      ? 'بكرة'
-      : '';
+        ? 'امبارح'
+        : currentDateKey === addDaysToDateKey(todayKey, 1)
+          ? 'بكرة'
+          : '';
 
   // Prayer click handler: 0 (none) -> 2 (on time) -> 1 (late) -> 0 (none)
   const handlePrayerClick = (prayerKey: keyof DailyRecord['prayers']) => {
@@ -197,11 +197,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
           <div className="flex items-center p-1 bg-slate-950/80 rounded-2xl border border-slate-800">
             <button
               onClick={() => setActiveTab('day')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'day'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'day'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               <Calendar className="w-4 h-4" />
               <span>اليوم</span>
@@ -209,11 +208,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
 
             <button
               onClick={() => setActiveTab('month')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'month'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'month'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               <TrendingUp className="w-4 h-4" />
               <span>التقرير الشهري</span>
@@ -221,11 +219,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
 
             <button
               onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'settings'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'settings'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               <Award className="w-4 h-4" />
               <span>الأهداف والنقاط</span>
@@ -337,11 +334,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                   {/* Minimum Day Badge */}
                   <div className="pt-2">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        minDayAchieved
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${minDayAchieved
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
                           : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
-                      }`}
+                        }`}
                     >
                       {minDayAchieved ? (
                         <>
@@ -383,13 +379,12 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                       key={k}
                       type="button"
                       onClick={() => handlePrayerClick(k)}
-                      className={`p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${
-                        isOntime
+                      className={`p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isOntime
                           ? 'bg-gradient-to-tr from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-500/25 scale-102'
                           : isLate
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                          : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                      }`}
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                            : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                        }`}
                     >
                       <span className="font-bold text-xs sm:text-sm">{name}</span>
                       <small className="text-[10px] mt-1 font-semibold opacity-90">
@@ -444,11 +439,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                           audioService.playChime('click', 0.3);
                         }
                       }}
-                      className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border ${
-                        active
+                      className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border ${active
                           ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
                           : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                      }`}
+                        }`}
                     >
                       <Check className={`w-3.5 h-3.5 ${active ? 'opacity-100' : 'opacity-30'}`} />
                       <span>{label}</span>
@@ -655,20 +649,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                 <button
                   type="button"
                   onClick={() => updateCurrentDay({ food: !dayRecord.food })}
-                  className={`p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${
-                    dayRecord.food
+                  className={`p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${dayRecord.food
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
                       : 'bg-slate-950/50 text-slate-400 border-slate-800 hover:border-slate-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <Utensils className="w-4 h-4 text-emerald-400" />
                     <span className="text-xs font-bold">أكل نضيف ومنتظم (3ن)</span>
                   </div>
                   <div
-                    className={`w-6 h-6 rounded-lg border flex items-center justify-center ${
-                      dayRecord.food ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-700'
-                    }`}
+                    className={`w-6 h-6 rounded-lg border flex items-center justify-center ${dayRecord.food ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-700'
+                      }`}
                   >
                     {dayRecord.food && <Check className="w-4 h-4" />}
                   </div>
@@ -737,11 +729,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                           audioService.playChime('success', 0.4);
                         }
                       }}
-                      className={`w-7 h-7 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-                        task.d
+                      className={`w-7 h-7 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${task.d
                           ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/25'
                           : 'border-slate-700 bg-slate-900 hover:border-slate-600'
-                      }`}
+                        }`}
                     >
                       {task.d && <Check className="w-4 h-4" />}
                     </button>
@@ -755,9 +746,8 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                         updateCurrentDay({ tasks: newTasks });
                       }}
                       placeholder={`المهمة ${idx + 1}...`}
-                      className={`flex-1 bg-transparent border-none text-xs text-white focus:outline-none ${
-                        task.d ? 'line-through text-slate-500' : ''
-                      }`}
+                      className={`flex-1 bg-transparent border-none text-xs text-white focus:outline-none ${task.d ? 'line-through text-slate-500' : ''
+                        }`}
                     />
                   </div>
                 ))}
@@ -905,9 +895,8 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                           setCurrentDateKey(id);
                           setActiveTab('day');
                         }}
-                        className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all cursor-pointer relative border ${
-                          minMet ? 'ring-2 ring-emerald-400/80 ring-offset-1 ring-offset-slate-900' : ''
-                        } ${isToday ? 'border-amber-400/80' : 'border-slate-800/60 hover:scale-105'}`}
+                        className={`aspect-square rounded-xl p-1 flex flex-col items-center justify-center transition-all cursor-pointer relative border ${minMet ? 'ring-2 ring-emerald-400/80 ring-offset-1 ring-offset-slate-900' : ''
+                          } ${isToday ? 'border-amber-400/80' : 'border-slate-800/60 hover:scale-105'}`}
                         style={{
                           backgroundColor: getHeatmapColor(score),
                           color: score !== null && score >= 40 ? '#ffffff' : '#94a3b8',
@@ -1404,3 +1393,4 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
     </div>
   );
 };
+

@@ -97,10 +97,13 @@ class UniversalSpeechService {
             this.listeningStateHandle = null;
           }
 
-          // Force stop any lingering native session cleanly before starting
+          // Force stop any lingering native session cleanly before starting and wait for IDLE
           try {
-            await SpeechRecognition.forceStop({ timeout: 10 }).catch(() => {});
-            await new Promise((resolve) => setTimeout(resolve, 150));
+            const isLis = await SpeechRecognition.isListening().catch(() => ({ listening: false }));
+            if (isLis.listening) {
+              await SpeechRecognition.forceStop({ timeout: 0 }).catch(() => {});
+              await new Promise((resolve) => setTimeout(resolve, 300));
+            }
           } catch {}
 
           // Listen for partial and final results in real-time
@@ -120,22 +123,11 @@ class UniversalSpeechService {
           });
 
           let startedSuccessfully = false;
-          try {
-            await SpeechRecognition.start({
-              language: 'ar-EG',
-              maxResults: 3,
-              prompt: 'تفضل بالحديث يا دكتور عبد العزيز...',
-              popup: false,
-              partialResults: true,
-              addPunctuation: true,
-            });
-            startedSuccessfully = true;
-          } catch (startErr: any) {
-            const errStr = (startErr?.message || startErr || '').toString();
-            if (errStr.toLowerCase().includes('already running')) {
-              console.warn('Native speech already running detected, auto-healing...');
-              await SpeechRecognition.forceStop({ timeout: 10 }).catch(() => {});
-              await new Promise((resolve) => setTimeout(resolve, 250));
+          let lastStartError: any = null;
+
+          // Attempt starting with auto-healing backoff for Android recognizer state transitions
+          for (let attempt = 0; attempt < 4; attempt++) {
+            try {
               await SpeechRecognition.start({
                 language: 'ar-EG',
                 maxResults: 3,
@@ -145,8 +137,17 @@ class UniversalSpeechService {
                 addPunctuation: true,
               });
               startedSuccessfully = true;
-            } else {
-              throw startErr;
+              break;
+            } catch (startErr: any) {
+              lastStartError = startErr;
+              const errStr = (startErr?.message || startErr || '').toString().toLowerCase();
+              if (errStr.includes('already running') || errStr.includes('busy')) {
+                console.warn(`[SpeechRecognition] Recognizer busy (attempt ${attempt + 1}/4), waiting for idle state...`);
+                await SpeechRecognition.forceStop({ timeout: 0 }).catch(() => {});
+                await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+              } else {
+                throw startErr;
+              }
             }
           }
 
@@ -155,12 +156,25 @@ class UniversalSpeechService {
             callbacks.onStart?.();
             return true;
           }
+
+          if (lastStartError) {
+            throw lastStartError;
+          }
           return false;
         } catch (err: any) {
           console.warn('Native speech recognition start error:', err);
           this.isCurrentlyListening = false;
-          await SpeechRecognition.forceStop({ timeout: 10 }).catch(() => {});
-          callbacks.onError?.('تعذر بدء التعرف الصوتي: ' + (err.message || 'خطأ في النظام'));
+          await SpeechRecognition.forceStop({ timeout: 0 }).catch(() => {});
+          const rawMsg = (err?.message || err || '').toString();
+          let friendlyMsg = 'تعذر بدء التعرف الصوتي';
+          if (rawMsg.includes('already running') || rawMsg.includes('busy')) {
+            friendlyMsg = 'تمت إعادة ضبط الميكروفون بنجاح. اضغط الآن للتحدث يا دكتور عبد العزيز.';
+          } else if (rawMsg.includes('permission') || rawMsg.includes('Permission')) {
+            friendlyMsg = 'يرجى تفعيل إذن الميكروفون من إعدادات الهاتف للتطبيق.';
+          } else {
+            friendlyMsg = `تعذر بدء التعرف الصوتي: ${rawMsg}`;
+          }
+          callbacks.onError?.(friendlyMsg);
           return false;
         }
       }

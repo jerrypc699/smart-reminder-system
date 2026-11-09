@@ -58,7 +58,11 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
   }, [isOpen]);
 
   const startListening = async () => {
-    if (isStarting || isListening) return;
+    if (isStarting) return;
+    if (isListening) {
+      await stopListening();
+      await new Promise((r) => setTimeout(r, 150));
+    }
 
     setIsStarting(true);
     setErrorMsg('');
@@ -115,6 +119,13 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
     } else {
       startListening();
     }
+  };
+
+  const handleRetry = async () => {
+    setErrorMsg('');
+    await stopListening();
+    await new Promise((r) => setTimeout(r, 200));
+    await startListening();
   };
 
   const handleSave = () => {
@@ -222,12 +233,12 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
             </div>
             <button
               type="button"
-              onClick={startListening}
+              onClick={handleRetry}
               disabled={isStarting}
               className="w-full py-2 px-3 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <Mic className="w-3.5 h-3.5" />
-              <span>إعادة المحاولة وطلب إذن الميكروفون 🎙️</span>
+              <span>إعادة تهيئة الميكروفون والتشغيل 🎙️</span>
             </button>
           </div>
         )}

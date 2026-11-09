@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
-import type { Task } from '../types';
+import type { Task, ScheduledMedia } from '../types';
 
 const CAIRO_LAT = 30.0444;
 const CAIRO_LNG = 31.2357;
@@ -89,6 +89,19 @@ export class NativeAlarmService {
         lightColor: '#10B981'
       });
 
+      // 4. Scheduled Media & Video High-Priority Channel (Importance 5 = Hardware Alarm, Alarm Stream)
+      await LocalNotifications.createChannel({
+        id: 'dr_abdelaziz_media_v9',
+        name: 'الوسائط والفيديوهات المجدولة (د. عبد العزيز)',
+        description: 'تشغيل الفيديوهات والملفات الصوتية المجدولة كمنبه صريح حتى لو كان الهاتف في الوضع الصامت',
+        importance: 5,
+        visibility: 1,
+        sound: 'dr_abdelaziz_task_alert.mp3',
+        vibration: true,
+        lights: true,
+        lightColor: '#8B5CF6'
+      });
+
       if (!this.isInitialized) {
         // Handle when notification is tapped
         LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
@@ -118,6 +131,13 @@ export class NativeAlarmService {
               const audio = new Audio('/audio/mishary.mp3');
               audio.volume = 1.0;
               audio.play().catch(console.warn);
+            } else if (extra?.type === 'scheduled_media' || extra?.type === 'scheduled_audio') {
+              // Dispatch immediately to pop up active alert modal with video/audio
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('native_notification_tapped', {
+                  detail: extra
+                }));
+              }
             }
           } catch (e) {
             console.warn('Live notification sound play error:', e);
@@ -135,15 +155,18 @@ export class NativeAlarmService {
   }
 
   /**
-   * Schedule both prayers (with pre-azan) and all user tasks into hardware AlarmManager
+   * Schedule prayers, tasks, and scheduled media items into hardware AlarmManager
    */
-  public static async syncAll(tasks?: Task[]): Promise<boolean> {
+  public static async syncAll(tasks?: Task[], mediaList?: ScheduledMedia[]): Promise<boolean> {
     if (!this.isNative()) return false;
     try {
       await this.initChannels();
       await this.schedulePrayers();
       if (tasks && tasks.length > 0) {
         await this.scheduleTasks(tasks);
+      }
+      if (mediaList && mediaList.length > 0) {
+        await this.scheduleMediaItems(mediaList);
       }
       return true;
     } catch (err) {
@@ -366,6 +389,116 @@ export class NativeAlarmService {
       }
     } catch (err) {
       console.error('[NativeAlarmService] scheduleTasks error:', err);
+    }
+  }
+
+  /**
+   * Schedule all enabled media & video items into native hardware AlarmManager (IDs 3000 - 3999)
+   * Plays with alarm stream attributes and pops up active alert modal with video player!
+   */
+  public static async scheduleMediaItems(mediaList: ScheduledMedia[]): Promise<void> {
+    if (!this.isNative()) return;
+    try {
+      const pending = await LocalNotifications.getPending();
+      const mediaNotifs = pending.notifications.filter(n => n.id >= 3000 && n.id < 4000);
+      if (mediaNotifs.length > 0) {
+        await LocalNotifications.cancel({
+          notifications: mediaNotifs.map(n => ({ id: n.id }))
+        });
+      }
+
+      const now = new Date();
+      const notificationsToSchedule: any[] = [];
+
+      for (const item of mediaList) {
+        if (!item.enabled || !item.scheduledTime) continue;
+
+        const [hour, min] = item.scheduledTime.split(':').map(Number);
+        if (isNaN(hour) || isNaN(min)) continue;
+
+        const isVideo = item.mediaType === 'video';
+        const numericId = 3000 + (Math.abs(NativeAlarmService.getNumericIdForTask(item.id)) % 900);
+
+        // Calculate occurrence dates
+        const targetDates: Date[] = [];
+
+        if (item.repeat === 'none') {
+          let dateStr = item.scheduledDate;
+          if (!dateStr) {
+            dateStr = now.toISOString().split('T')[0];
+          }
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const candidate = new Date(year, month - 1, day, hour, min, 0, 0);
+          if (candidate.getTime() > now.getTime()) {
+            targetDates.push(candidate);
+          }
+        } else if (item.repeat === 'daily') {
+          // Schedule for next 3 days
+          for (let d = 0; d < 3; d++) {
+            const candidate = new Date();
+            candidate.setDate(candidate.getDate() + d);
+            candidate.setHours(hour, min, 0, 0);
+            if (candidate.getTime() > now.getTime()) {
+              targetDates.push(candidate);
+            }
+          }
+        } else if (item.repeat === 'workdays') {
+          // Sunday (0) to Thursday (4) in Egypt / Middle East
+          for (let d = 0; d < 7; d++) {
+            const candidate = new Date();
+            candidate.setDate(candidate.getDate() + d);
+            candidate.setHours(hour, min, 0, 0);
+            const dayOfWeek = candidate.getDay();
+            if (dayOfWeek >= 0 && dayOfWeek <= 4 && candidate.getTime() > now.getTime()) {
+              targetDates.push(candidate);
+            }
+          }
+        } else if (item.repeat === 'weekly') {
+          for (let w = 0; w < 3; w++) {
+            const candidate = new Date();
+            candidate.setDate(candidate.getDate() + (w * 7));
+            candidate.setHours(hour, min, 0, 0);
+            if (candidate.getTime() > now.getTime()) {
+              targetDates.push(candidate);
+            }
+          }
+        }
+
+        targetDates.forEach((targetDate, idx) => {
+          notificationsToSchedule.push({
+            id: numericId + (idx * 10),
+            title: isVideo ? `🎬 موعد تشغيل فيديو: ${item.title}` : `📻 موعد تشغيل وسائط: ${item.title}`,
+            body: item.description || (isVideo ? `يا دكتور عبد العزيز: حان موعد عرض فيديو ${item.mediaName}` : `يا دكتور عبد العزيز: حان موعد تشغيل ${item.mediaName}`),
+            schedule: {
+              at: targetDate,
+              allowWhileIdle: true
+            },
+            channelId: 'dr_abdelaziz_media_v9',
+            sound: 'dr_abdelaziz_task_alert.mp3',
+            actionTypeId: 'MEDIA_ACTION',
+            foreground: true,
+            extra: {
+              type: 'scheduled_media',
+              mediaId: item.mediaId || item.id,
+              mediaName: item.mediaName || item.audioName || 'ملف وسائط',
+              mediaType: item.mediaType || 'audio',
+              title: item.title,
+              description: item.description,
+              cloudUrl: item.cloudUrl,
+              isVideo,
+            }
+          });
+        });
+      }
+
+      if (notificationsToSchedule.length > 0) {
+        await LocalNotifications.schedule({
+          notifications: notificationsToSchedule
+        });
+        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} media alarms in AlarmManager.`);
+      }
+    } catch (err) {
+      console.error('[NativeAlarmService] scheduleMediaItems error:', err);
     }
   }
 

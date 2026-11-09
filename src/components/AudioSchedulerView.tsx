@@ -28,6 +28,7 @@ import {
 import { ScheduledMedia, StoredMediaMeta, TaskRepeat, MediaType } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
 import { vercelCloudSync } from '../services/vercelCloudSync';
+import { NativeAlarmService } from '../services/nativeAlarmService';
 
 interface AudioSchedulerViewProps {
   scheduledAudios: ScheduledMedia[];
@@ -303,6 +304,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
       audioDuration: mediaMeta?.duration,
     });
 
+    NativeAlarmService.scheduleMediaItems(audioStorageService.getScheduledAudios()).catch(console.warn);
     onRefreshScheduled();
     setIsScheduleModalOpen(false);
     setTitle('');
@@ -312,6 +314,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   // Toggle enabled
   const handleToggleEnabled = (id: string, currentEnabled: boolean) => {
     audioStorageService.updateScheduledMedia(id, { enabled: !currentEnabled });
+    NativeAlarmService.scheduleMediaItems(audioStorageService.getScheduledAudios()).catch(console.warn);
     onRefreshScheduled();
   };
 
@@ -319,6 +322,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   const handleDeleteScheduled = (id: string) => {
     if (confirm('هل أنت متأكد من حذف هذا التنبيه المجدول؟')) {
       audioStorageService.deleteScheduledMedia(id);
+      NativeAlarmService.scheduleMediaItems(audioStorageService.getScheduledAudios()).catch(console.warn);
       onRefreshScheduled();
     }
   };

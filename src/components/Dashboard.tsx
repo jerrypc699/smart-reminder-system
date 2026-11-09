@@ -200,16 +200,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Glowing Digital Countdown Dial */}
-            <div className="flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/80 border border-slate-700/80 shadow-inner w-full md:w-auto md:min-w-[240px]">
-              <span className="text-xs text-slate-400 font-medium mb-1">الوقت المتبقي للأذان</span>
-              <div className="text-3xl sm:text-4xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 tracking-wider">
-                {remainingTime.formatted}
+            <div className="flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/80 border border-slate-700/80 shadow-inner w-full md:w-auto md:min-w-[260px]">
+              <span className="text-xs text-slate-400 font-medium mb-3">الوقت المتبقي للأذان</span>
+              
+              <div className="flex items-center justify-center gap-2 sm:gap-3" dir="ltr">
+                {/* Hours */}
+                <div className="flex flex-col items-center min-w-[52px] sm:min-w-[60px]">
+                  <span className="text-3xl sm:text-4xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
+                    {remainingTime.hours.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-bold mt-1">ساعة</span>
+                </div>
+
+                <span className="text-2xl sm:text-3xl font-mono font-bold text-emerald-500/50 pb-5 select-none animate-pulse">:</span>
+
+                {/* Minutes */}
+                <div className="flex flex-col items-center min-w-[52px] sm:min-w-[60px]">
+                  <span className="text-3xl sm:text-4xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
+                    {remainingTime.minutes.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-bold mt-1">دقيقة</span>
+                </div>
+
+                <span className="text-2xl sm:text-3xl font-mono font-bold text-emerald-500/50 pb-5 select-none animate-pulse">:</span>
+
+                {/* Seconds */}
+                <div className="flex flex-col items-center min-w-[52px] sm:min-w-[60px]">
+                  <span className="text-3xl sm:text-4xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 tracking-tight">
+                    {remainingTime.seconds.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-bold mt-1">ثانية</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-[10px] text-slate-400 mt-1 uppercase font-mono">
-                <span>ساعة</span>
-                <span>دقيقة</span>
-                <span>ثانية</span>
-              </div>
+
               <div className="mt-4 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                 <div 
                   className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-1000"

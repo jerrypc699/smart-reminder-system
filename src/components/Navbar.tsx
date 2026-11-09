@@ -69,6 +69,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     });
   };
 
+  const formatGregorianDate = (date: Date) => {
+    return date.toLocaleDateString('ar-EG-u-nu-latn', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
   const navItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: Layers },
     { id: 'daily_system', label: 'نظامي اليومي 📊', icon: Award },
@@ -92,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className="flex items-center justify-between min-h-[4rem] sm:h-20 py-1.5 sm:py-0">
 
           {/* Logo & Clock Info */}
           <div className="flex items-center gap-2.5 sm:gap-4">
@@ -117,14 +125,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     المساعد الذكي
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-400 mt-0.5">
-                  <span className="font-medium text-slate-300 truncate max-w-[130px] sm:max-w-none">
-                    {hijriDate}
-                  </span>
-                  <span>•</span>
-                  <span className="text-emerald-400 font-medium truncate">
-                    {prayerSettings.cityName}
-                  </span>
+                <div className="mt-0.5 flex flex-col text-[10px] sm:text-xs leading-snug">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+                    <span className="truncate">{hijriDate}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] sm:text-[11px] text-slate-400 font-medium mt-0.5">
+                    <span className="text-slate-300">{formatGregorianDate(currentTime)} م</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-emerald-400 font-semibold truncate">{prayerSettings.cityName}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { PrayerTimesView } from './components/PrayerTimesView';
 import { TasksView } from './components/TasksView';
 import { AthkarView } from './components/AthkarView';
+import { DailySystemView } from './components/DailySystemView';
 import { SettingsView } from './components/SettingsView';
 import { AudioSchedulerView } from './components/AudioSchedulerView';
 import { ActiveAlertModal } from './components/ActiveAlertModal';
@@ -15,6 +16,7 @@ import { cloudSyncService } from './services/cloudSyncService';
 import { vercelCloudSync } from './services/vercelCloudSync';
 import { mobileBackgroundService } from './services/mobileBackgroundService';
 import { NativeAlarmService } from './services/nativeAlarmService';
+import { dailySystemService } from './services/dailySystemService';
 
 import type { 
   Task, 
@@ -153,6 +155,9 @@ export function App() {
           return merged;
         });
       }
+      if (cloudData.dailySystem) {
+        dailySystemService.mergeFromCloud(cloudData.dailySystem);
+      }
     });
 
     return () => {
@@ -187,6 +192,7 @@ export function App() {
       scheduledMedia: m,
       prayerSettings,
       audioSettings,
+      dailySystem: dailySystemService.exportForCloud(),
     }).catch(console.warn);
   };
 
@@ -983,6 +989,13 @@ export function App() {
             prayerSettings={prayerSettings}
             setActiveTab={setActiveTab}
             onOpenInstallModal={() => setIsInstallModalOpen(true)}
+          />
+        )}
+
+        {activeTab === 'daily_system' && (
+          <DailySystemView
+            tasks={tasks}
+            onOpenAthkar={() => setActiveTab('athkar')}
           />
         )}
 

@@ -5,7 +5,8 @@ import {
   Film,
   Compass,
   Settings,
-  Sparkles
+  Sparkles,
+  Award
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -25,20 +26,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const primaryTabs = [
     { id: 'dashboard', label: 'الرئيسية', icon: Layers },
+    { id: 'daily_system', label: 'نظامي 📊', icon: Award },
+    { id: 'prayers', label: 'الصلاة', icon: Compass },
     {
       id: 'tasks',
       label: 'المهام',
       icon: CheckSquare,
       badge: pendingTasksCount > 0 ? pendingTasksCount : undefined,
     },
+    { id: 'athkar', label: 'الأذكار', icon: Sparkles },
     {
       id: 'audio_scheduler',
       label: 'الوسائط',
       icon: Film,
       badge: scheduledAudiosCount > 0 ? scheduledAudiosCount : undefined,
     },
-    { id: 'prayers', label: 'الصلاة', icon: Compass },
-    { id: 'athkar', label: 'أذكاري 📿', icon: Sparkles },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
   ];
 
@@ -47,7 +49,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       aria-label="شريط التنقل السفلي للهاتف"
       className="fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-1 py-1 pb-safe md:hidden shadow-2xl"
     >
-      <div className="grid grid-cols-6 items-center max-w-md mx-auto">
+      <div className="grid grid-cols-7 items-center max-w-md mx-auto">
         {primaryTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

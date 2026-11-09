@@ -12,11 +12,14 @@ import {
   TrendingUp,
   Volume2,
   Radio,
-  Mic
+  Mic,
+  Award,
+  ArrowLeft
 } from 'lucide-react';
 import { Task, PrayerInfo, PrayerSettings, TaskPriority, TaskCategory } from '../types';
 import { audioService } from '../services/audioService';
 import { VoiceTaskModal } from './VoiceTaskModal';
+import { dailySystemService, calculateScore, isMinDay, formatDateKey } from '../services/dailySystemService';
 
 interface DashboardProps {
   prayerTimes: PrayerInfo[];
@@ -60,6 +63,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const completionPercentage = todayTasks.length > 0 
     ? Math.round((completedTasks.length / todayTasks.length) * 100) 
     : 0;
+
+  // Daily Habit System quick stats
+  const todayKey = formatDateKey(new Date());
+  const todayRecord = dailySystemService.getDay(todayKey);
+  const dailySettings = dailySystemService.getSettings();
+  const dailyScore = calculateScore(todayRecord, dailySettings);
+  const minMet = isMinDay(todayRecord);
 
   // Build unified schedule for today (Prayers + Tasks)
   const timelineItems = [
@@ -248,6 +258,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="text-xl font-bold text-rose-400 mt-0.5">{urgentTasks.length}</div>
                 </div>
               </div>
+
+              {/* Daily Habit System Quick Link */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('daily_system')}
+                className="w-full mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-teal-950/60 border border-emerald-500/30 hover:border-emerald-500/50 flex items-center justify-between transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black font-mono text-sm border border-emerald-500/30">
+                    {dailyScore.total}
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-white block group-hover:text-emerald-300 transition-colors">
+                      نظامي اليومي 📊
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {minMet ? '✓ الحد الأدنى اتحقق' : 'سجّل صلواتك وعاداتك (100ن)'}
+                    </span>
+                  </div>
+                </div>
+                <ArrowLeft className="w-4 h-4 text-emerald-400 group-hover:-translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
 

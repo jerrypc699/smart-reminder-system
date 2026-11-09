@@ -7,6 +7,7 @@ export interface CloudSyncPayload {
   scheduledMedia: ScheduledMedia[];
   prayerSettings?: PrayerSettings;
   audioSettings?: AudioSettings;
+  dailySystem?: any;
   updatedAt?: string;
   sourceDevice?: string;
 }

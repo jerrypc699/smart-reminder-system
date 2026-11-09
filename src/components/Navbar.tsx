@@ -14,7 +14,8 @@ import {
   Radio,
   Film,
   Cloud,
-  RefreshCw
+  RefreshCw,
+  Award
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings } from '../types';
 
@@ -70,6 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: Layers },
+    { id: 'daily_system', label: 'نظامي اليومي 📊', icon: Award },
     { id: 'prayers', label: 'مواقيت الصلاة', icon: Compass },
     {
       id: 'tasks',

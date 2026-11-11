@@ -18,13 +18,22 @@ import {
   UploadCloud,
   Mic,
   Play,
-  Square
+  Square,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
+  ExternalLink,
+  Cloud
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Task, TaskPriority, TaskCategory, PrayerInfo, TaskAudioMode, StoredAudioMeta } from '../types';
+import { Task, TaskAttachment, TaskPriority, TaskCategory, PrayerInfo, TaskAudioMode, StoredAudioMeta } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
 import { vercelCloudSync } from '../services/vercelCloudSync';
+import { getLocalDateStr } from '../services/nativeAlarmService';
+import { taskAttachmentService, formatAttachmentSize } from '../services/taskAttachmentService';
 import { VoiceTaskModal } from './VoiceTaskModal';
+import { PdfExportModal } from './PdfExportModal';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 interface TasksViewProps {
   tasks: Task[];
@@ -52,12 +61,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
   // Form State
+  const todayStr = getLocalDateStr();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dueDate, setDueDate] = useState(todayStr);
   const [dueTime, setDueTime] = useState('11:00');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [category, setCategory] = useState<TaskCategory>('work');
@@ -67,6 +79,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [customAudioId, setCustomAudioId] = useState<string>('');
   const [customAudioName, setCustomAudioName] = useState<string>('');
   const [taskCloudUrl, setTaskCloudUrl] = useState<string>('');
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [attachmentStatusMsg, setAttachmentStatusMsg] = useState<string | null>(null);
+  const [quickAttachTargetId, setQuickAttachTargetId] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
   const [audioLibrary, setAudioLibrary] = useState<StoredAudioMeta[]>([]);
   const [isRecordingInTask, setIsRecordingInTask] = useState(false);
@@ -75,8 +91,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const taskMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const taskAudioChunksRef = useRef<Blob[]>([]);
   const taskTimerRef = useRef<any>(null);
-
-  const todayStr = new Date().toISOString().split('T')[0];
+  const quickAttachInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const loadAudioLib = async () => {
@@ -198,6 +213,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setCustomAudioId('');
     setCustomAudioName('');
     setTaskCloudUrl('');
+    setAttachments([]);
+    setAttachmentStatusMsg(null);
     setEditingTask(null);
   };
 
@@ -215,7 +232,68 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setCustomAudioId(task.customAudioId || '');
     setCustomAudioName(task.customAudioName || '');
     setTaskCloudUrl(task.cloudUrl || '');
+    setAttachments(task.attachments ? [...task.attachments] : []);
+    setAttachmentStatusMsg(null);
     setIsAddModalOpen(true);
+  };
+
+  const handleUploadModalAttachments = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    setIsUploadingAttachment(true);
+    try {
+      const uploaded: TaskAttachment[] = [];
+      for (let i = 0; i < fileList.length; i++) {
+        const f = fileList[i];
+        setAttachmentStatusMsg(`جاري رفع وإرفاق: ${f.name}...`);
+        const meta = await taskAttachmentService.saveAttachment(f, (pct) => {
+          setAttachmentStatusMsg(`جاري رفع "${f.name}" للسحابة: ${pct}%`);
+        });
+        uploaded.push(meta);
+      }
+      setAttachments((prev) => [...prev, ...uploaded]);
+      setAttachmentStatusMsg(`تم إرفاق ${uploaded.length} ملف بنجاح ✓`);
+    } catch (err: any) {
+      setAttachmentStatusMsg(`خطأ أثناء رفع الملف: ${err?.message || ''}`);
+    } finally {
+      setIsUploadingAttachment(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleQuickAttachFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    const targetId = quickAttachTargetId;
+    if (!fileList || fileList.length === 0 || !targetId) return;
+    const task = tasks.find((t) => t.id === targetId);
+    if (!task) return;
+
+    try {
+      const added: TaskAttachment[] = [];
+      for (let i = 0; i < fileList.length; i++) {
+        const meta = await taskAttachmentService.saveAttachment(fileList[i]);
+        added.push(meta);
+      }
+      const nextAtts = [...(task.attachments || []), ...added];
+      onUpdateTask(targetId, { attachments: nextAtts });
+    } catch (err: any) {
+      alert('تعذر رفع الملف: ' + (err?.message || ''));
+    } finally {
+      setQuickAttachTargetId(null);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveModalAttachment = async (attId: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== attId));
+    await taskAttachmentService.deleteAttachment(attId);
+  };
+
+  const handleRemoveTaskAttachment = async (task: Task, attId: string) => {
+    if (!confirm('هل تريد حذف هذا الملف المرفق من المهمة؟')) return;
+    const nextAtts = (task.attachments || []).filter((a) => a.id !== attId);
+    onUpdateTask(task.id, { attachments: nextAtts });
+    await taskAttachmentService.deleteAttachment(attId);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -247,6 +325,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         customAudioId: audioMode === 'custom' ? customAudioId : undefined,
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
         cloudUrl: audioMode === 'custom' ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
+        attachments,
       });
     } else {
       onAddTask({
@@ -263,6 +342,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         customAudioId: audioMode === 'custom' ? customAudioId : undefined,
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
         cloudUrl: audioMode === 'custom' ? taskCloudUrl : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
     }
 
@@ -341,15 +421,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsPdfModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-200 font-bold text-xs sm:text-sm border border-indigo-500/40 transition-all cursor-pointer"
+            title="تصدير مهام العمل المختارة إلى PDF"
+          >
+            <FileText className="w-4 h-4 text-indigo-300" />
+            <span>تصدير PDF 📄</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsVoiceModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 hover:from-amber-400 hover:to-rose-400 text-white font-black text-sm shadow-lg shadow-rose-500/25 transition-all cursor-pointer animate-pulse"
+            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 hover:from-amber-400 hover:to-rose-400 text-white font-black text-xs sm:text-sm shadow-lg shadow-rose-500/25 transition-all cursor-pointer animate-pulse"
             title="إضافة مهمة سريعة بالصوت للدكتور عبد العزيز"
           >
             <Mic className="w-4 h-4 text-white" />
-            <span>إضافة مهمة بالصوت 🎙️</span>
+            <span>إضافة بالصوت 🎙️</span>
           </button>
 
           <button
@@ -358,12 +448,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
               resetForm();
               setIsAddModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>إضافة يدوية ✍️</span>
           </button>
         </div>
+
+        {/* Hidden Quick-Attach File Input for Task Cards */}
+        <input
+          ref={quickAttachInputRef}
+          type="file"
+          multiple
+          onChange={handleQuickAttachFiles}
+          className="hidden"
+        />
       </div>
 
       {/* Filter and Search Bar */}
@@ -539,6 +638,54 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         </div>
                       )}
 
+                      {/* Attached Work Files & Documents */}
+                      {task.attachments && task.attachments.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                          {task.attachments.map((att) => {
+                            const isImg = att.type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name);
+                            return (
+                              <div
+                                key={att.id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/35 text-indigo-200 text-[11px] font-semibold"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    taskAttachmentService.openAttachment(att, (url, title) =>
+                                      setPreviewImage({ url, title })
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+                                  title="فتح / معاينة الملف"
+                                >
+                                  {isImg ? (
+                                    <ImageIcon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
+                                  ) : (
+                                    <Paperclip className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
+                                  )}
+                                  <span className="max-w-[140px] truncate">{att.name}</span>
+                                  <span className="text-[10px] text-indigo-300/70 font-mono">
+                                    ({formatAttachmentSize(att.size)})
+                                  </span>
+                                  {att.cloudUrl && (
+                                    <Cloud className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  )}
+                                  <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTaskAttachment(task, att.id)}
+                                  className="p-0.5 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                                  title="حذف المرفق"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       {/* Smart Prayer Conflict Warning Badge */}
                       {conflict && !isCompleted && (
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs mt-1">
@@ -561,6 +708,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      {/* Quick Attach Document / File */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickAttachTargetId(task.id);
+                          quickAttachInputRef.current?.click();
+                        }}
+                        title="رفع وإرفاق ملف (PDF، صورة، مستند) لهذه المهمة"
+                        className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 hover:text-white border border-indigo-500/30 transition-colors cursor-pointer"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </button>
+
                       {/* Audio Voice Test */}
                       <button
                         onClick={() => onPreviewTaskAudio(task)}
@@ -839,6 +999,79 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 )}
               </div>
 
+              {/* Task File & Document Attachments Section */}
+              <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-indigo-200 flex items-center gap-1.5">
+                    <Paperclip className="w-4 h-4 text-indigo-400" />
+                    <span>مرفقات وملفات المهمة (PDF، صور، مستندات، تقارير)</span>
+                  </label>
+                  <input
+                    id="task-doc-attachments-input"
+                    type="file"
+                    multiple
+                    onChange={handleUploadModalAttachments}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="task-doc-attachments-input"
+                    className={`px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors ${
+                      isUploadingAttachment ? 'opacity-60 pointer-events-none' : ''
+                    }`}
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>{isUploadingAttachment ? 'جاري الرفع...' : 'رفع ملفات 📎'}</span>
+                  </label>
+                </div>
+
+                {attachmentStatusMsg && (
+                  <div className="text-[11px] text-emerald-300 font-semibold">
+                    {attachmentStatusMsg}
+                  </div>
+                )}
+
+                {attachments.length > 0 ? (
+                  <div className="space-y-1.5 pt-1">
+                    {attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            taskAttachmentService.openAttachment(att, (url, title) =>
+                              setPreviewImage({ url, title })
+                            )
+                          }
+                          className="flex items-center gap-2 min-w-0 flex-1 text-right hover:text-indigo-300 cursor-pointer"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <span className="truncate font-semibold text-white">{att.name}</span>
+                          <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                            ({formatAttachmentSize(att.size)})
+                          </span>
+                          {att.cloudUrl && (
+                            <Cloud className="w-3 h-3 text-emerald-400 shrink-0" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveModalAttachment(att.id)}
+                          className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400">
+                    يمكنك رفع أكثر من ملف (ملفات PDF، Word، Excel، صور أشعة أو تقارير...) لتظهر دائماً مع المهمة وفي التقارير.
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   نص التذكير الصوتي المخصص (اختياري)
@@ -855,7 +1088,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 </span>
               </div>
 
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-800 grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
@@ -889,6 +1122,18 @@ export const TasksView: React.FC<TasksViewProps> = ({
           });
         }}
       />
+
+      {/* PDF Report Export Studio Modal */}
+      <PdfExportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        tasks={tasks}
+        currentDateKey={todayStr}
+        defaultScope="tasks_only"
+      />
+
+      {/* Lightbox Preview for Image Attachments */}
+      <ImageLightboxModal image={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 };

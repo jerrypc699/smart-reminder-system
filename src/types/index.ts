@@ -6,6 +6,15 @@ export type TaskRepeat = 'none' | 'daily' | 'workdays' | 'weekly';
 export type TaskAudioMode = 'tts' | 'custom' | 'record' | 'none';
 export type MediaType = 'audio' | 'video';
 
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  createdAt: string;
+  cloudUrl?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -20,6 +29,7 @@ export interface Task {
   customAudioId?: string;
   customAudioName?: string;
   customMediaType?: MediaType;
+  attachments?: TaskAttachment[];
   status: TaskStatus;
   repeat: TaskRepeat;
   createdAt: string;

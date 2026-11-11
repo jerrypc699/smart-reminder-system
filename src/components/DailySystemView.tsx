@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar,
   CheckCircle2,
@@ -24,7 +24,12 @@ import {
   AlertTriangle,
   FileText,
   Clock,
-  Compass
+  Compass,
+  Paperclip,
+  ExternalLink,
+  Image as ImageIcon,
+  Cloud,
+  CheckSquare
 } from 'lucide-react';
 import { Task } from '../types';
 import {
@@ -46,10 +51,15 @@ import {
   CATEGORIES_LIST,
 } from '../services/dailySystemService';
 import { audioService } from '../services/audioService';
+import { taskAttachmentService, formatAttachmentSize } from '../services/taskAttachmentService';
+import { PdfExportModal } from './PdfExportModal';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 interface DailySystemViewProps {
   tasks: Task[];
   onOpenAthkar?: () => void;
+  onToggleTask?: (taskId: string) => void;
+  onOpenTasksTab?: () => void;
 }
 
 const AR_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -58,7 +68,12 @@ const AR_MONTHS = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ];
 
-export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenAthkar }) => {
+export const DailySystemView: React.FC<DailySystemViewProps> = ({
+  tasks,
+  onOpenAthkar,
+  onToggleTask,
+  onOpenTasksTab,
+}) => {
   const [activeTab, setActiveTab] = useState<'day' | 'month' | 'settings'>('day');
   const todayKey = formatDateKey(new Date());
   const [currentDateKey, setCurrentDateKey] = useState<string>(todayKey);
@@ -69,6 +84,12 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
   const [allDays, setAllDays] = useState<Record<string, DailyRecord>>(dailySystemService.getAllDays());
   const [settings, setSettings] = useState<DailySettings>(dailySystemService.getSettings());
   const [monthReview, setMonthReview] = useState<MonthlyReview>(dailySystemService.getMonthReview(currentMonthKey));
+
+  // Work tasks & PDF report states
+  const [dayTasksMode, setDayTasksMode] = useState<'all' | 'day'>('all');
+  const [reportTasksFilter, setReportTasksFilter] = useState<'all' | 'month' | 'completed' | 'pending' | 'urgent'>('all');
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
   // Toast feedback
   const [toastMsg, setToastMsg] = useState<string>('');
@@ -164,6 +185,157 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
   // Month stats
   const monthStats = calculateMonthStats(currentMonthKey, allDays, settings);
 
+  // Work tasks integration across Daily System & Reports
+  const dayWorkTasks = useMemo(
+    () => tasks.filter((t) => t.dueDate === currentDateKey),
+    [tasks, currentDateKey]
+  );
+
+  const monthWorkTasks = useMemo(
+    () => tasks.filter((t) => (t.dueDate || '').startsWith(currentMonthKey)),
+    [tasks, currentMonthKey]
+  );
+
+  const reportFilteredTasks = useMemo(() => {
+    switch (reportTasksFilter) {
+      case 'month':
+        return monthWorkTasks;
+      case 'completed':
+        return tasks.filter((t) => t.status === 'completed');
+      case 'pending':
+        return tasks.filter((t) => t.status !== 'completed');
+      case 'urgent':
+        return tasks.filter((t) => t.priority === 'urgent');
+      default:
+        return tasks;
+    }
+  }, [tasks, monthWorkTasks, reportTasksFilter]);
+
+  const totalWorkCompleted = tasks.filter((t) => t.status === 'completed').length;
+  const totalWorkPending = tasks.filter((t) => t.status !== 'completed').length;
+  const totalWorkUrgent = tasks.filter((t) => t.priority === 'urgent' && t.status !== 'completed').length;
+  const totalWorkAttachments = tasks.reduce((acc, t) => acc + (t.attachments?.length || 0), 0);
+
+  const renderWorkTaskRow = (task: Task) => {
+    const isCompleted = task.status === 'completed';
+    const isUrgent = task.priority === 'urgent';
+    return (
+      <div
+        key={task.id}
+        className={`p-3.5 rounded-2xl border transition-all ${
+          isCompleted
+            ? 'bg-slate-950/40 border-slate-800/70 opacity-75'
+            : isUrgent
+            ? 'bg-slate-950/80 border-rose-500/40'
+            : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+            {onToggleTask ? (
+              <button
+                type="button"
+                onClick={() => onToggleTask(task.id)}
+                className={`mt-0.5 w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                  isCompleted
+                    ? 'bg-emerald-500 border-emerald-400 text-white'
+                    : 'bg-slate-900 border-slate-600 hover:border-emerald-500 text-transparent'
+                }`}
+                title={isCompleted ? 'تحديد كقيد الانتظار' : 'تحديد كمكتملة'}
+              >
+                <Check className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <div
+                className={`mt-0.5 w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${
+                  isCompleted
+                    ? 'bg-emerald-500 border-emerald-400 text-white'
+                    : 'bg-slate-900 border-slate-700 text-transparent'
+                }`}
+              >
+                <Check className="w-3.5 h-3.5" />
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className={`text-xs sm:text-sm font-bold ${
+                    isCompleted ? 'line-through text-slate-500' : 'text-white'
+                  }`}
+                >
+                  {task.title}
+                </span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    task.priority === 'urgent'
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      : task.priority === 'high'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                  }`}
+                >
+                  {task.priority === 'urgent'
+                    ? 'عاجل'
+                    : task.priority === 'high'
+                    ? 'مرتفع'
+                    : task.priority === 'medium'
+                    ? 'متوسط'
+                    : 'منخفض'}
+                </span>
+              </div>
+
+              {task.description && (
+                <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                  {task.description}
+                </p>
+              )}
+
+              {/* Task Attached Files */}
+              {task.attachments && task.attachments.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {task.attachments.map((att) => {
+                    const isImg = att.type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name);
+                    return (
+                      <button
+                        key={att.id}
+                        type="button"
+                        onClick={() =>
+                          taskAttachmentService.openAttachment(att, (url, title) =>
+                            setPreviewImage({ url, title })
+                          )
+                        }
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/30 border border-indigo-500/35 text-indigo-200 text-[10px] font-semibold transition-colors cursor-pointer"
+                        title="فتح / معاينة الملف"
+                      >
+                        {isImg ? (
+                          <ImageIcon className="w-3 h-3 text-indigo-300 shrink-0" />
+                        ) : (
+                          <Paperclip className="w-3 h-3 text-indigo-300 shrink-0" />
+                        )}
+                        <span className="max-w-[120px] truncate">{att.name}</span>
+                        <span className="text-indigo-300/70 font-mono">
+                          ({formatAttachmentSize(att.size)})
+                        </span>
+                        {att.cloudUrl && <Cloud className="w-2.5 h-2.5 text-emerald-400 shrink-0" />}
+                        <ExternalLink className="w-2.5 h-2.5 opacity-75 shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="text-left font-mono text-[10px] text-slate-400 shrink-0">
+            <div className="font-bold text-slate-300">{task.dueTime}</div>
+            <div>{task.dueDate}</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn pb-12 max-w-4xl mx-auto" dir="rtl">
       {/* Toast */}
@@ -175,29 +347,40 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
 
       {/* Header & Sub-Tabs */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 backdrop-blur-xl shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-              <Award className="w-6 h-6" />
+        <div className="flex flex-col gap-4 border-b border-slate-800/80 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                  نظامي اليومي
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    متابعة وتقارير
+                  </span>
+                </h1>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  تتبع الصلوات، الأذكار، القرآن، الرياضة، الصحة، وكافة مهام العمل مع تصدير PDF
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-                نظامي اليومي
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  متابعة وتقارير
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                تتبع الصلوات، الأذكار، القرآن، الرياضة، الصحة، وأهم مهام اليوم بنظام الـ 100 نقطة
-              </p>
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsPdfModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25 transition-all cursor-pointer shrink-0"
+            >
+              <FileText className="w-4 h-4" />
+              <span>تصدير تقرير PDF 📄</span>
+            </button>
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div className="flex items-center p-1 bg-slate-950/80 rounded-2xl border border-slate-800">
+          <div className="grid grid-cols-3 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 gap-1">
             <button
               onClick={() => setActiveTab('day')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'day'
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'day'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
                 }`}
@@ -208,18 +391,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
 
             <button
               onClick={() => setActiveTab('month')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'month'
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'month'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
                 }`}
             >
               <TrendingUp className="w-4 h-4" />
-              <span>التقرير الشهري</span>
+              <span>التقرير الشهري والمهام</span>
             </button>
 
             <button
               onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'settings'
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'settings'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white'
                 }`}
@@ -754,6 +937,64 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
               </div>
             </div>
 
+            {/* CARD 5B: ALL WORK TASKS & ATTACHMENTS IN DAILY SYSTEM */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-sm font-bold text-white">سجل مهام العمل الشامل والمرفقات</h3>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                    {tasks.length} مهمة
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setDayTasksMode('all')}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                        dayTasksMode === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      كل المهام ({tasks.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDayTasksMode('day')}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                        dayTasksMode === 'day' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      مهام اليوم ({dayWorkTasks.length})
+                    </button>
+                  </div>
+
+                  {onOpenTasksTab && (
+                    <button
+                      type="button"
+                      onClick={onOpenTasksTab}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 text-[11px] font-bold border border-slate-700 cursor-pointer"
+                    >
+                      فتح المهام ↗
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {(dayTasksMode === 'all' ? tasks : dayWorkTasks).length === 0 ? (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  {dayTasksMode === 'all'
+                    ? 'لا توجد مهام عمل مضافة حتى الآن.'
+                    : `لا توجد مهام مجدولة بتاريخ ${currentDateKey}. يمكنك التبديل إلى "كل المهام".`}
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5">
+                  {(dayTasksMode === 'all' ? tasks : dayWorkTasks).map((t) => renderWorkTaskRow(t))}
+                </div>
+              )}
+            </div>
+
             {/* CARD 6: EVENING REVIEW / JOURNAL */}
             <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
@@ -1206,6 +1447,87 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
                 </div>
               </div>
             </div>
+
+            {/* COMPREHENSIVE WORK TASKS REPORT SECTION IN MONTHLY SYSTEM REPORT */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-indigo-500/30 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <Briefcase className="w-5 h-5 text-indigo-400" />
+                  <div>
+                    <h3 className="text-sm font-bold text-white">تقرير مهام العمل الشامل والمرفقات</h3>
+                    <p className="text-[11px] text-slate-400">عرض كافة مهام العمل وملفاتها المرفقة مع إمكانية المتابعة وتصدير PDF</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPdfModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20 cursor-pointer shrink-0"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>تصدير PDF مع اختيار المهام</span>
+                </button>
+              </div>
+
+              {/* Work Tasks KPI Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                  <div className="text-lg font-black font-mono text-white">{tasks.length}</div>
+                  <div className="text-[11px] text-slate-400">إجمالي مهام العمل</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/25">
+                  <div className="text-lg font-black font-mono text-emerald-400">
+                    {totalWorkCompleted} ({tasks.length > 0 ? Math.round((totalWorkCompleted / tasks.length) * 100) : 0}%)
+                  </div>
+                  <div className="text-[11px] text-slate-400">المهام المنجزة</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-amber-950/25 border border-amber-500/25">
+                  <div className="text-lg font-black font-mono text-amber-400">
+                    {totalWorkPending} {totalWorkUrgent > 0 ? `(${totalWorkUrgent} عاجل)` : ''}
+                  </div>
+                  <div className="text-[11px] text-slate-400">قيد الانتظار</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-indigo-950/30 border border-indigo-500/25">
+                  <div className="text-lg font-black font-mono text-indigo-300">{totalWorkAttachments}</div>
+                  <div className="text-[11px] text-slate-400">ملفات ومرفقات العمل</div>
+                </div>
+              </div>
+
+              {/* Filter Chips */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { id: 'all', label: `كافة المهام (${tasks.length})` },
+                  { id: 'month', label: `مهام هذا الشهر (${monthWorkTasks.length})` },
+                  { id: 'completed', label: `مكتملة (${totalWorkCompleted})` },
+                  { id: 'pending', label: `قيد الانتظار (${totalWorkPending})` },
+                  { id: 'urgent', label: `عاجلة (${tasks.filter((t) => t.priority === 'urgent').length})` },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setReportTasksFilter(f.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer ${
+                      reportTasksFilter === f.id
+                        ? 'bg-indigo-600 text-white border-indigo-500'
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tasks Rows */}
+              {reportFilteredTasks.length === 0 ? (
+                <div className="text-center py-8 text-xs text-slate-500">
+                  لا توجد مهام مطابقة للتصفية الحالية.
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-0.5">
+                  {reportFilteredTasks.map((t) => renderWorkTaskRow(t))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1390,6 +1712,19 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({ tasks, onOpenA
           </div>
         )}
       </div>
+
+      {/* PDF Report Export Studio Modal */}
+      <PdfExportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        tasks={tasks}
+        currentDateKey={currentDateKey}
+        currentMonthKey={currentMonthKey}
+        defaultScope={activeTab === 'day' ? 'daily_and_tasks' : 'comprehensive'}
+      />
+
+      {/* Lightbox Preview for Image Attachments */}
+      <ImageLightboxModal image={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 };

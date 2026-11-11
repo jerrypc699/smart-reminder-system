@@ -153,23 +153,25 @@ class VercelCloudSyncService {
   }
 
   /**
-   * Upload video or audio file directly to Vercel Blob Cloud Storage
-   * (Uses direct client-to-blob upload with no size limit, and fallback to /api/upload)
+   * Upload any file (video, audio, PDF, image, Word, Excel, etc.) to Vercel Blob Cloud Storage.
+   * Uses direct client-to-blob upload with no 4.5MB limit, with serverless fallback.
    */
   public async uploadMediaFile(
     file: File | Blob, 
     filename: string, 
-    onProgress?: (percent: number) => void
+    onProgress?: (percent: number) => void,
+    folder: string = 'media'
   ): Promise<string> {
-    // Ensure filename has proper extension
     const ext = filename.split('.').pop()?.toLowerCase() || '';
     const isVideo = file.type.startsWith('video') || ['mp4', 'mov', 'webm', 'mkv', 'avi'].includes(ext);
-    const safeExt = ext || (isVideo ? 'mp4' : 'mp3');
+    const isAudio = file.type.startsWith('audio') || ['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext);
+    const fallbackExt = isVideo ? 'mp4' : isAudio ? 'mp3' : 'bin';
+    const safeExt = ext || fallbackExt;
     const safeFilename = filename.includes('.') ? filename : `${filename}.${safeExt}`;
 
-    // 1. First attempt: Direct Client Upload via @vercel/blob/client (No 4.5MB limit, supports large phone videos)
+    // 1. First attempt: Direct Client Upload via @vercel/blob/client
     try {
-      const newBlob = await upload(`dr-abdelaziz/media/${Date.now()}_${safeFilename}`, file, {
+      const newBlob = await upload(`dr-abdelaziz/${folder}/${Date.now()}_${safeFilename}`, file, {
         access: 'public',
         handleUploadUrl: getApiUrl('/api/blob-upload'),
         onUploadProgress: (progress) => {
@@ -187,7 +189,7 @@ class VercelCloudSyncService {
         method: 'POST',
         headers: {
           'x-filename': encodeURIComponent(safeFilename),
-          'x-content-type': file.type || (isVideo ? 'video/mp4' : 'audio/mpeg'),
+          'x-content-type': file.type || (isVideo ? 'video/mp4' : isAudio ? 'audio/mpeg' : 'application/octet-stream'),
         },
         body: file,
       });
@@ -248,6 +250,30 @@ class VercelCloudSyncService {
 
       if (uploadedCount > 0) {
         audioStorageService.saveScheduledMedias(scheduledMedia);
+      }
+
+      // Also upload any task file attachments without cloudUrl yet
+      const { taskAttachmentService } = await import('./taskAttachmentService');
+      let uploadedTaskFilesCount = 0;
+      for (const t of tasks) {
+        if (t.attachments && t.attachments.length > 0) {
+          for (const att of t.attachments) {
+            if (!att.cloudUrl) {
+              try {
+                const blob = await taskAttachmentService.getAttachmentBlob(att.id);
+                if (blob) {
+                  att.cloudUrl = await this.uploadMediaFile(blob, att.name, undefined, 'attachments');
+                  uploadedTaskFilesCount++;
+                }
+              } catch (err) {
+                console.warn(`Failed to upload task attachment ${att.name}:`, err);
+              }
+            }
+          }
+        }
+      }
+      if (uploadedTaskFilesCount > 0) {
+        taskService.saveTasks(tasks);
       }
 
       onStatus?.('جاري تحديث السحابة...');

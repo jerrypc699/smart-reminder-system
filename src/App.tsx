@@ -1111,6 +1111,8 @@ export function App() {
           <DailySystemView
             tasks={tasks}
             onOpenAthkar={() => setActiveTab('athkar')}
+            onToggleTask={handleToggleTask}
+            onOpenTasksTab={() => setActiveTab('tasks')}
           />
         )}
 

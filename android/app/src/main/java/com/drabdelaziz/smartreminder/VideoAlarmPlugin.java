@@ -2,12 +2,22 @@ package com.drabdelaziz.smartreminder;
 
 import android.app.AlarmManager;
 import android.app.NotificationManager;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.provider.Settings;
+import android.util.Base64;
+import androidx.core.content.FileProvider;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -191,5 +201,102 @@ public class VideoAlarmPlugin extends Plugin {
             ctx.startActivity(intent);
         }
         call.resolve();
+    }
+
+    @PluginMethod
+    public void saveAndOpenFile(PluginCall call) {
+        String base64 = call.getString("base64", "");
+        String rawName = call.getString("fileName", "report.pdf");
+        String mimeType = call.getString("mimeType", "application/pdf");
+        boolean shareMode = Boolean.TRUE.equals(call.getBoolean("share", false));
+
+        if (base64 == null || base64.isEmpty()) {
+            call.reject("Missing base64 data");
+            return;
+        }
+
+        Context ctx = getContext();
+        try {
+            byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+            String safeName = (rawName != null ? rawName : "file.pdf").replaceAll("[\\\\/:*?\"<>|]", "_");
+
+            // 1. Write to app cache directory for FileProvider sharing/viewing
+            File shareDir = new File(ctx.getCacheDir(), "shared_docs");
+            if (!shareDir.exists()) {
+                shareDir.mkdirs();
+            }
+            File cacheFile = new File(shareDir, safeName);
+            try (FileOutputStream fos = new FileOutputStream(cacheFile)) {
+                fos.write(bytes);
+                fos.flush();
+            }
+
+            // 2. Also save a permanent copy to Android Downloads folder on Android 10+ (API 29+)
+            boolean savedToDownloads = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Downloads.DISPLAY_NAME, safeName);
+                    values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
+                    values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/DrAbdelazizReports");
+                    values.put(MediaStore.Downloads.IS_PENDING, 1);
+
+                    ContentResolver resolver = ctx.getContentResolver();
+                    Uri downloadUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (downloadUri != null) {
+                        try (OutputStream os = resolver.openOutputStream(downloadUri)) {
+                            if (os != null) {
+                                os.write(bytes);
+                                os.flush();
+                            }
+                        }
+                        values.clear();
+                        values.put(MediaStore.Downloads.IS_PENDING, 0);
+                        resolver.update(downloadUri, values, null, null);
+                        savedToDownloads = true;
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // 3. Open or Share via FileProvider URI
+            Uri contentUri = FileProvider.getUriForFile(
+                    ctx,
+                    ctx.getPackageName() + ".fileprovider",
+                    cacheFile
+            );
+
+            if (shareMode) {
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType(mimeType);
+                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent chooser = Intent.createChooser(shareIntent, safeName);
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx.startActivity(chooser);
+            } else {
+                Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                viewIntent.setDataAndType(contentUri, mimeType);
+                viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    ctx.startActivity(viewIntent);
+                } catch (Exception noViewer) {
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType(mimeType);
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    Intent chooser = Intent.createChooser(shareIntent, safeName);
+                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    ctx.startActivity(chooser);
+                }
+            }
+
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("savedToDownloads", savedToDownloads);
+            ret.put("fileName", safeName);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Failed to save/open file: " + e.getMessage());
+        }
     }
 }

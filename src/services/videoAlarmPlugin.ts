@@ -44,6 +44,12 @@ export interface VideoAlarmPluginInterface {
   requestFullScreenPermission(): Promise<void>;
   requestBatteryOptimizationExemption(): Promise<void>;
   requestExactAlarmPermission(): Promise<void>;
+  saveAndOpenFile(options: {
+    base64: string;
+    fileName: string;
+    mimeType?: string;
+    share?: boolean;
+  }): Promise<{ success: boolean; savedToDownloads: boolean; fileName: string }>;
   addListener(
     eventName: 'scheduledMediaLaunch',
     listenerFunc: (data: ScheduledMediaLaunchEvent) => void
@@ -51,3 +57,4 @@ export interface VideoAlarmPluginInterface {
 }
 
 export const VideoAlarm = registerPlugin<VideoAlarmPluginInterface>('VideoAlarm');
+

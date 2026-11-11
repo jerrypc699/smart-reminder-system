@@ -28,20 +28,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let ext = rawFilename.split('.').pop()?.toLowerCase() || '';
     let mime = requestedContentType;
 
+    const MIME_BY_EXT: Record<string, string> = {
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      webm: 'video/webm',
+      mkv: 'video/x-matroska',
+      avi: 'video/x-msvideo',
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      ogg: 'audio/ogg',
+      m4a: 'audio/mp4',
+      aac: 'audio/aac',
+      pdf: 'application/pdf',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      gif: 'image/gif',
+      txt: 'text/plain; charset=utf-8',
+      csv: 'text/csv; charset=utf-8',
+      json: 'application/json',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ppt: 'application/vnd.ms-powerpoint',
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      zip: 'application/zip',
+    };
+
     if (!mime) {
-      if (['mp4', 'mov', 'webm', 'mkv', 'avi'].includes(ext)) {
-        mime = ext === 'webm' ? 'video/webm' : ext === 'mov' ? 'video/quicktime' : 'video/mp4';
-      } else if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) {
-        mime = ext === 'mp3' ? 'audio/mpeg' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'audio/mp4';
+      if (ext && MIME_BY_EXT[ext]) {
+        mime = MIME_BY_EXT[ext];
       } else {
-        mime = 'video/mp4';
-        ext = 'mp4';
+        mime = 'application/octet-stream';
+        ext = ext || 'bin';
       }
     }
 
-    // Ensure safe clean filename that ALWAYS ends with extension so video players decode properly
+    // Ensure safe clean filename that ALWAYS ends with extension so viewers decode properly
     const baseName = rawFilename.replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-    const safeFilename = baseName.includes('.') ? baseName : `${baseName}.${ext || 'mp4'}`;
+    const safeFilename = baseName.includes('.') ? baseName : `${baseName}.${ext || 'bin'}`;
     const cleanFilename = `dr-abdelaziz/media/${Date.now()}_${safeFilename}`;
 
     const blob = await put(cleanFilename, req, {

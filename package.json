@@ -21,6 +21,8 @@
     "adhan": "^4.4.6",
     "canvas-confetti": "^1.9.4",
     "firebase": "^13.2.0",
+    "html2canvas-pro": "^2.5.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.68.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

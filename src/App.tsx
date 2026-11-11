@@ -43,8 +43,33 @@ import { notificationService } from './services/notificationService';
 
 const PRAYER_SETTINGS_KEY = 'smart_reminder_prayer_settings_v1';
 const AUDIO_SETTINGS_KEY = 'smart_reminder_audio_settings_v1';
+const THEME_STORAGE_KEY = 'smart_reminder_theme_v1';
 
 export function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      return saved === 'dark' ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute('content', theme === 'light' ? '#F3F6FB' : '#070B14');
+      }
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+      } catch {}
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
@@ -1182,11 +1207,11 @@ export function App() {
   const pendingTasksCount = tasks.filter((t) => t.status !== 'completed').length;
 
   return (
-    <div className="min-h-screen bg-[#06080D] text-slate-100 flex flex-col font-['Cairo'] relative">
+    <div className="min-h-screen flex flex-col font-['Cairo'] relative">
       {/* Subtle Ambient Zenith Halo */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_75%_55%_at_50%_0%,rgba(16,185,129,0.075),transparent_70%)] z-0"
+        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_75%_55%_at_50%_0%,rgba(0,113,227,0.06),transparent_70%)] z-0"
       />
       {/* Navbar */}
       <Navbar
@@ -1208,6 +1233,8 @@ export function App() {
         onOpenCloudModal={() => setIsCloudModalOpen(true)}
         onManualSync={handleManualSync}
         isManualSyncing={isManualSyncing}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Container */}
@@ -1293,6 +1320,8 @@ export function App() {
             onOpenInstallModal={() => setIsInstallModalOpen(true)}
             isCloudConnected={isCloudConnected}
             onOpenCloudModal={() => setIsCloudModalOpen(true)}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
         )}
       </main>
@@ -1344,7 +1373,7 @@ export function App() {
       <FloatingDhikr />
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.06] bg-[#070A11]/90 py-5 text-center text-xs text-slate-500">
+      <footer className="lux-footer relative z-10 py-5 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-slate-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>

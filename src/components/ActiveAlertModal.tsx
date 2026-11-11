@@ -106,16 +106,16 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
       >
         {/* Subtle Signature Badge Icon */}
         <div 
-          className={`absolute -top-9 sm:-top-11 left-1/2 -translate-x-1/2 w-18 h-18 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-2xl ring-4 ring-[#06080D] ${
+          className={`absolute -top-9 sm:-top-11 left-1/2 -translate-x-1/2 w-18 h-18 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-2xl ring-4 ring-[var(--lux-surface)] text-white ${
             isPrayer 
-              ? 'bg-gradient-to-br from-emerald-500 to-emerald-700' 
+              ? 'bg-gradient-to-br from-[#0A84FF] to-[#0058B0]' 
               : isVideo
-              ? 'bg-gradient-to-br from-[#ECD07B] to-[#C89B2B] text-[#06080D]'
+              ? 'bg-gradient-to-br from-[#DDA728] to-[#B7810C]'
               : isScheduledMedia
-              ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+              ? 'bg-gradient-to-br from-[#0A84FF] to-[#0284C7]'
               : isUrgent 
-              ? 'bg-gradient-to-br from-rose-500 to-amber-500' 
-              : 'bg-gradient-to-br from-emerald-600 to-teal-700'
+              ? 'bg-gradient-to-br from-rose-500 to-rose-700' 
+              : 'bg-gradient-to-br from-[#0A84FF] to-[#0066CC]'
           }`}
         >
           {isPrayer ? (

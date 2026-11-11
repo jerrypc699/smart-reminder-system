@@ -497,9 +497,9 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
                 style={{ transform: `rotate(${qiblaDirection}deg)` }}
               >
                 <div className="flex flex-col items-center">
-                  <div className="w-2.5 h-14 bg-gradient-to-t from-emerald-500 to-[#E7C66C] rounded-t-full shadow-[0_0_16px_rgba(231,198,108,0.45)]" />
-                  <div className="w-4 h-4 rounded-full bg-white border-2 border-[#06080D] shadow" />
-                  <div className="w-2 h-9 bg-slate-600/80 rounded-b-full" />
+                  <div className="w-2.5 h-14 bg-gradient-to-t from-[#0071E3] to-[#D69E24] rounded-t-full shadow-[0_0_16px_rgba(0,113,227,0.35)]" />
+                  <div className="w-4 h-4 rounded-full bg-white border-2 border-[#0071E3] shadow" />
+                  <div className="w-2 h-9 bg-slate-400/70 rounded-b-full" />
                 </div>
               </div>
             </div>

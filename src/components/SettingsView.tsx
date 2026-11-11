@@ -20,7 +20,9 @@ import {
   Send,
   MessageCircle,
   Plus,
-  Trash2
+  Trash2,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta, WhatsAppGlobalSettings, WhatsAppGatewayProvider } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
@@ -42,6 +44,8 @@ interface SettingsViewProps {
   onOpenInstallModal?: () => void;
   isCloudConnected?: boolean;
   onOpenCloudModal?: () => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -56,6 +60,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onOpenInstallModal,
   isCloudConnected = false,
   onOpenCloudModal,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -202,6 +208,49 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <span>تجربة نداء الترحيب</span>
         </button>
       </div>
+
+      {/* Appearance & Daylight Theme Card */}
+      {onToggleTheme && (
+        <div className="lux-card rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+              {theme === 'light' ? (
+                <Sun className="w-6 h-6" strokeWidth={1.75} />
+              ) : (
+                <Moon className="w-6 h-6" strokeWidth={1.75} />
+              )}
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">
+                مظهر وألوان التطبيق
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {theme === 'light'
+                  ? 'المفعّل حالياً: الوضع النهاري اللؤلؤي مع الأزرق الطبي والذهبي (Pearl Sapphire)'
+                  : 'المفعّل حالياً: الوضع الليلي الداكن مع الأزرق السماوي والذهبي'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className="btn-lux-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2 shrink-0"
+          >
+            {theme === 'light' ? (
+              <>
+                <Moon className="w-4 h-4 text-[var(--lux-accent)]" strokeWidth={1.75} />
+                <span>التبديل للوضع الليلي</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-4 h-4 text-[#C59014]" strokeWidth={1.75} />
+                <span>العودة للوضع النهاري اللؤلؤي</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* PWA Mobile App Card in Settings */}
       {onOpenInstallModal && (

@@ -220,19 +220,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="text-[11px] text-slate-400 font-semibold mt-1.5">ساعة</span>
                 </div>
 
-                <span className="text-2xl sm:text-3xl font-mono font-bold text-emerald-400/50 pt-0.5 select-none">
+                <span className="text-2xl sm:text-3xl font-mono font-bold text-[var(--lux-accent)] opacity-60 pt-0.5 select-none">
                   :
                 </span>
 
                 {/* Minutes */}
                 <div className="flex flex-col items-center w-14 sm:w-16">
-                  <span className="text-3xl sm:text-4xl font-mono font-extrabold tabular-nums text-emerald-300 tracking-tight">
+                  <span className="text-3xl sm:text-4xl font-mono font-extrabold tabular-nums text-[var(--lux-accent)] tracking-tight">
                     {remainingTime.minutes.toString().padStart(2, '0')}
                   </span>
                   <span className="text-[11px] text-slate-400 font-semibold mt-1.5">دقيقة</span>
                 </div>
 
-                <span className="text-2xl sm:text-3xl font-mono font-bold text-emerald-400/50 pt-0.5 select-none">
+                <span className="text-2xl sm:text-3xl font-mono font-bold text-[var(--lux-accent)] opacity-60 pt-0.5 select-none">
                   :
                 </span>
 
@@ -245,9 +245,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
 
-              <div className="mt-4 w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+              <div className="mt-4 w-full bg-[var(--lux-track-bg)] rounded-full h-1.5 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-emerald-500 to-[#E7C66C] h-full rounded-full transition-all duration-1000"
+                  className="bg-gradient-to-r from-[#0071E3] to-[#C59014] h-full rounded-full transition-all duration-1000"
                   style={{
                     width: `${Math.min(100, Math.max(5, (1 - (remainingTime.totalSeconds || 0) / (4 * 3600)) * 100))}%`,
                   }}
@@ -280,9 +280,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {completionPercentage}%
                   </span>
                 </div>
-                <div className="w-full bg-white/[0.06] rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-[var(--lux-track-bg)] rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-emerald-500 to-teal-300 h-full rounded-full transition-all duration-700"
+                    className="bg-gradient-to-r from-[#0071E3] to-[#38BDF8] h-full rounded-full transition-all duration-700"
                     style={{ width: `${completionPercentage}%` }}
                   />
                 </div>

@@ -536,14 +536,14 @@ export const AthkarView: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Luxury Gold-Emerald Misbaha Sphere */}
+          {/* Right: Luxury Sapphire & Gold Pearl Misbaha Sphere */}
           <div className="flex flex-col items-center shrink-0">
             <button
               onClick={handleTasbeehClick}
-              className="relative w-48 h-48 sm:w-52 sm:h-52 rounded-full bg-gradient-to-br from-[#ECD07B] via-emerald-500 to-emerald-700 p-[3px] shadow-[0_16px_45px_-10px_rgba(16,185,129,0.45)] hover:scale-[1.03] active:scale-[0.96] transition-all cursor-pointer flex items-center justify-center group"
+              className="relative w-48 h-48 sm:w-52 sm:h-52 rounded-full bg-gradient-to-br from-[#D69E24] via-[#0071E3] to-[#0058B0] p-[3px] shadow-[0_16px_45px_-10px_rgba(0,113,227,0.38)] hover:scale-[1.03] active:scale-[0.96] transition-all cursor-pointer flex items-center justify-center group"
             >
-              <div className="w-full h-full rounded-full bg-[#090D16] border border-white/10 flex flex-col items-center justify-center p-4">
-                <span className="text-5xl sm:text-6xl font-mono font-extrabold tabular-nums text-white group-hover:text-emerald-300 transition-colors">
+              <div className="w-full h-full rounded-full bg-[var(--lux-surface)] border border-slate-200/30 flex flex-col items-center justify-center p-4">
+                <span className="text-5xl sm:text-6xl font-mono font-extrabold tabular-nums text-white group-hover:text-[var(--lux-accent)] transition-colors">
                   {tasbeehCount}
                 </span>
                 <span className="text-xs text-slate-400 font-mono tabular-nums mt-1">

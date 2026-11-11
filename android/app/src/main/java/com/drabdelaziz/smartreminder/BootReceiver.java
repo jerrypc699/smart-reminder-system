@@ -17,8 +17,9 @@ public class BootReceiver extends BroadcastReceiver {
             Intent.ACTION_MY_PACKAGE_REPLACED.equals(action) ||
             "android.intent.action.QUICKBOOT_POWERON".equals(action) ||
             "com.htc.intent.action.QUICKBOOT_POWERON".equals(action)) {
-            Log.d(TAG, "Device booted or app updated; rescheduling saved video alarms.");
+            Log.d(TAG, "Device booted or app updated; rescheduling saved video and WhatsApp alarms.");
             MediaAlarmHelper.rescheduleFromPrefs(context);
+            TaskWhatsAppAlarmHelper.rescheduleFromPrefs(context);
         }
     }
 }

@@ -27,6 +27,18 @@ export interface ScheduledMediaLaunchEvent {
   autoLaunchTimestamp?: number;
 }
 
+export interface NativeWhatsAppTaskAlarmPayload {
+  alarmId: number;
+  triggerAtMs: number;
+  taskId: string;
+  title: string;
+  phone: string;
+  recipientName: string;
+  message: string;
+  autoTriggerAtDueTime: boolean;
+  dedupeKey: string;
+}
+
 export interface AutoLaunchPermissionsStatus {
   overlayGranted: boolean;
   fullScreenGranted: boolean;
@@ -44,6 +56,11 @@ export interface VideoAlarmPluginInterface {
   requestFullScreenPermission(): Promise<void>;
   requestBatteryOptimizationExemption(): Promise<void>;
   requestExactAlarmPermission(): Promise<void>;
+  openWhatsApp(options: { phone: string; text: string }): Promise<{ opened: boolean }>;
+  syncWhatsAppTaskAlarms(options: {
+    alarms: NativeWhatsAppTaskAlarmPayload[];
+    gatewayConfigJson: string;
+  }): Promise<{ scheduledCount: number }>;
   saveAndOpenFile(options: {
     base64: string;
     fileName: string;

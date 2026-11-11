@@ -17,6 +17,7 @@ import { vercelCloudSync } from './services/vercelCloudSync';
 import { mobileBackgroundService } from './services/mobileBackgroundService';
 import { NativeAlarmService, getLocalDateStr } from './services/nativeAlarmService';
 import { dailySystemService } from './services/dailySystemService';
+import { whatsappService, buildTaskWhatsAppMessage, formatWhatsAppDisplayPhone } from './services/whatsappService';
 
 import type { 
   Task, 
@@ -25,7 +26,8 @@ import type {
   AudioSettings, 
   ActiveAlert,
   ScheduledAudio,
-  ScheduledMedia
+  ScheduledMedia,
+  WhatsAppGlobalSettings
 } from './types';
 import { 
   prayerService, 
@@ -161,6 +163,10 @@ export function App() {
       if (cloudData.dailySystem) {
         dailySystemService.mergeFromCloud(cloudData.dailySystem);
       }
+      if (cloudData.whatsappSettings) {
+        whatsappService.saveSettings(cloudData.whatsappSettings);
+        whatsappService.syncNativeWhatsAppAlarms(taskService.getTasks()).catch(console.warn);
+      }
     });
 
     return () => {
@@ -197,6 +203,7 @@ export function App() {
       mediaLibrary: mediaLib,
       prayerSettings,
       audioSettings,
+      whatsappSettings: whatsappService.getSettings(),
       dailySystem: dailySystemService.exportForCloud(),
     }).catch(console.warn);
   };
@@ -233,11 +240,32 @@ export function App() {
 
   // Tasks
   const [tasks, setTasks] = useState<Task[]>(() => taskService.getTasks());
+  const [whatsappSettings, setWhatsappSettings] = useState<WhatsAppGlobalSettings>(() =>
+    whatsappService.getSettings()
+  );
+  const recentWhatsAppRef = useRef<Map<string, number>>(new Map());
 
-  // Automatically sync Work Tasks into Today's Daily System whenever tasks update
+  useEffect(() => {
+    const unsubWa = whatsappService.subscribeSettings((updated) => {
+      setWhatsappSettings(updated);
+      vercelCloudSync.pushToCloud({
+        tasks: taskService.getTasks(),
+        scheduledMedia: audioStorageService.getScheduledMedias(),
+        mediaLibrary: audioStorageService.getMetaRegistry(),
+        prayerSettings,
+        audioSettings,
+        whatsappSettings: updated,
+        dailySystem: dailySystemService.exportForCloud(),
+      }).catch(console.warn);
+    });
+    return unsubWa;
+  }, [prayerSettings, audioSettings]);
+
+  // Automatically sync Work Tasks into Today's Daily System & Native WhatsApp Alarms whenever tasks/settings update
   useEffect(() => {
     dailySystemService.autoSyncWorkTasksForDay(tasks, getLocalDateStr());
-  }, [tasks]);
+    whatsappService.syncNativeWhatsAppAlarms(tasks).catch(console.warn);
+  }, [tasks, whatsappSettings]);
 
   // Scheduled Custom Audio Files
   const [scheduledAudios, setScheduledAudios] = useState<ScheduledAudio[]>(() =>
@@ -333,6 +361,7 @@ export function App() {
       setActiveTab('tasks');
 
       // Display Active Alert Modal
+      const waActive = !!(task?.whatsapp?.enabled && task.whatsapp.phoneNumber);
       setActiveAlert({
         id: `alert-task-${params.taskId || Date.now()}`,
         type: 'task',
@@ -344,6 +373,21 @@ export function App() {
         audioName: task?.customAudioName,
         isCustomAudio: !!(audioUrl || customAudioId),
         canSnooze: true,
+        ...(waActive && task?.whatsapp
+          ? {
+              whatsappPhone: task.whatsapp.phoneNumber,
+              whatsappRecipientName:
+                task.whatsapp.recipientName ||
+                formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber, whatsappSettings.defaultCountryCode),
+              whatsappMessage: buildTaskWhatsAppMessage(task),
+              whatsappAutoSentStatus:
+                task.whatsapp.lastSendStatus === 'sent_api'
+                  ? 'sent_api'
+                  : task.whatsapp.lastSendStatus === 'opened_app'
+                    ? 'opened_app'
+                    : 'pending_open',
+            }
+          : {}),
       });
 
       // 1. If there is a cloud audio URL (uploaded recorded voice note), play it immediately!
@@ -818,6 +862,14 @@ export function App() {
             tag: `task-${task.id}`,
           });
 
+          // Prepare WhatsApp dispatch if enabled on this task
+          const hasWhatsAppTask = !!(task.whatsapp?.enabled && task.whatsapp.phoneNumber);
+          const waMessage = hasWhatsAppTask ? buildTaskWhatsAppMessage(task) : undefined;
+          const waRecipientDisplay = hasWhatsAppTask && task.whatsapp
+            ? task.whatsapp.recipientName ||
+              formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber, whatsappSettings.defaultCountryCode)
+            : undefined;
+
           // Show Active Alert Modal
           setActiveAlert({
             id: `alert-task-${task.id}-${Date.now()}`,
@@ -830,7 +882,66 @@ export function App() {
             audioName: task.customAudioName,
             isCustomAudio: !!task.customAudioId,
             canSnooze: true,
+            ...(hasWhatsAppTask && task.whatsapp
+              ? {
+                  whatsappPhone: task.whatsapp.phoneNumber,
+                  whatsappRecipientName: waRecipientDisplay,
+                  whatsappMessage: waMessage,
+                  whatsappAutoSentStatus: 'pending_open',
+                }
+              : {}),
           });
+
+          // Auto-trigger WhatsApp message send/open at due time (deduped within 65s)
+          if (hasWhatsAppTask && task.whatsapp) {
+            const waDedupeKey = `${task.id}-${task.dueDate}-${task.dueTime}`;
+            const prevWaMs = recentWhatsAppRef.current.get(waDedupeKey) || 0;
+            const lastSentDiff = task.whatsapp.lastSentAt
+              ? now.getTime() - new Date(task.whatsapp.lastSentAt).getTime()
+              : Infinity;
+
+            if (now.getTime() - prevWaMs > 65000 && lastSentDiff > 65000) {
+              recentWhatsAppRef.current.set(waDedupeKey, now.getTime());
+              whatsappService
+                .triggerTaskWhatsAppSend(task, {
+                  allowOpenApp: task.whatsapp.autoTriggerAtDueTime !== false,
+                })
+                .then((res) => {
+                  const statusValue: 'sent_api' | 'opened_app' | 'failed' =
+                    res.success && res.method === 'api'
+                      ? 'sent_api'
+                      : res.success && res.method === 'app'
+                        ? 'opened_app'
+                        : 'failed';
+
+                  const latestList = taskService.getTasks();
+                  const latestTask = latestList.find((item) => item.id === task.id);
+                  if (latestTask?.whatsapp) {
+                    const nextTasks = taskService.updateTask(task.id, {
+                      whatsapp: {
+                        ...latestTask.whatsapp,
+                        lastSentAt: res.success ? new Date().toISOString() : latestTask.whatsapp.lastSentAt,
+                        lastSendStatus: statusValue,
+                        lastSendError: res.error,
+                      },
+                    });
+                    setTasks(nextTasks);
+                    syncCurrentStateToCloud(nextTasks);
+                  }
+
+                  setActiveAlert((prev) =>
+                    prev && prev.taskId === task.id
+                      ? {
+                          ...prev,
+                          whatsappAutoSentStatus: statusValue,
+                          whatsappAutoSentError: res.error,
+                        }
+                      : prev
+                  );
+                })
+                .catch(console.warn);
+            }
+          }
 
           // Play Audio chime & Speech or Custom Audio
           if (!audioSettings.soundMuted) {

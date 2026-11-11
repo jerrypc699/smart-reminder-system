@@ -9,11 +9,13 @@ import {
   Calendar, 
   AlertCircle, 
   Volume2, 
-  RotateCcw
+  RotateCcw,
+  MessageCircle
 } from 'lucide-react';
 import { Task, TaskPriority, TaskCategory } from '../types';
 import { parseArabicVoiceTask, ParsedVoiceTask } from '../utils/arabicVoiceParser';
 import { universalSpeechService } from '../services/speechRecognitionService';
+import { normalizeWhatsAppPhone, whatsappService } from '../services/whatsappService';
 
 interface VoiceTaskModalProps {
   isOpen: boolean;
@@ -39,6 +41,8 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [category, setCategory] = useState<TaskCategory>('work');
   const [voiceMessage, setVoiceMessage] = useState<string>('');
+  const [waPhone, setWaPhone] = useState<string>('');
+  const [waName, setWaName] = useState<string>('');
 
   // Modal lifecycle
   useEffect(() => {
@@ -48,6 +52,8 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
       setParsed(null);
       setErrorMsg('');
       setIsStarting(false);
+      setWaPhone('');
+      setWaName('');
       return;
     }
 
@@ -130,6 +136,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
 
   const handleSave = () => {
     if (!title.trim()) return;
+    const cleanPhone = normalizeWhatsAppPhone(waPhone);
 
     onAddTask({
       title: title.trim(),
@@ -141,6 +148,17 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
       voiceMessage: voiceMessage.trim() || `يا دكتور عبد العزيز، ${title.trim()}`,
       repeat: 'none',
       audioMode: 'tts',
+      ...(cleanPhone.length >= 8
+        ? {
+            whatsapp: {
+              enabled: true,
+              phoneNumber: cleanPhone,
+              recipientName: waName.trim() || undefined,
+              autoTriggerAtDueTime: true,
+              includeAttachmentsLinks: true,
+            },
+          }
+        : {}),
     });
 
     onClose();
@@ -341,6 +359,41 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
                   <option value="low">▫️ منخفضة</option>
                 </select>
               </div>
+            </div>
+
+            {/* Optional Scheduled WhatsApp Recipient */}
+            <div className="p-2.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] text-emerald-300 font-bold flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>إرسال عبر واتساب في موعد المهمة (اختياري)</span>
+                </label>
+              </div>
+              {whatsappService.getSettings().savedContacts.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {whatsappService.getSettings().savedContacts.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setWaPhone(c.phone);
+                        setWaName(c.name);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-emerald-300 hover:border-emerald-500/40 cursor-pointer"
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input
+                type="tel"
+                dir="ltr"
+                value={waPhone}
+                onChange={(e) => setWaPhone(e.target.value)}
+                placeholder="رقم الواتساب (مثال: 01012345678)"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+              />
             </div>
 
             {/* Spoken Voice Alert Preview */}

@@ -17,14 +17,18 @@ import {
   UploadCloud,
   Smartphone,
   Cloud,
-  Send
+  Send,
+  MessageCircle,
+  Plus,
+  Trash2
 } from 'lucide-react';
-import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta } from '../types';
+import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta, WhatsAppGlobalSettings, WhatsAppGatewayProvider } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
 import { audioService } from '../services/audioService';
 import { audioStorageService } from '../services/audioStorageService';
 import { notificationService } from '../services/notificationService';
 import { mobileBackgroundService } from '../services/mobileBackgroundService';
+import { whatsappService, normalizeWhatsAppPhone } from '../services/whatsappService';
 
 interface SettingsViewProps {
   prayerSettings: PrayerSettings;
@@ -56,6 +60,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
   const [savedAlert, setSavedAlert] = useState(false);
+
+  // WhatsApp Settings & Contacts State
+  const [waSettings, setWaSettings] = useState<WhatsAppGlobalSettings>(() => whatsappService.getSettings());
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [waTestPhone, setWaTestPhone] = useState('');
+  const [waTestStatus, setWaTestStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [isWaTesting, setIsWaTesting] = useState(false);
+
+  useEffect(() => {
+    return whatsappService.subscribeSettings((updated) => {
+      setWaSettings(updated);
+    });
+  }, []);
+
+  const updateWaSettings = (updates: Partial<WhatsAppGlobalSettings>) => {
+    const next = whatsappService.saveSettings(updates);
+    setWaSettings(next);
+    triggerSaved();
+  };
 
   useEffect(() => {
     const loadVoices = () => {
@@ -506,6 +530,343 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <Play className="w-3.5 h-3.5" />
             <span>اختبار نغمة التنبيه الموسيقية والأذان</span>
           </button>
+        </div>
+      </div>
+
+      {/* WhatsApp Automated Task Messaging & Quick Contacts */}
+      <div className="rounded-2xl sm:rounded-3xl bg-slate-900 border border-emerald-500/30 p-5 sm:p-8 shadow-xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <MessageCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                إعدادات إرسال المهام عبر واتساب (WhatsApp Integration)
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                إرسال المهام المجدولة تلقائياً لأي رقم عند حلول وقتها عبر التطبيق مباشرة أو ببوابة إرسال آلي
+              </p>
+            </div>
+          </div>
+
+          <span
+            className={`px-3 py-1 rounded-full text-[11px] font-bold border shrink-0 self-start sm:self-center ${
+              waSettings.provider === 'none'
+                ? 'bg-slate-800 text-slate-300 border-slate-700'
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            }`}
+          >
+            {waSettings.provider === 'none'
+              ? 'الوضع المباشر (بدون API)'
+              : `وضع الإرسال الآلي: ${waSettings.provider}`}
+          </span>
+        </div>
+
+        {/* Default Country Code & Gateway Selector */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              طريقة الإرسال عند حلول موعد المهمة
+            </label>
+            <select
+              value={waSettings.provider}
+              onChange={(e) =>
+                updateWaSettings({ provider: e.target.value as WhatsAppGatewayProvider })
+              }
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
+            >
+              <option value="none">💬 مباشر عبر واتساب (يفتح المحادثة بالرسالة جاهزة — مجاني 100%)</option>
+              <option value="greenapi">🤖 Green-API (إرسال آلي في الخلفية عبر مسح QR مرة واحدة)</option>
+              <option value="ultramsg">⚡ UltraMsg API (إرسال آلي في الخلفية عبر مسح QR)</option>
+              <option value="callmebot">🆓 CallMeBot (إرسال آلي مجاني للأرقام المفعلة)</option>
+              <option value="meta_cloud">🏢 Meta WhatsApp Cloud API (رسمي)</option>
+              <option value="webhook">🔗 Webhook مخصص (n8n / Make / خادم خاص)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              رمز الدولة الافتراضي للأرقام المحلية
+            </label>
+            <select
+              value={waSettings.defaultCountryCode || '20'}
+              onChange={(e) => updateWaSettings({ defaultCountryCode: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
+            >
+              <option value="20">🇪🇬 مصر (+20) — يحوّل 010... إلى 2010...</option>
+              <option value="966">🇸🇦 السعودية (+966)</option>
+              <option value="971">🇦🇪 الإمارات (+971)</option>
+              <option value="965">🇰🇼 الكويت (+965)</option>
+              <option value="974">🇶🇦 قطر (+974)</option>
+              <option value="962">🇯🇴 الأردن (+962)</option>
+              <option value="973">🇧🇭 البحرين (+973)</option>
+              <option value="968">🇴🇲 عُمان (+968)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Provider Credentials Panels */}
+        {waSettings.provider === 'greenapi' && (
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-emerald-500/20 space-y-3">
+            <p className="text-[11px] text-emerald-300">
+              من لوحة تحكم Green-API انسخ رقم الـ Instance ID و ApiTokenInstance بعد ربط هاتفك عبر QR:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                dir="ltr"
+                placeholder="Instance ID (مثال: 7103...)"
+                value={waSettings.greenApiInstanceId || ''}
+                onChange={(e) => updateWaSettings({ greenApiInstanceId: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+              <input
+                type="password"
+                dir="ltr"
+                placeholder="API Token Instance"
+                value={waSettings.greenApiToken || ''}
+                onChange={(e) => updateWaSettings({ greenApiToken: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+              <input
+                type="text"
+                dir="ltr"
+                placeholder="https://api.green-api.com"
+                value={waSettings.greenApiHost || 'https://api.green-api.com'}
+                onChange={(e) => updateWaSettings({ greenApiHost: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+            </div>
+          </div>
+        )}
+
+        {waSettings.provider === 'ultramsg' && (
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-emerald-500/20 space-y-3">
+            <p className="text-[11px] text-emerald-300">
+              أدخل بيانات حساب UltraMsg لإرسال المهام تلقائياً في الخلفية بدون أي ضغطة:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="text"
+                dir="ltr"
+                placeholder="Instance ID (مثال: instance12345)"
+                value={waSettings.ultraMsgInstanceId || ''}
+                onChange={(e) => updateWaSettings({ ultraMsgInstanceId: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+              <input
+                type="password"
+                dir="ltr"
+                placeholder="UltraMsg Token"
+                value={waSettings.ultraMsgToken || ''}
+                onChange={(e) => updateWaSettings({ ultraMsgToken: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+            </div>
+          </div>
+        )}
+
+        {waSettings.provider === 'callmebot' && (
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-emerald-500/20 space-y-2.5">
+            <p className="text-[11px] text-emerald-300 leading-relaxed">
+              لتفعيل CallMeBot المجاني: أرسل من رقمك المستهدف رسالة «I allow callmebot to send me messages» إلى رقم البوت على واتساب، ثم أدخل الـ API Key المستلم هنا:
+            </p>
+            <input
+              type="text"
+              dir="ltr"
+              placeholder="CallMeBot API Key"
+              value={waSettings.callMeBotApiKey || ''}
+              onChange={(e) => updateWaSettings({ callMeBotApiKey: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+            />
+          </div>
+        )}
+
+        {waSettings.provider === 'meta_cloud' && (
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-emerald-500/20 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="text"
+                dir="ltr"
+                placeholder="Phone Number ID"
+                value={waSettings.metaPhoneNumberId || ''}
+                onChange={(e) => updateWaSettings({ metaPhoneNumberId: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+              <input
+                type="password"
+                dir="ltr"
+                placeholder="Permanent Access Token"
+                value={waSettings.metaAccessToken || ''}
+                onChange={(e) => updateWaSettings({ metaAccessToken: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+            </div>
+          </div>
+        )}
+
+        {waSettings.provider === 'webhook' && (
+          <div className="p-4 rounded-2xl bg-slate-800/60 border border-emerald-500/20 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="url"
+                dir="ltr"
+                placeholder="https://your-n8n-or-webhook-url"
+                value={waSettings.webhookUrl || ''}
+                onChange={(e) => updateWaSettings({ webhookUrl: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+              <input
+                type="password"
+                dir="ltr"
+                placeholder="Bearer Secret (اختياري)"
+                value={waSettings.webhookSecret || ''}
+                onChange={(e) => updateWaSettings({ webhookSecret: e.target.value })}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Saved Quick Contacts Manager */}
+        <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-200">
+              دفتر أرقام واتساب السريعة ({waSettings.savedContacts.length})
+            </span>
+            <span className="text-[11px] text-slate-500">تظهر للاختيار السريع عند جدولة أي مهمة</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="الاسم (مثال: السكرتارية / د. محمد)"
+              value={newContactName}
+              onChange={(e) => setNewContactName(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+            />
+            <input
+              type="tel"
+              dir="ltr"
+              placeholder="01012345678"
+              value={newContactPhone}
+              onChange={(e) => setNewContactPhone(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!normalizeWhatsAppPhone(newContactPhone, waSettings.defaultCountryCode)) {
+                  alert('يرجى إدخال رقم واتساب صحيح');
+                  return;
+                }
+                whatsappService.addSavedContact(newContactName, newContactPhone);
+                setNewContactName('');
+                setNewContactPhone('');
+                triggerSaved();
+              }}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة جهة اتصال</span>
+            </button>
+          </div>
+
+          {waSettings.savedContacts.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              {waSettings.savedContacts.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs"
+                >
+                  <div className="min-w-0">
+                    <div className="font-bold text-white truncate">{c.name}</div>
+                    <div className="text-[11px] text-emerald-400 font-mono" dir="ltr">
+                      +{c.phone}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      whatsappService.removeSavedContact(c.id);
+                      triggerSaved();
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Live WhatsApp Test Dispatch */}
+        <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/20 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <input
+              type="tel"
+              dir="ltr"
+              placeholder="أدخل رقم للتجربة (مثال: 01012345678)"
+              value={waTestPhone}
+              onChange={(e) => setWaTestPhone(e.target.value)}
+              className="flex-1 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+            />
+            <button
+              type="button"
+              disabled={isWaTesting}
+              onClick={async () => {
+                const phone = normalizeWhatsAppPhone(waTestPhone, waSettings.defaultCountryCode);
+                if (!phone || phone.length < 8) {
+                  setWaTestStatus({ ok: false, msg: 'يرجى إدخال رقم واتساب صحيح أولاً.' });
+                  return;
+                }
+                setIsWaTesting(true);
+                setWaTestStatus(null);
+                const msg = '✅ رسالة اختبار من نظام التذكير الذكي الخاص بالدكتور عبد العزيز.';
+                if (waSettings.provider === 'none') {
+                  const opened = await whatsappService.openWhatsAppChat(phone, msg);
+                  setWaTestStatus({
+                    ok: opened,
+                    msg: opened
+                      ? '💬 تم فتح محادثة واتساب مباشرة بنجاح!'
+                      : 'تعذر فتح النافذة تلقائياً، تأكد من تثبيت واتساب.',
+                  });
+                } else {
+                  const res = await whatsappService.sendViaApiGateway({
+                    phone,
+                    message: msg,
+                    taskTitle: 'اختبار البوابة',
+                    gatewayOverride: waSettings,
+                  });
+                  setWaTestStatus({
+                    ok: res.success,
+                    msg: res.success
+                      ? `✅ تم إرسال الرسالة التجريبية تلقائياً عبر ${res.provider}!`
+                      : `⚠️ فشل الإرسال عبر البوابة: ${res.error}`,
+                  });
+                }
+                setIsWaTesting(false);
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>{isWaTesting ? 'جاري الإرسال...' : 'إرسال رسالة واتساب تجريبية 🚀'}</span>
+            </button>
+          </div>
+
+          {waTestStatus && (
+            <div
+              className={`text-xs font-semibold px-3 py-2 rounded-xl border ${
+                waTestStatus.ok
+                  ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+                  : 'bg-rose-500/15 border-rose-500/35 text-rose-300'
+              }`}
+            >
+              {waTestStatus.msg}
+            </div>
+          )}
         </div>
       </div>
 

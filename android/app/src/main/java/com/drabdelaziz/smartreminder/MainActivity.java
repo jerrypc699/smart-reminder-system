@@ -26,6 +26,7 @@ public class MainActivity extends BridgeActivity {
         configureWebViewForAutoplay();
         setupAlarmNotificationChannels();
         MediaAlarmHelper.ensureMediaLaunchChannel(this);
+        TaskWhatsAppAlarmHelper.ensureChannel(this);
         requestAudioPermissions();
     }
 

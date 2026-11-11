@@ -24,6 +24,7 @@ const triggeredPrayers = new Set();
 const triggeredTasks = new Set();
 let cachedTasks = [];
 let cachedScheduledMedia = [];
+let cachedWhatsAppSettings = null;
 let lastSyncTime = 0;
 
 function log(msg) {
@@ -102,6 +103,9 @@ async function syncFromCloud() {
       }
       if (Array.isArray(data.scheduledMedia)) {
         cachedScheduledMedia = data.scheduledMedia;
+      }
+      if (data.whatsappSettings) {
+        cachedWhatsAppSettings = data.whatsappSettings;
       }
       lastSyncTime = Date.now();
     }
@@ -215,19 +219,30 @@ function checkTasks() {
 
   // Check tasks
   for (const task of cachedTasks) {
-    if (task.completed) continue;
+    if (task.completed || task.status === 'completed') continue;
 
-    // Matches today and time
+    // Matches today and reminder time
     const taskDate = task.dueDate || todayYMD;
     const taskTime = task.dueTime || task.time;
 
     if (!taskTime) continue;
 
-    // Format taskTime to HH:mm
+    // Subtract reminderMinutesBefore just like main app
     const formattedTaskTime = taskTime.substring(0, 5);
-    const taskKey = `${taskDate}-${formattedTaskTime}-${task.id}`;
+    let targetDateStr = taskDate;
+    let targetTimeStr = formattedTaskTime;
+    const remMins = Number(task.reminderMinutesBefore) || 0;
+    if (remMins > 0 && /^\d{4}-\d{2}-\d{2}$/.test(taskDate) && /^\d{2}:\d{2}$/.test(formattedTaskTime)) {
+      const [yy, mm, dd] = taskDate.split('-').map(Number);
+      const [hh, mi] = formattedTaskTime.split(':').map(Number);
+      const shifted = new Date(Date.UTC(yy, mm - 1, dd, hh, mi, 0, 0) - remMins * 60 * 1000);
+      targetDateStr = shifted.toISOString().slice(0, 10);
+      targetTimeStr = shifted.toISOString().slice(11, 16);
+    }
 
-    if (taskDate === todayYMD && formattedTaskTime === cairoTimeStr && !triggeredTasks.has(taskKey)) {
+    const taskKey = `${targetDateStr}-${targetTimeStr}-${task.id}`;
+
+    if (targetDateStr === todayYMD && targetTimeStr === cairoTimeStr && !triggeredTasks.has(taskKey)) {
       triggeredTasks.add(taskKey);
 
       log(`تنبيه مهمة مستحقة: ${task.title}`);
@@ -258,6 +273,44 @@ function checkTasks() {
           }),
         }).catch(() => { });
       } catch (err) { }
+
+      // Trigger automatic WhatsApp dispatch if configured on task and gateway
+      if (
+        task.whatsapp?.enabled &&
+        task.whatsapp.phoneNumber &&
+        cachedWhatsAppSettings?.provider &&
+        cachedWhatsAppSettings.provider !== 'none'
+      ) {
+        try {
+          const customMsg = (task.whatsapp.customMessage || '').trim();
+          const waMessage = customMsg
+            ? customMsg
+            : `📋 *تذكير مهمة: ${task.title}*\n⏰ الموعد: ${task.dueDate || ''} — الساعة ${task.dueTime || ''}${task.description ? `\n📝 التفاصيل: ${task.description}` : ''}\n\n— مرسل تلقائياً من نظام د. عبد العزيز الذكي`;
+
+          fetch('https://smart-reminder-system-nu.vercel.app/api/whatsapp-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({
+              phone: task.whatsapp.phoneNumber,
+              message: waMessage,
+              recipientName: task.whatsapp.recipientName || '',
+              taskId: task.id,
+              taskTitle: task.title,
+              dueDate: task.dueDate,
+              dueTime: task.dueTime,
+              dedupeKey: `${task.id}-${task.dueDate || 'any'}-${task.dueTime || 'now'}`,
+              gateway: cachedWhatsAppSettings,
+            }),
+          })
+            .then((r) => r.json())
+            .then((res) => {
+              if (res?.success) {
+                log(`✅ تم إرسال المهمة تلقائياً على واتساب إلى ${task.whatsapp.phoneNumber}`);
+              }
+            })
+            .catch(() => { });
+        } catch { }
+      }
     }
   }
 

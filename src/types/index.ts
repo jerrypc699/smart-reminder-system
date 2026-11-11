@@ -15,6 +15,42 @@ export interface TaskAttachment {
   cloudUrl?: string;
 }
 
+export type WhatsAppGatewayProvider = 'none' | 'greenapi' | 'ultramsg' | 'callmebot' | 'meta_cloud' | 'webhook';
+
+export interface WhatsAppSavedContact {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+export interface WhatsAppGlobalSettings {
+  provider: WhatsAppGatewayProvider;
+  defaultCountryCode: string;
+  greenApiInstanceId?: string;
+  greenApiToken?: string;
+  greenApiHost?: string;
+  ultraMsgInstanceId?: string;
+  ultraMsgToken?: string;
+  callMeBotApiKey?: string;
+  metaPhoneNumberId?: string;
+  metaAccessToken?: string;
+  webhookUrl?: string;
+  webhookSecret?: string;
+  savedContacts: WhatsAppSavedContact[];
+}
+
+export interface WhatsAppReminderConfig {
+  enabled: boolean;
+  phoneNumber: string;
+  recipientName?: string;
+  customMessage?: string;
+  autoTriggerAtDueTime?: boolean;
+  includeAttachmentsLinks?: boolean;
+  lastSentAt?: string;
+  lastSendStatus?: 'sent_api' | 'opened_app' | 'failed';
+  lastSendError?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -30,6 +66,7 @@ export interface Task {
   customAudioName?: string;
   customMediaType?: MediaType;
   attachments?: TaskAttachment[];
+  whatsapp?: WhatsAppReminderConfig;
   status: TaskStatus;
   repeat: TaskRepeat;
   createdAt: string;
@@ -146,6 +183,11 @@ export interface ActiveAlert {
   audioUrl?: string;
   isCustomAudio?: boolean;
   canSnooze?: boolean;
+  whatsappPhone?: string;
+  whatsappRecipientName?: string;
+  whatsappMessage?: string;
+  whatsappAutoSentStatus?: 'sent_api' | 'opened_app' | 'pending_open' | 'failed';
+  whatsappAutoSentError?: string;
 }
 
 export type AthkarCategory = 

@@ -204,6 +204,33 @@ public class VideoAlarmPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openWhatsApp(PluginCall call) {
+        String phone = call.getString("phone", "");
+        String text = call.getString("text", "");
+        Context ctx = getContext();
+        JSObject ret = new JSObject();
+        try {
+            Intent waIntent = TaskWhatsAppAlarmHelper.buildWhatsAppIntent(phone, text);
+            ctx.startActivity(waIntent);
+            ret.put("opened", true);
+        } catch (Exception e) {
+            ret.put("opened", false);
+            ret.put("error", e.getMessage());
+        }
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void syncWhatsAppTaskAlarms(PluginCall call) {
+        JSArray alarms = call.getArray("alarms");
+        String gatewayConfigJson = call.getString("gatewayConfigJson", "{}");
+        int count = TaskWhatsAppAlarmHelper.syncAlarms(getContext(), alarms, gatewayConfigJson);
+        JSObject ret = new JSObject();
+        ret.put("scheduledCount", count);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void saveAndOpenFile(PluginCall call) {
         String base64 = call.getString("base64", "");
         String rawName = call.getString("fileName", "report.pdf");

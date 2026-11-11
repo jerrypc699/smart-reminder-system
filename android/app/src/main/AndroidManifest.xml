@@ -32,6 +32,11 @@
             android:exported="false" />
 
         <receiver
+            android:name=".TaskWhatsAppAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
             android:name=".BootReceiver"
             android:enabled="true"
             android:exported="true">
@@ -70,4 +75,9 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
 </manifest>

@@ -1,4 +1,4 @@
-import { Task, ScheduledMedia, PrayerSettings, AudioSettings, StoredMediaMeta } from '../types';
+import { Task, ScheduledMedia, PrayerSettings, AudioSettings, StoredMediaMeta, WhatsAppGlobalSettings } from '../types';
 import { upload } from '@vercel/blob/client';
 import { getApiUrl } from '../config/api';
 
@@ -8,6 +8,7 @@ export interface CloudSyncPayload {
   mediaLibrary?: StoredMediaMeta[];
   prayerSettings?: PrayerSettings;
   audioSettings?: AudioSettings;
+  whatsappSettings?: WhatsAppGlobalSettings;
   dailySystem?: any;
   updatedAt?: string;
   sourceDevice?: string;
@@ -279,11 +280,13 @@ class VercelCloudSyncService {
       onStatus?.('جاري تحديث السحابة...');
 
       const mediaLibrary = audioStorageService.getMetaRegistry();
+      const { whatsappService } = await import('./whatsappService');
 
       const pushed = await this.pushToCloud({
         tasks,
         scheduledMedia,
         mediaLibrary,
+        whatsappSettings: whatsappService.getSettings(),
       });
 
       this.isSyncing = false;

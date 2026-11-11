@@ -23,14 +23,32 @@ import {
   FileText,
   Image as ImageIcon,
   ExternalLink,
-  Cloud
+  Cloud,
+  MessageCircle,
+  Send,
+  UserPlus
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Task, TaskAttachment, TaskPriority, TaskCategory, PrayerInfo, TaskAudioMode, StoredAudioMeta } from '../types';
+import {
+  Task,
+  TaskAttachment,
+  TaskPriority,
+  TaskCategory,
+  PrayerInfo,
+  TaskAudioMode,
+  StoredAudioMeta,
+  WhatsAppSavedContact
+} from '../types';
 import { audioStorageService } from '../services/audioStorageService';
 import { vercelCloudSync } from '../services/vercelCloudSync';
 import { getLocalDateStr } from '../services/nativeAlarmService';
 import { taskAttachmentService, formatAttachmentSize } from '../services/taskAttachmentService';
+import {
+  whatsappService,
+  buildTaskWhatsAppMessage,
+  formatWhatsAppDisplayPhone,
+  normalizeWhatsAppPhone
+} from '../services/whatsappService';
 import { VoiceTaskModal } from './VoiceTaskModal';
 import { PdfExportModal } from './PdfExportModal';
 import { ImageLightboxModal } from './ImageLightboxModal';
@@ -87,6 +105,31 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [audioLibrary, setAudioLibrary] = useState<StoredAudioMeta[]>([]);
   const [isRecordingInTask, setIsRecordingInTask] = useState(false);
   const [taskRecordSeconds, setTaskRecordSeconds] = useState(0);
+
+  // WhatsApp Scheduled Send State
+  const [waEnabled, setWaEnabled] = useState(false);
+  const [waPhone, setWaPhone] = useState('');
+  const [waRecipientName, setWaRecipientName] = useState('');
+  const [waCustomMessage, setWaCustomMessage] = useState('');
+  const [waAutoTrigger, setWaAutoTrigger] = useState(true);
+  const [waIncludeAttachments, setWaIncludeAttachments] = useState(true);
+  const [waSavedContacts, setWaSavedContacts] = useState<WhatsAppSavedContact[]>(() =>
+    whatsappService.getSettings().savedContacts
+  );
+  const [waStatusBanner, setWaStatusBanner] = useState<string | null>(null);
+  const [waSendingId, setWaSendingId] = useState<string | null>(null);
+
+  const showWaBanner = (msg: string) => {
+    setWaStatusBanner(msg);
+    setTimeout(() => setWaStatusBanner(null), 4000);
+  };
+
+  useEffect(() => {
+    setWaSavedContacts(whatsappService.getSettings().savedContacts);
+    return whatsappService.subscribeSettings((s) => {
+      setWaSavedContacts(s.savedContacts || []);
+    });
+  }, []);
 
   const taskMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const taskAudioChunksRef = useRef<Blob[]>([]);
@@ -215,10 +258,16 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTaskCloudUrl('');
     setAttachments([]);
     setAttachmentStatusMsg(null);
+    setWaEnabled(false);
+    setWaPhone('');
+    setWaRecipientName('');
+    setWaCustomMessage('');
+    setWaAutoTrigger(true);
+    setWaIncludeAttachments(true);
     setEditingTask(null);
   };
 
-  const handleOpenEdit = (task: Task) => {
+  const handleOpenEdit = (task: Task, forceExpandWhatsApp = false) => {
     setEditingTask(task);
     setTitle(task.title);
     setDescription(task.description || '');
@@ -234,6 +283,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTaskCloudUrl(task.cloudUrl || '');
     setAttachments(task.attachments ? [...task.attachments] : []);
     setAttachmentStatusMsg(null);
+    setWaEnabled(forceExpandWhatsApp ? true : !!task.whatsapp?.enabled);
+    setWaPhone(task.whatsapp?.phoneNumber || '');
+    setWaRecipientName(task.whatsapp?.recipientName || '');
+    setWaCustomMessage(task.whatsapp?.customMessage || '');
+    setWaAutoTrigger(task.whatsapp?.autoTriggerAtDueTime !== false);
+    setWaIncludeAttachments(task.whatsapp?.includeAttachmentsLinks !== false);
     setIsAddModalOpen(true);
   };
 
@@ -311,6 +366,28 @@ export const TasksView: React.FC<TasksViewProps> = ({
       finalVoiceMessage = `${prefix}${finalVoiceMessage}`;
     }
 
+    if (waEnabled) {
+      const normalized = normalizeWhatsAppPhone(waPhone);
+      if (!normalized || normalized.length < 8) {
+        alert('يرجى إدخال رقم واتساب صحيح مع رمز الدولة (مثال: 01012345678 أو 201012345678).');
+        return;
+      }
+    }
+
+    const whatsappPayload = waEnabled && waPhone.trim()
+      ? {
+          enabled: true,
+          phoneNumber: normalizeWhatsAppPhone(waPhone),
+          recipientName: waRecipientName.trim() || undefined,
+          customMessage: waCustomMessage.trim() || undefined,
+          autoTriggerAtDueTime: waAutoTrigger,
+          includeAttachmentsLinks: waIncludeAttachments,
+          lastSentAt: editingTask?.whatsapp?.lastSentAt,
+          lastSendStatus: editingTask?.whatsapp?.lastSendStatus,
+          lastSendError: editingTask?.whatsapp?.lastSendError,
+        }
+      : undefined;
+
     if (editingTask) {
       onUpdateTask(editingTask.id, {
         title: title.trim(),
@@ -326,6 +403,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
         cloudUrl: audioMode === 'custom' ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
         attachments,
+        whatsapp: whatsappPayload,
       });
     } else {
       onAddTask({
@@ -343,11 +421,49 @@ export const TasksView: React.FC<TasksViewProps> = ({
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
         cloudUrl: audioMode === 'custom' ? taskCloudUrl : undefined,
         attachments: attachments.length > 0 ? attachments : undefined,
+        whatsapp: whatsappPayload,
       });
     }
 
     setIsAddModalOpen(false);
     resetForm();
+  };
+
+  const handleSendTaskWhatsAppNow = async (task: Task) => {
+    if (!task.whatsapp?.phoneNumber) {
+      handleOpenEdit(task, true);
+      return;
+    }
+    setWaSendingId(task.id);
+    try {
+      const res = await whatsappService.triggerTaskWhatsAppSend(task, {
+        allowOpenApp: true,
+        skipDedupe: true,
+      });
+      const statusValue: 'sent_api' | 'opened_app' | 'failed' =
+        res.success && res.method === 'api'
+          ? 'sent_api'
+          : res.success && res.method === 'app'
+            ? 'opened_app'
+            : 'failed';
+      onUpdateTask(task.id, {
+        whatsapp: {
+          ...task.whatsapp,
+          lastSentAt: res.success ? new Date().toISOString() : task.whatsapp.lastSentAt,
+          lastSendStatus: statusValue,
+          lastSendError: res.error,
+        },
+      });
+      if (res.success && res.method === 'api') {
+        showWaBanner(`✅ تم إرسال المهمة تلقائياً على واتساب إلى ${task.whatsapp.recipientName || '+' + task.whatsapp.phoneNumber}`);
+      } else if (res.success && res.method === 'app') {
+        showWaBanner(`💬 تم فتح محادثة واتساب لـ ${task.whatsapp.recipientName || '+' + task.whatsapp.phoneNumber} بالرسالة جاهزة`);
+      } else {
+        showWaBanner(`⚠️ تعذر الإرسال: ${res.error || 'تحقق من الإعدادات'}`);
+      }
+    } finally {
+      setWaSendingId(null);
+    }
   };
 
   const handleToggle = (taskId: string) => {
@@ -464,6 +580,22 @@ export const TasksView: React.FC<TasksViewProps> = ({
           className="hidden"
         />
       </div>
+
+      {waStatusBanner && (
+        <div className="p-3.5 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-xs font-bold flex items-center justify-between gap-2 shadow-lg animate-fade-in">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{waStatusBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setWaStatusBanner(null)}
+            className="p-1 rounded-lg hover:bg-emerald-500/20 text-emerald-300 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
@@ -638,6 +770,35 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         </div>
                       )}
 
+                      {/* Scheduled WhatsApp Badge */}
+                      {task.whatsapp?.enabled && task.whatsapp.phoneNumber && (
+                        <div className="inline-flex flex-wrap items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs mt-1 ml-1">
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>
+                            واتساب في الموعد ←{' '}
+                            <strong className="text-white" dir="ltr">
+                              {task.whatsapp.recipientName ||
+                                formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber)}
+                            </strong>
+                          </span>
+                          {task.whatsapp.lastSendStatus === 'sent_api' && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-200 text-[10px] font-bold">
+                              ✓ تم الإرسال التلقائي
+                            </span>
+                          )}
+                          {task.whatsapp.lastSendStatus === 'opened_app' && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-teal-500/25 text-teal-200 text-[10px] font-bold">
+                              ↗ فُتح واتساب
+                            </span>
+                          )}
+                          {task.whatsapp.lastSendStatus === 'failed' && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-rose-500/25 text-rose-200 text-[10px] font-bold">
+                              ⚠ تعذر الإرسال
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {/* Attached Work Files & Documents */}
                       {task.attachments && task.attachments.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 pt-1.5">
@@ -708,6 +869,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      {/* Send / Schedule WhatsApp Button */}
+                      <button
+                        type="button"
+                        disabled={waSendingId === task.id}
+                        onClick={() => handleSendTaskWhatsAppNow(task)}
+                        title={
+                          task.whatsapp?.enabled && task.whatsapp.phoneNumber
+                            ? `إرسال الآن عبر واتساب إلى ${task.whatsapp.recipientName || task.whatsapp.phoneNumber}`
+                            : 'تحديد رقم واتساب لإرسال المهمة في موعدها'
+                        }
+                        className={`p-2 rounded-xl border transition-colors cursor-pointer disabled:opacity-50 ${
+                          task.whatsapp?.enabled && task.whatsapp.phoneNumber
+                            ? 'bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border-emerald-500/45'
+                            : 'bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border-slate-700 hover:border-emerald-500/30'
+                        }`}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+
                       {/* Quick Attach Document / File */}
                       <button
                         type="button"
@@ -812,7 +992,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     تاريخ المهمة
@@ -836,6 +1016,23 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    موعد التنبيه / واتساب
+                  </label>
+                  <select
+                    value={reminderMinutesBefore}
+                    onChange={(e) => setReminderMinutesBefore(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value={0}>في الموعد بالضبط</option>
+                    <option value={5}>قبلها بـ 5 دقائق</option>
+                    <option value={10}>قبلها بـ 10 دقائق</option>
+                    <option value={15}>قبلها بـ 15 دقيقة</option>
+                    <option value={30}>قبلها بـ 30 دقيقة</option>
+                  </select>
                 </div>
               </div>
 
@@ -1069,6 +1266,229 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   <p className="text-[11px] text-slate-400">
                     يمكنك رفع أكثر من ملف (ملفات PDF، Word، Excel، صور أشعة أو تقارير...) لتظهر دائماً مع المهمة وفي التقارير.
                   </p>
+                )}
+              </div>
+
+              {/* WhatsApp Scheduled Message Section */}
+              <div className="p-4 rounded-2xl bg-emerald-950/25 border border-emerald-500/35 space-y-3">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                      <MessageCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-emerald-200">
+                        إرسال المهمة عبر واتساب عند حلول موعدها 📲
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        حدد رقم المستلم لتصل إليه رسالة المهمة تلقائياً في وقتها
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={waEnabled}
+                    onChange={(e) => setWaEnabled(e.target.checked)}
+                    className="w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0"
+                  />
+                </label>
+
+                {waEnabled && (
+                  <div className="space-y-3 pt-2 border-t border-emerald-500/20">
+                    {/* Quick Saved Contacts */}
+                    {waSavedContacts.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] font-semibold text-slate-400 block">
+                          اختيار سريع من جهات الاتصال المحفوظة:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {waSavedContacts.map((contact) => (
+                            <button
+                              key={contact.id}
+                              type="button"
+                              onClick={() => {
+                                setWaPhone(contact.phone);
+                                setWaRecipientName(contact.name);
+                              }}
+                              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
+                                normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(contact.phone)
+                                  ? 'bg-emerald-500/30 border-emerald-400 text-white'
+                                  : 'bg-slate-900/80 border-slate-700 text-emerald-300 hover:border-emerald-500/40'
+                              }`}
+                            >
+                              {contact.name} ({contact.phone})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          رقم الواتساب المستلم *
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="tel"
+                            dir="ltr"
+                            required={waEnabled}
+                            placeholder="01012345678 أو +2010..."
+                            value={waPhone}
+                            onChange={(e) => setWaPhone(e.target.value)}
+                            className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                          />
+                          <button
+                            type="button"
+                            disabled={!normalizeWhatsAppPhone(waPhone)}
+                            onClick={() => {
+                              whatsappService.addSavedContact(waRecipientName, waPhone);
+                              showWaBanner('✓ تم حفظ الرقم في جهات اتصال واتساب السريعة');
+                            }}
+                            title="حفظ الرقم للاستخدام السريع لاحقاً"
+                            className="p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/30 disabled:opacity-40 cursor-pointer shrink-0"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {waPhone.trim() && normalizeWhatsAppPhone(waPhone) && (
+                          <span className="text-[10px] text-emerald-400 font-mono mt-1 block" dir="ltr">
+                            ✓ الصيغة المعتمدة: +{normalizeWhatsAppPhone(waPhone)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          اسم المستلم (اختياري)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="مثال: أحمد السكرتير / العيادة"
+                          value={waRecipientName}
+                          onChange={(e) => setWaRecipientName(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-semibold text-slate-300">
+                          نص رسالة الواتساب (اختياري)
+                        </label>
+                        {waCustomMessage.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setWaCustomMessage('')}
+                            className="text-[10px] text-slate-400 hover:text-emerald-300 cursor-pointer"
+                          >
+                            العودة للنص التلقائي ↻
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        rows={2}
+                        placeholder="اتركه فارغاً لإرسال رسالة منسقة تلقائياً بعنوان المهمة وموعدها ومرفقاتها..."
+                        value={waCustomMessage}
+                        onChange={(e) => setWaCustomMessage(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                      />
+                      <div className="mt-1.5 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 whitespace-pre-line">
+                        <span className="text-[10px] text-emerald-400 font-bold block mb-0.5">
+                          معاينة الرسالة التي ستُرسل في الموعد:
+                        </span>
+                        {buildTaskWhatsAppMessage({
+                          title: title || 'عنوان المهمة',
+                          description,
+                          dueDate,
+                          dueTime,
+                          attachments,
+                          whatsapp: {
+                            enabled: true,
+                            phoneNumber: waPhone,
+                            customMessage: waCustomMessage,
+                            includeAttachmentsLinks: waIncludeAttachments,
+                          },
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-300">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={waAutoTrigger}
+                          onChange={(e) => setWaAutoTrigger(e.target.checked)}
+                          className="accent-emerald-500 rounded cursor-pointer"
+                        />
+                        <span>تنفيذ تلقائي عند حلول الموعد</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={waIncludeAttachments}
+                          onChange={(e) => setWaIncludeAttachments(e.target.checked)}
+                          className="accent-emerald-500 rounded cursor-pointer"
+                        />
+                        <span>إرفاق روابط ملفات المهمة</span>
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-500/20">
+                      <span className="text-[10px] text-slate-400">
+                        {whatsappService.getSettings().provider !== 'none'
+                          ? `🤖 الوضع الآلي مفعّل (${whatsappService.getSettings().provider}) — سيُرسل تلقائياً بدون تدخل`
+                          : '💬 الوضع المباشر — يفتح المحادثة بالرسالة جاهزة (يمكن تفعيل بوابة إرسال آلي من الإعدادات)'}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={!normalizeWhatsAppPhone(waPhone)}
+                        onClick={async () => {
+                          const testTask: Task = {
+                            id: editingTask?.id || `wa-preview-${Date.now()}`,
+                            title: title.trim() || 'مهمة تجريبية',
+                            description: description.trim() || undefined,
+                            category,
+                            priority,
+                            dueDate,
+                            dueTime,
+                            reminderMinutesBefore,
+                            status: 'pending',
+                            repeat: 'none',
+                            createdAt: new Date().toISOString(),
+                            attachments,
+                            whatsapp: {
+                              enabled: true,
+                              phoneNumber: normalizeWhatsAppPhone(waPhone),
+                              recipientName: waRecipientName.trim() || undefined,
+                              customMessage: waCustomMessage.trim() || undefined,
+                              autoTriggerAtDueTime: true,
+                              includeAttachmentsLinks: waIncludeAttachments,
+                            },
+                          };
+                          const res = await whatsappService.triggerTaskWhatsAppSend(testTask, {
+                            allowOpenApp: true,
+                            skipDedupe: true,
+                          });
+                          if (res.success) {
+                            showWaBanner(
+                              res.method === 'api'
+                                ? '✅ تم إرسال رسالة التجربة عبر البوابة الآلية بنجاح!'
+                                : '💬 تم فتح واتساب بالرسالة جاهزة للإرسال!'
+                            );
+                          } else {
+                            alert(res.error || 'تعذر إرسال الرسالة');
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shrink-0"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>تجربة الإرسال الآن 💬</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
 

@@ -13,9 +13,12 @@ import {
   Music,
   Video,
   Film,
-  Maximize2
+  Maximize2,
+  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 import { ActiveAlert } from '../types';
+import { whatsappService } from '../services/whatsappService';
 
 interface ActiveAlertModalProps {
   alert: ActiveAlert | null;
@@ -212,6 +215,60 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
             <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-800/40 text-xs text-cyan-300 flex items-center justify-center gap-2 mb-4">
               <FileAudio className="w-4 h-4 text-cyan-400" />
               <span>الملف: <strong className="text-white">{alert.mediaName || alert.audioName}</strong></span>
+            </div>
+          )}
+
+          {/* WhatsApp Auto-Send Status & Instant Send Action */}
+          {alert.whatsappPhone && (
+            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/35 text-right space-y-2.5">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    {alert.whatsappAutoSentStatus === 'sent_api'
+                      ? '✅ تم إرسال المهمة تلقائياً عبر واتساب'
+                      : alert.whatsappAutoSentStatus === 'opened_app'
+                        ? '💬 تم تجهيز المحادثة في واتساب'
+                        : alert.whatsappAutoSentStatus === 'failed'
+                          ? '⚠️ تعذر الإرسال الآلي — يمكنك الإرسال فوراً'
+                          : '📲 موعد إرسال المهمة عبر واتساب'}
+                  </span>
+                </span>
+                <span className="text-[11px] font-mono text-emerald-200 bg-emerald-500/15 px-2 py-0.5 rounded-lg border border-emerald-500/25 shrink-0" dir="ltr">
+                  {alert.whatsappRecipientName || alert.whatsappPhone}
+                </span>
+              </div>
+
+              {alert.whatsappAutoSentError && alert.whatsappAutoSentStatus === 'failed' && (
+                <p className="text-[11px] text-amber-300 bg-amber-950/30 px-2.5 py-1.5 rounded-xl border border-amber-500/20">
+                  {alert.whatsappAutoSentError}
+                </p>
+              )}
+
+              {alert.whatsappMessage && (
+                <p className="text-[11px] text-slate-300 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 whitespace-pre-line max-h-24 overflow-y-auto leading-relaxed">
+                  {alert.whatsappMessage}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  whatsappService.openWhatsAppChat(
+                    alert.whatsappPhone!,
+                    alert.whatsappMessage || alert.message
+                  );
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>
+                  {alert.whatsappAutoSentStatus === 'sent_api'
+                    ? 'إعادة إرسال / فتح المحادثة في واتساب'
+                    : `إرسال الآن على واتساب إلى ${alert.whatsappRecipientName || alert.whatsappPhone}`}
+                </span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+              </button>
             </div>
           )}
 

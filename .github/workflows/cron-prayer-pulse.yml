@@ -10,7 +10,8 @@ jobs:
   check-prayer:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Prayer API
+      - name: Ping Prayer & Scheduled WhatsApp APIs
         run: |
           curl -sS -m 20 "https://smart-reminder-system-nu.vercel.app/api/cron-prayer-check" || true
+          curl -sS -m 20 "https://smart-reminder-system-nu.vercel.app/api/whatsapp-send" || true
 

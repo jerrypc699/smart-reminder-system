@@ -1,6 +1,7 @@
 import { Task } from '../types';
 
 export interface DailyPrayers {
+  [key: string]: number;
   fajr: number; // 0 = none, 1 = late, 2 = on time
   dhuhr: number;
   asr: number;
@@ -9,6 +10,7 @@ export interface DailyPrayers {
 }
 
 export interface DailyAdhkar {
+  [key: string]: boolean;
   sabah: boolean;
   masaa: boolean;
   nawm: boolean;
@@ -16,14 +18,38 @@ export interface DailyAdhkar {
 }
 
 export interface DailyHabitTask {
+  id?: string;
   t: string; // task title
   d: boolean; // is completed
+  sourceTaskId?: string; // linked Work Task ID if auto-imported
 }
 
 export interface DailyNotes {
   good: string; // إيه اللي نجح النهارده؟
   block: string; // إيه اللي عطّلني؟
   tomorrow: string; // أهم حاجة لازم أعملها بكرة
+}
+
+export interface CustomWorshipItem {
+  id: string;
+  label: string;
+  points: number;
+}
+
+export interface CustomHabitDef {
+  id: string;
+  label: string;
+  kind: 'toggle' | 'counter';
+  target: number;
+  step: number;
+  unit: string;
+  points: number;
+}
+
+export interface CustomNotePrompt {
+  id: string;
+  label: string;
+  placeholder?: string;
 }
 
 export interface DailyRecord {
@@ -37,8 +63,11 @@ export interface DailyRecord {
   water: number; // cups
   food: boolean; // clean/healthy eating
   weight: string; // optional weight in kg
-  tasks: DailyHabitTask[]; // Top 3 tasks
+  tasks: DailyHabitTask[]; // Unlimited daily tasks
+  dismissedTaskIds?: string[]; // sourceTaskIds deleted by user on this day
   notes: DailyNotes;
+  customValues?: Record<string, number>;
+  customNotes?: Record<string, string>;
 }
 
 export interface DailySettings {
@@ -47,21 +76,29 @@ export interface DailySettings {
   study: number; // Target minutes, default 60
   sleep: number; // Target hours, default 7
   water: number; // Target cups, default 8
+  autoImportTasks: boolean; // Automatically sync work tasks into Daily System
+  autoImportIncludePendingPrevious: boolean; // Also pull overdue pending tasks onto today
+  hiddenBuiltIns?: string[]; // Deleted/hidden built-in items or cards
+  customPrayers?: CustomWorshipItem[];
+  customAdhkar?: CustomWorshipItem[];
+  customHabits?: CustomHabitDef[];
+  customNotePrompts?: CustomNotePrompt[];
 }
 
 export interface MonthlyReview {
-  wins: string; // أهم 3 إنجازات
-  lesson: string; // الدرس المستفاد
-  change: string; // تعديل واحد للشهر القادم
-  goal: string; // هدف الشهر القادم
+  wins: string;
+  lesson: string;
+  change: string;
+  goal: string;
 }
 
 export interface DayScoreResult {
   c: Record<string, number>;
+  maxByCat: Record<string, number>;
   total: number;
 }
 
-export const PRAYERS_LIST: [keyof DailyPrayers, string][] = [
+export const PRAYERS_LIST: ['fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', string][] = [
   ['fajr', 'الفجر'],
   ['dhuhr', 'الظهر'],
   ['asr', 'العصر'],
@@ -69,7 +106,7 @@ export const PRAYERS_LIST: [keyof DailyPrayers, string][] = [
   ['isha', 'العشاء'],
 ];
 
-export const ADHKAR_LIST: [keyof DailyAdhkar, string, number][] = [
+export const ADHKAR_LIST: ['sabah' | 'masaa' | 'nawm' | 'dua', string, number][] = [
   ['sabah', 'أذكار الصباح', 3],
   ['masaa', 'أذكار المساء', 3],
   ['nawm', 'أذكار النوم', 2],
@@ -92,6 +129,13 @@ export const DEFAULT_DAILY_SETTINGS: DailySettings = {
   study: 60,
   sleep: 7,
   water: 8,
+  autoImportTasks: true,
+  autoImportIncludePendingPrevious: true,
+  hiddenBuiltIns: [],
+  customPrayers: [],
+  customAdhkar: [],
+  customHabits: [],
+  customNotePrompts: [],
 };
 
 export const STORAGE_KEY = 'dr_abdelaziz_daily_system_v1';
@@ -127,18 +171,26 @@ export function createBlankDay(date: string): DailyRecord {
     water: 0,
     food: false,
     weight: '',
-    tasks: [
-      { t: '', d: false },
-      { t: '', d: false },
-      { t: '', d: false },
-    ],
+    tasks: [],
+    dismissedTaskIds: [],
     notes: { good: '', block: '', tomorrow: '' },
+    customValues: {},
+    customNotes: {},
   };
 }
 
 export function normalizeDayRecord(raw: any, date: string): DailyRecord {
   const blank = createBlankDay(date);
   if (!raw) return blank;
+
+  const rawTasks: DailyHabitTask[] = Array.isArray(raw.tasks)
+    ? raw.tasks.map((item: any, idx: number) => ({
+        id: item?.id || `dt_${date}_${idx}`,
+        t: typeof item?.t === 'string' ? item.t : '',
+        d: Boolean(item?.d),
+        sourceTaskId: item?.sourceTaskId,
+      }))
+    : [];
 
   return {
     ...blank,
@@ -147,7 +199,10 @@ export function normalizeDayRecord(raw: any, date: string): DailyRecord {
     prayers: { ...blank.prayers, ...(raw.prayers || {}) },
     adhkar: { ...blank.adhkar, ...(raw.adhkar || {}) },
     notes: { ...blank.notes, ...(raw.notes || {}) },
-    tasks: Array.isArray(raw.tasks) && raw.tasks.length === 3 ? raw.tasks : blank.tasks,
+    tasks: rawTasks,
+    dismissedTaskIds: Array.isArray(raw.dismissedTaskIds) ? raw.dismissedTaskIds : [],
+    customValues: raw.customValues && typeof raw.customValues === 'object' ? raw.customValues : {},
+    customNotes: raw.customNotes && typeof raw.customNotes === 'object' ? raw.customNotes : {},
   };
 }
 
@@ -156,46 +211,175 @@ export function clamp01(x: number): number {
 }
 
 export function calculateScore(d: DailyRecord, S: DailySettings): DayScoreResult {
+  const hidden = new Set(S.hiddenBuiltIns || []);
   const c: Record<string, number> = {};
-  c.prayer = PRAYERS_LIST.reduce(
-    (a, [k]) => a + (d.prayers[k] === 2 ? 5 : d.prayers[k] === 1 ? 2 : 0),
-    0
-  );
-  c.adhkar = ADHKAR_LIST.reduce((a, [k, , p]) => a + (d.adhkar[k] ? p : 0), 0);
-  c.quran = 10 * clamp01(d.quran / (S.quran || 1));
-  c.sport = 10 * clamp01(d.sport / (S.sport || 1));
-  c.health =
-    4 * clamp01(d.sleep / (S.sleep || 1)) +
-    3 * clamp01(d.water / (S.water || 1)) +
-    (d.food ? 3 : 0);
-  c.work = (20 * d.tasks.filter((t) => t.d).length) / 3;
-  c.study = 15 * clamp01(d.study / (S.study || 1));
+  const maxByCat: Record<string, number> = {};
 
-  const total = Object.values(c).reduce((a, b) => a + b, 0);
-  return { c, total: Math.round(total) };
+  // 1. Prayers (+ custom worship items)
+  if (hidden.has('card_prayer')) {
+    c.prayer = 0;
+    maxByCat.prayer = 0;
+  } else {
+    let pEarned = 0;
+    let pMax = 0;
+    PRAYERS_LIST.forEach(([k]) => {
+      if (!hidden.has(`prayer_${k}`)) {
+        pMax += 5;
+        const val = d.prayers[k] || 0;
+        pEarned += val === 2 ? 5 : val === 1 ? 2 : 0;
+      }
+    });
+    (S.customPrayers || []).forEach((cp) => {
+      pMax += cp.points || 3;
+      const val = d.prayers[cp.id] || 0;
+      pEarned += val === 2 ? cp.points || 3 : val === 1 ? Math.round((cp.points || 3) / 2) : 0;
+    });
+    c.prayer = pEarned;
+    maxByCat.prayer = pMax;
+  }
+
+  // 2. Adhkar (+ custom adhkar)
+  if (hidden.has('card_adhkar')) {
+    c.adhkar = 0;
+    maxByCat.adhkar = 0;
+  } else {
+    let aEarned = 0;
+    let aMax = 0;
+    ADHKAR_LIST.forEach(([k, , pts]) => {
+      if (!hidden.has(`adhkar_${k}`)) {
+        aMax += pts;
+        if (d.adhkar[k]) aEarned += pts;
+      }
+    });
+    (S.customAdhkar || []).forEach((ca) => {
+      aMax += ca.points || 2;
+      if (d.adhkar[ca.id]) aEarned += ca.points || 2;
+    });
+    c.adhkar = aEarned;
+    maxByCat.adhkar = aMax;
+  }
+
+  // 3. Quran, Sport, Study
+  const hideQss = hidden.has('card_qss');
+  if (hideQss || hidden.has('item_quran')) {
+    c.quran = 0;
+    maxByCat.quran = 0;
+  } else {
+    maxByCat.quran = 10;
+    c.quran = 10 * clamp01(d.quran / (S.quran || 1));
+  }
+
+  if (hideQss || hidden.has('item_sport')) {
+    c.sport = 0;
+    maxByCat.sport = 0;
+  } else {
+    maxByCat.sport = 10;
+    c.sport = 10 * clamp01(d.sport / (S.sport || 1));
+  }
+
+  if (hideQss || hidden.has('item_study')) {
+    c.study = 0;
+    maxByCat.study = 0;
+  } else {
+    maxByCat.study = 15;
+    c.study = 15 * clamp01(d.study / (S.study || 1));
+  }
+
+  // 4. Health
+  if (hidden.has('card_health')) {
+    c.health = 0;
+    maxByCat.health = 0;
+  } else {
+    let hEarned = 0;
+    let hMax = 0;
+    if (!hidden.has('item_sleep')) {
+      hMax += 4;
+      hEarned += 4 * clamp01(d.sleep / (S.sleep || 1));
+    }
+    if (!hidden.has('item_water')) {
+      hMax += 3;
+      hEarned += 3 * clamp01(d.water / (S.water || 1));
+    }
+    if (!hidden.has('item_food')) {
+      hMax += 3;
+      if (d.food) hEarned += 3;
+    }
+    c.health = hEarned;
+    maxByCat.health = hMax;
+  }
+
+  // 5. Work tasks (dynamic count!)
+  if (hidden.has('card_work')) {
+    c.work = 0;
+    maxByCat.work = 0;
+  } else {
+    maxByCat.work = 20;
+    const validTasks = d.tasks.filter((t) => t.t.trim().length > 0 || t.d);
+    if (validTasks.length > 0) {
+      c.work = (20 * validTasks.filter((t) => t.d).length) / validTasks.length;
+    } else {
+      c.work = 0;
+    }
+  }
+
+  // 6. Custom habits (user-added toggles or counters)
+  const customHabits = S.customHabits || [];
+  let customEarned = 0;
+  let customMax = 0;
+  const customVals = d.customValues || {};
+  customHabits.forEach((h) => {
+    const pts = h.points || 5;
+    customMax += pts;
+    const val = customVals[h.id] || 0;
+    if (h.kind === 'toggle') {
+      if (val > 0) customEarned += pts;
+    } else {
+      customEarned += pts * clamp01(val / (h.target || 1));
+    }
+  });
+  if (customMax > 0) {
+    c.custom = customEarned;
+    maxByCat.custom = customMax;
+  }
+
+  const totalMax = Object.values(maxByCat).reduce((a, b) => a + b, 0);
+  const totalEarned = Object.values(c).reduce((a, b) => a + b, 0);
+
+  let total = 0;
+  if (totalMax > 0) {
+    total = totalMax === 100
+      ? Math.round(totalEarned)
+      : Math.min(100, Math.round((totalEarned / totalMax) * 100));
+  }
+
+  return { c, maxByCat, total };
 }
 
-export function isMinDay(d: DailyRecord): boolean {
-  return (
-    PRAYERS_LIST.every(([k]) => d.prayers[k] > 0) &&
-    d.adhkar.sabah &&
-    d.adhkar.masaa &&
-    d.quran >= 1 &&
-    d.sport >= 10
-  );
+export function isMinDay(d: DailyRecord, S: DailySettings = DEFAULT_DAILY_SETTINGS): boolean {
+  const hidden = new Set(S.hiddenBuiltIns || []);
+  const activePrayers = PRAYERS_LIST.filter(([k]) => !hidden.has('card_prayer') && !hidden.has(`prayer_${k}`));
+  const prayersOk = activePrayers.every(([k]) => (d.prayers[k] || 0) > 0);
+  const sabahOk = hidden.has('card_adhkar') || hidden.has('adhkar_sabah') || !!d.adhkar.sabah;
+  const masaaOk = hidden.has('card_adhkar') || hidden.has('adhkar_masaa') || !!d.adhkar.masaa;
+  const quranOk = hidden.has('card_qss') || hidden.has('item_quran') || d.quran >= 1;
+  const sportOk = hidden.has('card_qss') || hidden.has('item_sport') || d.sport >= 10;
+  return prayersOk && sabahOk && masaaOk && quranOk && sportOk;
 }
 
 export function hasData(d: DailyRecord): boolean {
   return (
-    PRAYERS_LIST.some(([k]) => d.prayers[k] > 0) ||
-    Object.values(d.adhkar).some(Boolean) ||
+    Object.values(d.prayers || {}).some((v) => v > 0) ||
+    Object.values(d.adhkar || {}).some(Boolean) ||
     d.quran > 0 ||
     d.sport > 0 ||
     d.sleep > 0 ||
     d.water > 0 ||
     d.food ||
     d.study > 0 ||
-    d.tasks.some((t) => t.d || t.t.trim().length > 0)
+    d.tasks.some((t) => t.d || t.t.trim().length > 0) ||
+    Object.values(d.customValues || {}).some((v) => v > 0) ||
+    Object.values(d.notes || {}).some((v) => (v || '').trim().length > 0) ||
+    Object.values(d.customNotes || {}).some((v) => (v || '').trim().length > 0)
   );
 }
 
@@ -210,11 +394,11 @@ export function getMonthDateKeys(yearMonth: string): string[] {
 }
 
 export function getHeatmapColor(score: number | null): string {
-  if (score === null) return 'rgba(30, 41, 59, 0.6)'; // slate-800
-  if (score >= 85) return '#10b981'; // emerald-500
-  if (score >= 65) return '#0d9488'; // teal-600
-  if (score >= 40) return '#d97706'; // amber-600
-  return '#e11d48'; // rose-600
+  if (score === null) return 'rgba(30, 41, 59, 0.6)';
+  if (score >= 85) return '#10b981';
+  if (score >= 65) return '#0d9488';
+  if (score >= 40) return '#d97706';
+  return '#e11d48';
 }
 
 export interface MonthStats {
@@ -276,7 +460,7 @@ export function calculateMonthStats(
     studyH: 0,
     sleep: 0,
     tasks: 0,
-    tasksAll: n * 3,
+    tasksAll: 0,
     minDays: 0,
     streak: 0,
     w0: null,
@@ -289,7 +473,10 @@ export function calculateMonthStats(
 
   result.avg = logged.reduce((a, x) => a + x.s.total, 0) / n;
   CATEGORIES_LIST.forEach(({ key, max }) => {
-    result.cats[key] = (logged.reduce((a, x) => a + (x.s.c[key] || 0), 0) / n / max) * 100;
+    const denom = logged[0]?.s.maxByCat?.[key] ?? max;
+    result.cats[key] = denom > 0
+      ? (logged.reduce((a, x) => a + (x.s.c[key] || 0), 0) / n / denom) * 100
+      : 0;
   });
 
   let pOn = 0;
@@ -315,14 +502,17 @@ export function calculateMonthStats(
   const sl = logged.filter(({ d }) => d.sleep > 0);
   result.sleep = sl.length ? sl.reduce((a, { d }) => a + d.sleep, 0) / sl.length : 0;
   result.tasks = logged.reduce((a, { d }) => a + d.tasks.filter((t) => t.d).length, 0);
-  result.minDays = logged.filter(({ d }) => isMinDay(d)).length;
+  result.tasksAll = logged.reduce(
+    (a, { d }) => a + d.tasks.filter((t) => t.t.trim().length > 0 || t.d).length,
+    0
+  );
+  result.minDays = logged.filter(({ d }) => isMinDay(d, S)).length;
 
-  // Longest streak
   let bestStreak = 0;
   let currentStreak = 0;
   ids.forEach((id) => {
     const d = days[id] ? normalizeDayRecord(days[id], id) : null;
-    if (d && isMinDay(d)) {
+    if (d && isMinDay(d, S)) {
       currentStreak++;
       bestStreak = Math.max(bestStreak, currentStreak);
     } else {
@@ -343,7 +533,6 @@ export function calculateMonthStats(
     result.w1 = parseFloat(w[w.length - 1].d.weight);
   }
 
-  // Weeks (Saturday start)
   const weeksMap: Record<string, number[]> = {};
   logged.forEach((x) => {
     const dt = parseDateKey(x.id);
@@ -367,6 +556,28 @@ export function calculateMonthStats(
     .map(({ id, d }) => ({ id, t: d.notes.block.trim() }));
 
   return result;
+}
+
+function doesWorkTaskApplyToDate(task: Task, dateKey: string, todayKey: string, includePendingPrevious: boolean): boolean {
+  if (task.dueDate === dateKey) return true;
+  if (task.repeat === 'daily') return true;
+  const targetDate = parseDateKey(dateKey);
+  const dow = targetDate.getDay();
+  if (task.repeat === 'workdays' && dow >= 0 && dow <= 4) return true;
+  if (task.repeat === 'weekly' && task.dueDate) {
+    const origDow = parseDateKey(task.dueDate).getDay();
+    if (origDow === dow) return true;
+  }
+  if (
+    includePendingPrevious &&
+    dateKey === todayKey &&
+    task.status !== 'completed' &&
+    task.dueDate &&
+    task.dueDate < dateKey
+  ) {
+    return true;
+  }
+  return false;
 }
 
 class DailySystemService {
@@ -448,8 +659,17 @@ class DailySystemService {
     return normalizeDayRecord(this.days[dateKey], dateKey);
   }
 
-  public setDay(record: DailyRecord) {
+  public setDay(record: DailyRecord, skipCloud = false) {
     this.days[record.date] = record;
+    this.saveToStorage();
+    this.notify();
+    if (!skipCloud) {
+      this.triggerCloudSync();
+    }
+  }
+
+  public clearDay(dateKey: string) {
+    delete this.days[dateKey];
     this.saveToStorage();
     this.notify();
     this.triggerCloudSync();
@@ -460,14 +680,104 @@ class DailySystemService {
   }
 
   public getSettings(): DailySettings {
-    return { ...this.settings };
+    return {
+      ...DEFAULT_DAILY_SETTINGS,
+      ...this.settings,
+      hiddenBuiltIns: [...(this.settings.hiddenBuiltIns || [])],
+      customPrayers: [...(this.settings.customPrayers || [])],
+      customAdhkar: [...(this.settings.customAdhkar || [])],
+      customHabits: [...(this.settings.customHabits || [])],
+      customNotePrompts: [...(this.settings.customNotePrompts || [])],
+    };
   }
 
   public updateSettings(newSettings: Partial<DailySettings>) {
-    this.settings = { ...this.settings, ...newSettings };
+    this.settings = { ...DEFAULT_DAILY_SETTINGS, ...this.settings, ...newSettings };
     this.saveToStorage();
     this.notify();
     this.triggerCloudSync();
+  }
+
+  public hideBuiltInItem(key: string) {
+    const curr = new Set(this.settings.hiddenBuiltIns || []);
+    curr.add(key);
+    this.updateSettings({ hiddenBuiltIns: Array.from(curr) });
+  }
+
+  public restoreBuiltInItem(key: string) {
+    const curr = (this.settings.hiddenBuiltIns || []).filter((k) => k !== key);
+    this.updateSettings({ hiddenBuiltIns: curr });
+  }
+
+  public restoreAllBuiltIns() {
+    this.updateSettings({ hiddenBuiltIns: [] });
+  }
+
+  public addCustomPrayer(label: string, points = 3) {
+    const item: CustomWorshipItem = {
+      id: `cp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      label: label.trim(),
+      points,
+    };
+    this.updateSettings({
+      customPrayers: [...(this.settings.customPrayers || []), item],
+    });
+  }
+
+  public removeCustomPrayer(id: string) {
+    this.updateSettings({
+      customPrayers: (this.settings.customPrayers || []).filter((i) => i.id !== id),
+    });
+  }
+
+  public addCustomAdhkar(label: string, points = 2) {
+    const item: CustomWorshipItem = {
+      id: `ca_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      label: label.trim(),
+      points,
+    };
+    this.updateSettings({
+      customAdhkar: [...(this.settings.customAdhkar || []), item],
+    });
+  }
+
+  public removeCustomAdhkar(id: string) {
+    this.updateSettings({
+      customAdhkar: (this.settings.customAdhkar || []).filter((i) => i.id !== id),
+    });
+  }
+
+  public addCustomHabit(def: Omit<CustomHabitDef, 'id'>) {
+    const habit: CustomHabitDef = {
+      ...def,
+      id: `ch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    };
+    this.updateSettings({
+      customHabits: [...(this.settings.customHabits || []), habit],
+    });
+  }
+
+  public removeCustomHabit(id: string) {
+    this.updateSettings({
+      customHabits: (this.settings.customHabits || []).filter((h) => h.id !== id),
+    });
+  }
+
+  public addCustomNotePrompt(label: string, placeholder?: string) {
+    const prompt: CustomNotePrompt = {
+      id: `cn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      label: label.trim(),
+      placeholder,
+    };
+    this.updateSettings({
+      customNotePrompts: [...(this.settings.customNotePrompts || []), prompt],
+    });
+  }
+
+  public removeCustomNotePrompt(id: string) {
+    this.updateSettings({
+      customNotePrompts: (this.settings.customNotePrompts || []).filter((p) => p.id !== id),
+    });
   }
 
   public getMonthReview(month: string): MonthlyReview {
@@ -489,28 +799,86 @@ class DailySystemService {
   }
 
   /**
-   * Import tasks from today's work task list into the 3 habit slots
+   * Automatically synchronize matching Work Tasks into Daily System for `dateKey`.
+   * Respects manually added tasks AND explicitly deleted/dismissed tasks (`dismissedTaskIds`).
+   * Passing `forceRestore = true` ignores `dismissedTaskIds` (used by manual "Re-import All" button).
    */
-  public importTasksFromWorkList(tasks: Task[], dateKey: string) {
-    const day = this.getDay(dateKey);
-    const todayTasks = tasks.filter((t) => t.dueDate === dateKey || !t.dueDate);
-    const candidateTasks = todayTasks.slice(0, 3);
+  public autoSyncWorkTasksForDay(
+    tasks: Task[],
+    dateKey: string,
+    forceRestore = false
+  ): boolean {
+    if (!forceRestore && !this.settings.autoImportTasks) return false;
 
-    for (let i = 0; i < 3; i++) {
-      if (candidateTasks[i]) {
-        day.tasks[i] = {
-          t: candidateTasks[i].title,
-          d: candidateTasks[i].status === 'completed',
-        };
+    const todayKey = formatDateKey(new Date());
+    const day = this.getDay(dateKey);
+    const dismissed = forceRestore ? new Set<string>() : new Set(day.dismissedTaskIds || []);
+
+    const matchingWorkTasks = tasks.filter(
+      (t) =>
+        !dismissed.has(t.id) &&
+        doesWorkTaskApplyToDate(
+          t,
+          dateKey,
+          todayKey,
+          this.settings.autoImportIncludePendingPrevious !== false
+        )
+    );
+
+    const matchingById = new Map<string, Task>();
+    matchingWorkTasks.forEach((wt) => matchingById.set(wt.id, wt));
+
+    // Keep manual items (no sourceTaskId) AND still-valid linked items, updating titles/statuses
+    const nextTasks: DailyHabitTask[] = [];
+    const seenLinkedIds = new Set<string>();
+
+    for (const existing of day.tasks) {
+      if (existing.sourceTaskId) {
+        const wt = matchingById.get(existing.sourceTaskId);
+        if (wt) {
+          seenLinkedIds.add(wt.id);
+          nextTasks.push({
+            ...existing,
+            t: wt.title,
+            d: wt.status === 'completed',
+          });
+        }
+      } else if (existing.t.trim().length > 0 || existing.d) {
+        nextTasks.push(existing);
       }
     }
 
-    this.setDay(day);
+    // Append newly discovered matching Work Tasks
+    for (const wt of matchingWorkTasks) {
+      if (!seenLinkedIds.has(wt.id)) {
+        nextTasks.push({
+          id: `imp_${wt.id}_${dateKey}`,
+          t: wt.title,
+          d: wt.status === 'completed',
+          sourceTaskId: wt.id,
+        });
+      }
+    }
+
+    const updatedDismissed = forceRestore ? [] : day.dismissedTaskIds || [];
+    const prevJson = JSON.stringify({ t: day.tasks, d: day.dismissedTaskIds || [] });
+    const nextJson = JSON.stringify({ t: nextTasks, d: updatedDismissed });
+    if (prevJson === nextJson) return false;
+
+    day.tasks = nextTasks;
+    day.dismissedTaskIds = updatedDismissed;
+    this.setDay(day, true);
+    return true;
   }
 
   /**
-   * Merge state from cloud sync
+   * Backward-compatible manual import trigger (force-imports matching tasks & restores dismissed ones).
    */
+  public importTasksFromWorkList(tasks: Task[], dateKey: string) {
+    this.autoSyncWorkTasksForDay(tasks, dateKey, true);
+    this.triggerCloudSync();
+  }
+
   public mergeFromCloud(cloudData: {
     days?: Record<string, DailyRecord>;
     months?: Record<string, MonthlyReview>;
@@ -528,7 +896,7 @@ class DailySystemService {
       changed = true;
     }
     if (cloudData.settings) {
-      this.settings = { ...this.settings, ...cloudData.settings };
+      this.settings = { ...DEFAULT_DAILY_SETTINGS, ...this.settings, ...cloudData.settings };
       changed = true;
     }
 

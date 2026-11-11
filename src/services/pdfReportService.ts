@@ -226,19 +226,27 @@ export async function generateExecutivePdfReport(
   let systemSummaryHtml = '';
   if (showSystemSection) {
     if (scope === 'daily_and_tasks') {
-      const catBarsHtml = CATEGORIES_LIST.map(({ key, label, max }) => {
-        const val = Math.round(dayScore.c[key] || 0);
-        const pct = Math.round((val / max) * 100);
-        return `
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-            <span style="width: 58px; font-size: 10px; font-weight: 700; color: #334155;">${escapeHtml(label)}</span>
-            <div style="flex: 1; height: 7px; border-radius: 99px; background: #e2e8f0; overflow: hidden;">
-              <div style="width: ${pct}%; height: 100%; background: #059669; border-radius: 99px;"></div>
+      const pdfCats = [
+        ...CATEGORIES_LIST,
+        ...(dayScore.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'عادات مخصصة', max: dayScore.maxByCat.custom }] : []),
+      ];
+      const catBarsHtml = pdfCats
+        .map(({ key, label, max }) => {
+          const effectiveMax = dayScore.maxByCat?.[key] ?? max;
+          if (!effectiveMax || effectiveMax <= 0) return '';
+          const val = Math.round(dayScore.c[key] || 0);
+          const pct = Math.round((val / effectiveMax) * 100);
+          return `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+              <span style="width: 68px; font-size: 10px; font-weight: 700; color: #334155;">${escapeHtml(label)}</span>
+              <div style="flex: 1; height: 7px; border-radius: 99px; background: #e2e8f0; overflow: hidden;">
+                <div style="width: ${pct}%; height: 100%; background: #059669; border-radius: 99px;"></div>
+              </div>
+              <span style="width: 34px; font-size: 10px; font-weight: 800; color: #0f172a; text-align: left;">${pct}%</span>
             </div>
-            <span style="width: 34px; font-size: 10px; font-weight: 800; color: #0f172a; text-align: left;">${pct}%</span>
-          </div>
-        `;
-      }).join('');
+          `;
+        })
+        .join('');
 
       systemSummaryHtml = `
         <div style="margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: #f8fafc; border: 1px solid #cbd5e1;">

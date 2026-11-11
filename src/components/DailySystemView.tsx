@@ -2,8 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Award,
   Sparkles,
   BookOpen,
@@ -23,13 +21,17 @@ import {
   TrendingUp,
   AlertTriangle,
   FileText,
-  Clock,
   Compass,
   Paperclip,
   ExternalLink,
   Image as ImageIcon,
   Cloud,
-  CheckSquare
+  CheckSquare,
+  Plus,
+  Trash2,
+  Edit3,
+  Zap,
+  X
 } from 'lucide-react';
 import { Task } from '../types';
 import {
@@ -39,7 +41,6 @@ import {
   MonthlyReview,
   calculateScore,
   isMinDay,
-  hasData,
   formatDateKey,
   parseDateKey,
   addDaysToDateKey,
@@ -68,6 +69,35 @@ const AR_MONTHS = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ];
 
+const BUILT_IN_LABELS: Record<string, string> = {
+  card_prayer: 'قسم الصلاة والعبادات بالكامل',
+  card_adhkar: 'قسم الأذكار والدعاء بالكامل',
+  card_qss: 'قسم القرآن والرياضة والتعلّم بالكامل',
+  card_health: 'قسم الصحة والراحة بالكامل',
+  card_work: 'قسم الشغل ومهام اليوم بالكامل',
+  card_all_tasks: 'قسم سجل مهام العمل الشامل',
+  card_notes: 'قسم مراجعة آخر اليوم بالكامل',
+  prayer_fajr: 'صلاة الفجر',
+  prayer_dhuhr: 'صلاة الظهر',
+  prayer_asr: 'صلاة العصر',
+  prayer_maghrib: 'صلاة المغرب',
+  prayer_isha: 'صلاة العشاء',
+  adhkar_sabah: 'أذكار الصباح',
+  adhkar_masaa: 'أذكار المساء',
+  adhkar_nawm: 'أذكار النوم',
+  adhkar_dua: 'دعاء / ورد أدعية',
+  item_quran: 'ورد القرآن',
+  item_sport: 'رياضة وحركة',
+  item_study: 'تعلّم / مذاكرة',
+  item_sleep: 'النوم',
+  item_water: 'شرب الماء',
+  item_food: 'أكل نضيف ومنتظم',
+  item_weight: 'الوزن',
+  note_good: 'سؤال: إيه اللي نجح النهارده؟',
+  note_block: 'سؤال: إيه اللي عطّلني؟',
+  note_tomorrow: 'سؤال: أهم حاجة لبكرة',
+};
+
 export const DailySystemView: React.FC<DailySystemViewProps> = ({
   tasks,
   onOpenAthkar,
@@ -85,6 +115,17 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   const [settings, setSettings] = useState<DailySettings>(dailySystemService.getSettings());
   const [monthReview, setMonthReview] = useState<MonthlyReview>(dailySystemService.getMonthReview(currentMonthKey));
 
+  // Customization, Add/Delete Mode, Auto-Import & PDF states
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [quickDailyTaskTitle, setQuickDailyTaskTitle] = useState<string>('');
+  const [addModalKind, setAddModalKind] = useState<null | 'habit' | 'prayer' | 'adhkar' | 'note' | 'task'>(null);
+  const [newItemLabel, setNewItemLabel] = useState('');
+  const [newItemPoints, setNewItemPoints] = useState(5);
+  const [newHabitKind, setNewHabitKind] = useState<'toggle' | 'counter'>('toggle');
+  const [newHabitTarget, setNewHabitTarget] = useState(1);
+  const [newHabitStep, setNewHabitStep] = useState(1);
+  const [newHabitUnit, setNewHabitUnit] = useState('مرة');
+
   // Work tasks & PDF report states
   const [dayTasksMode, setDayTasksMode] = useState<'all' | 'day'>('all');
   const [reportTasksFilter, setReportTasksFilter] = useState<'all' | 'month' | 'completed' | 'pending' | 'urgent'>('all');
@@ -96,7 +137,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 1500);
+    setTimeout(() => setToastMsg(''), 1800);
   };
 
   // Subscribe to service updates
@@ -110,10 +151,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     return unsub;
   }, [currentDateKey, currentMonthKey]);
 
-  // Keep dayRecord in sync when date changes
+  // Automatic Task Sync whenever date, tasks, or auto-import setting changes
   useEffect(() => {
+    dailySystemService.autoSyncWorkTasksForDay(tasks, currentDateKey);
     setDayRecord(dailySystemService.getDay(currentDateKey));
-  }, [currentDateKey]);
+  }, [currentDateKey, tasks, settings.autoImportTasks, settings.autoImportIncludePendingPrevious]);
 
   // Keep monthReview in sync when month changes
   useEffect(() => {
@@ -126,9 +168,76 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     dailySystemService.setDay(updated);
   };
 
+  const hiddenSet = new Set(settings.hiddenBuiltIns || []);
+
   // Score computation
   const scoreResult = calculateScore(dayRecord, settings);
-  const minDayAchieved = isMinDay(dayRecord);
+  const minDayAchieved = isMinDay(dayRecord, settings);
+
+  const handleAddDailyTask = (titleText: string) => {
+    const trimmed = titleText.trim();
+    if (!trimmed) return;
+    const newTask = {
+      id: `dt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      t: trimmed,
+      d: false,
+    };
+    updateCurrentDay({ tasks: [...dayRecord.tasks, newTask] });
+    setQuickDailyTaskTitle('');
+    showToast('تمت إضافة المهمة لليوم ✓');
+  };
+
+  const handleDeleteDailyTask = (idx: number) => {
+    const target = dayRecord.tasks[idx];
+    const nextTasks = dayRecord.tasks.filter((_, i) => i !== idx);
+    const nextDismissed = target?.sourceTaskId
+      ? Array.from(new Set([...(dayRecord.dismissedTaskIds || []), target.sourceTaskId]))
+      : dayRecord.dismissedTaskIds;
+    updateCurrentDay({ tasks: nextTasks, dismissedTaskIds: nextDismissed });
+    showToast('تم حذف المهمة من نظام اليوم');
+  };
+
+  const handleOpenAddModal = (kind: 'habit' | 'prayer' | 'adhkar' | 'note' | 'task') => {
+    setAddModalKind(kind);
+    setNewItemLabel('');
+    setNewItemPoints(kind === 'adhkar' ? 2 : kind === 'prayer' ? 3 : 5);
+    setNewHabitKind('toggle');
+    setNewHabitTarget(1);
+    setNewHabitStep(1);
+    setNewHabitUnit('مرة');
+  };
+
+  const handleSaveCustomItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    const label = newItemLabel.trim();
+    if (!label || !addModalKind) return;
+
+    if (addModalKind === 'task') {
+      handleAddDailyTask(label);
+    } else if (addModalKind === 'prayer') {
+      dailySystemService.addCustomPrayer(label, Math.max(1, newItemPoints));
+      showToast(`تمت إضافة "${label}" إلى قسم الصلاة ✓`);
+    } else if (addModalKind === 'adhkar') {
+      dailySystemService.addCustomAdhkar(label, Math.max(1, newItemPoints));
+      showToast(`تمت إضافة "${label}" إلى الأذكار ✓`);
+    } else if (addModalKind === 'note') {
+      dailySystemService.addCustomNotePrompt(label, 'اكتب ملاحظاتك هنا...');
+      showToast(`تمت إضافة سؤال المراجعة "${label}" ✓`);
+    } else if (addModalKind === 'habit') {
+      dailySystemService.addCustomHabit({
+        label,
+        kind: newHabitKind,
+        target: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitTarget),
+        step: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitStep),
+        unit: newHabitKind === 'toggle' ? '' : newHabitUnit.trim() || 'مرة',
+        points: Math.max(1, newItemPoints),
+      });
+      showToast(`تمت إضافة العادة "${label}" بنجاح ✓`);
+    }
+
+    setAddModalKind(null);
+    setNewItemLabel('');
+  };
 
   // Date navigation
   const navigateDay = (offset: number) => {
@@ -471,6 +580,63 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               </div>
             </div>
 
+            {/* Quick System Customization Bar: Add Anything / Edit & Delete Mode / Reset Day */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleOpenAddModal('habit')}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إضافة بند جديد</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsEditMode((v) => !v)}
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                  isEditMode
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/25'
+                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>{isEditMode ? '✓ تم الحذف والتعديل' : 'حذف / تعديل النظام'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`هل تريد تفريغ ومسح كافة سجلات يوم ${currentDateKey}؟`)) {
+                    dailySystemService.clearDay(currentDateKey);
+                    showToast('تم تفريغ بيانات اليوم بنجاح');
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>تفريغ اليوم</span>
+              </button>
+            </div>
+
+            {hiddenSet.size > 0 && isEditMode && (
+              <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+                <span className="text-amber-300 font-bold">
+                  يوجد {hiddenSet.size} عنصر أو قسم تم حذفه/إخفاؤه من نظامك
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dailySystemService.restoreAllBuiltIns();
+                    showToast('تمت استعادة كافة العناصر الافتراضية ✓');
+                  }}
+                  className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] cursor-pointer"
+                >
+                  استعادة الكل ↺
+                </button>
+              </div>
+            )}
+
             {/* Score Ring & Category Breakdown */}
             <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/20 shadow-xl">
               <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -494,12 +660,17 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 {/* Categories Horizontal Progress Bars */}
                 <div className="flex-1 w-full space-y-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                    {CATEGORIES_LIST.map(({ key, label, max }) => {
+                    {[
+                      ...CATEGORIES_LIST,
+                      ...(scoreResult.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'مخصص', max: scoreResult.maxByCat.custom }] : []),
+                    ].map(({ key, label, max }) => {
+                      const effectiveMax = scoreResult.maxByCat?.[key] ?? max;
+                      if (!effectiveMax || effectiveMax <= 0) return null;
                       const val = scoreResult.c[key] || 0;
-                      const pct = Math.round((val / max) * 100);
+                      const pct = Math.round((val / effectiveMax) * 100);
                       return (
                         <div key={key} className="flex items-center gap-2">
-                          <span className="w-12 text-slate-400 font-semibold truncate">{label}</span>
+                          <span className="w-14 text-slate-400 font-semibold truncate">{label}</span>
                           <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
@@ -530,7 +701,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       ) : (
                         <>
                           <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>الحد الأدنى: الصلوات الخمس + أذكار الصباح والمساء + صفحة قرآن + 10 دقائق حركة</span>
+                          <span>الحد الأدنى: الصلوات + الأذكار + صفحة قرآن + 10 دقائق حركة</span>
                         </>
                       )}
                     </span>
@@ -539,516 +710,1039 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               </div>
             </div>
 
-            {/* CARD 1: PRAYERS (25 Points) */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-emerald-400" />
-                  <h3 className="text-sm font-bold text-white">الصلاة</h3>
-                </div>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {scoreResult.c.prayer} / 25 نقطة
-                </span>
-              </div>
-
-              <div className="grid grid-cols-5 gap-2 sm:gap-3">
-                {PRAYERS_LIST.map(([k, name]) => {
-                  const status = dayRecord.prayers[k];
-                  const isOntime = status === 2;
-                  const isLate = status === 1;
-
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => handlePrayerClick(k)}
-                      className={`p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isOntime
-                          ? 'bg-gradient-to-tr from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-500/25 scale-102'
-                          : isLate
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                            : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                        }`}
-                    >
-                      <span className="font-bold text-xs sm:text-sm">{name}</span>
-                      <small className="text-[10px] mt-1 font-semibold opacity-90">
-                        {isOntime ? 'في وقتها 🌟' : isLate ? 'متأخرة ⏳' : 'لم تُصلّ —'}
-                      </small>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-slate-500">
-                💡 اضغط مرة = في وقتها (5 نقاط)، مرتين = متأخرة (2 نقطة)، تالت مرة = إلغاء
-              </p>
-            </div>
-
-            {/* CARD 2: ADHKAR & DUA (10 Points) */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-teal-400" />
-                  <h3 className="text-sm font-bold text-white">الأذكار والدعاء</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  {onOpenAthkar && (
+            {/* CARD 1: PRAYERS & CUSTOM WORSHIP */}
+            {!hiddenSet.has('card_prayer') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-sm font-bold text-white">الصلاة والعبادات</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={onOpenAthkar}
-                      className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer font-semibold"
+                      onClick={() => handleOpenAddModal('prayer')}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1 cursor-pointer"
                     >
-                      <span>قراءة الأذكار 📿</span>
+                      <Plus className="w-3 h-3" />
+                      <span>إضافة عبادة</span>
                     </button>
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {scoreResult.c.prayer} / {scoreResult.maxByCat.prayer} نقطة
+                    </span>
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_prayer')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        title="حذف/إخفاء هذا القسم"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+                  {PRAYERS_LIST.filter(([k]) => !hiddenSet.has(`prayer_${k}`)).map(([k, name]) => {
+                    const status = dayRecord.prayers[k] || 0;
+                    const isOntime = status === 2;
+                    const isLate = status === 1;
+
+                    return (
+                      <div key={k} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => handlePrayerClick(k)}
+                          className={`w-full p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isOntime
+                              ? 'bg-gradient-to-tr from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-500/25 scale-102'
+                              : isLate
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                                : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                            }`}
+                        >
+                          <span className="font-bold text-xs sm:text-sm">{name}</span>
+                          <small className="text-[10px] mt-1 font-semibold opacity-90">
+                            {isOntime ? 'في وقتها 🌟' : isLate ? 'متأخرة ⏳' : 'لم تُصلّ —'}
+                          </small>
+                        </button>
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem(`prayer_${k}`)}
+                            className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
+                            title={`حذف ${name}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {(settings.customPrayers || []).map((cp) => {
+                    const status = dayRecord.prayers[cp.id] || 0;
+                    const isDone = status === 2;
+                    return (
+                      <div key={cp.id} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextVal = isDone ? 0 : 2;
+                            updateCurrentDay({ prayers: { ...dayRecord.prayers, [cp.id]: nextVal } });
+                            if (nextVal === 2) audioService.playChime('success', 0.4);
+                          }}
+                          className={`w-full p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isDone
+                              ? 'bg-gradient-to-tr from-teal-600 to-emerald-500 text-white border-teal-300 shadow-lg'
+                              : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                            }`}
+                        >
+                          <span className="font-bold text-xs sm:text-sm truncate max-w-full">{cp.label}</span>
+                          <small className="text-[10px] mt-1 font-semibold opacity-90">
+                            {isDone ? `تم (${cp.points}ن) ✓` : `مضاف (${cp.points}ن)`}
+                          </small>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.removeCustomPrayer(cp.id)}
+                          className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer ${
+                            isEditMode ? 'opacity-100' : 'opacity-75 hover:opacity-100'
+                          }`}
+                          title="حذف هذه العبادة"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  💡 اضغط مرة = في وقتها، مرتين = متأخرة، ثالث مرة = إلغاء • يمكنك إضافة السنن أو حذف أي بند
+                </p>
+              </div>
+            )}
+
+            {/* CARD 2: ADHKAR & DUA */}
+            {!hiddenSet.has('card_adhkar') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-teal-400" />
+                    <h3 className="text-sm font-bold text-white">الأذكار والدعاء</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAddModal('adhkar')}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>إضافة ذكر</span>
+                    </button>
+                    {onOpenAthkar && (
+                      <button
+                        type="button"
+                        onClick={onOpenAthkar}
+                        className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer font-semibold"
+                      >
+                        <span>قراءة الأذكار 📿</span>
+                      </button>
+                    )}
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                      {scoreResult.c.adhkar} / {scoreResult.maxByCat.adhkar} نقاط
+                    </span>
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_adhkar')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        title="حذف هذا القسم"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {ADHKAR_LIST.filter(([k]) => !hiddenSet.has(`adhkar_${k}`)).map(([k, label, pts]) => {
+                    const active = !!dayRecord.adhkar[k];
+                    return (
+                      <div key={k} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = { ...dayRecord.adhkar, [k]: !active };
+                            updateCurrentDay({ adhkar: updated });
+                            if (!active) audioService.playChime('click', 0.3);
+                          }}
+                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${active
+                              ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
+                              : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                            }`}
+                        >
+                          <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                          <span className="truncate">{label}</span>
+                          <span className="text-[10px] opacity-75 font-mono">({pts}ن)</span>
+                        </button>
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem(`adhkar_${k}`)}
+                            className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
+                            title={`حذف ${label}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {(settings.customAdhkar || []).map((ca) => {
+                    const active = !!dayRecord.adhkar[ca.id];
+                    return (
+                      <div key={ca.id} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = { ...dayRecord.adhkar, [ca.id]: !active };
+                            updateCurrentDay({ adhkar: updated });
+                            if (!active) audioService.playChime('click', 0.3);
+                          }}
+                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${active
+                              ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
+                              : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                            }`}
+                        >
+                          <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                          <span className="truncate">{ca.label}</span>
+                          <span className="text-[10px] opacity-75 font-mono">({ca.points}ن)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.removeCustomAdhkar(ca.id)}
+                          className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
+                          title="حذف هذا الذكر"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* CARD 3: QURAN, SPORT, STUDY */}
+            {!hiddenSet.has('card_qss') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-indigo-400" />
+                    <h3 className="text-sm font-bold text-white">القرآن والرياضة والتعلّم</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                      {Math.round(scoreResult.c.quran + scoreResult.c.sport + scoreResult.c.study)} / {scoreResult.maxByCat.quran + scoreResult.maxByCat.sport + scoreResult.maxByCat.study} نقطة
+                    </span>
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_qss')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        title="حذف هذا القسم"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {!hiddenSet.has('item_quran') && (
+                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">ورد القرآن</span>
+                        <span className="text-[10px] text-slate-400">الهدف: {settings.quran} صفحات (10ن)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStep('quran', -1, 1)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                        {dayRecord.quran} ص
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStep('quran', 1, 1)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        +
+                      </button>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_quran')}
+                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!hiddenSet.has('item_sport') && (
+                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <Activity className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">رياضة وحركة</span>
+                        <span className="text-[10px] text-slate-400">الهدف: {settings.sport} دقيقة (10ن)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStep('sport', -1, 5)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                        {dayRecord.sport} د
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStep('sport', 1, 5)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        +
+                      </button>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_sport')}
+                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!hiddenSet.has('item_study') && (
+                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <GraduationCap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
+                        <span className="text-[10px] text-slate-400">الهدف: {settings.study} دقيقة (15ن)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStep('study', -1, 15)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                        {dayRecord.study} د
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStep('study', 1, 15)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        +
+                      </button>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_study')}
+                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CARD 4: HEALTH */}
+            {!hiddenSet.has('card_health') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Droplets className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-sm font-bold text-white">الصحة والراحة</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                      {Math.round(scoreResult.c.health)} / {scoreResult.maxByCat.health} نقاط
+                    </span>
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_health')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        title="حذف هذا القسم"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {!hiddenSet.has('item_sleep') && (
+                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        <Moon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">النوم</span>
+                        <span className="text-[10px] text-slate-400">الهدف: {settings.sleep} ساعات (4ن)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStep('sleep', -1, 0.5)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                        {dayRecord.sleep} س
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStep('sleep', 1, 0.5)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        +
+                      </button>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_sleep')}
+                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!hiddenSet.has('item_water') && (
+                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                        <Droplets className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">شرب الماء</span>
+                        <span className="text-[10px] text-slate-400">الهدف: {settings.water} أكواب (3ن)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStep('water', -1, 1)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                        {dayRecord.water} كوب
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleStep('water', 1, 1)}
+                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                      >
+                        +
+                      </button>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_water')}
+                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {!hiddenSet.has('item_food') && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => updateCurrentDay({ food: !dayRecord.food })}
+                        className={`w-full p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${dayRecord.food
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                            : 'bg-slate-950/50 text-slate-400 border-slate-800 hover:border-slate-700'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Utensils className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-bold">أكل نضيف ومنتظم (3ن)</span>
+                        </div>
+                        <div
+                          className={`w-6 h-6 rounded-lg border flex items-center justify-center ${dayRecord.food ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-700'
+                            }`}
+                        >
+                          {dayRecord.food && <Check className="w-4 h-4" />}
+                        </div>
+                      </button>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_food')}
+                          className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   )}
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                    {scoreResult.c.adhkar} / 10 نقاط
-                  </span>
+
+                  {!hiddenSet.has('item_weight') && (
+                    <div className="p-3 rounded-2xl bg-slate-950/50 border border-slate-800 flex items-center justify-between gap-3 relative">
+                      <div className="flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-slate-400" />
+                        <span className="text-xs font-bold text-slate-300">الوزن (اختياري)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={dayRecord.weight}
+                          onChange={(e) => updateCurrentDay({ weight: e.target.value })}
+                          placeholder="0.0"
+                          className="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs text-center focus:outline-none focus:border-cyan-500"
+                        />
+                        <span className="text-xs text-slate-400">كجم</span>
+                      </div>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.hideBuiltInItem('item_weight')}
+                          className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {ADHKAR_LIST.map(([k, label, pts]) => {
-                  const active = dayRecord.adhkar[k];
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => {
-                        const updated = {
-                          ...dayRecord.adhkar,
-                          [k]: !active,
-                        };
-                        updateCurrentDay({ adhkar: updated });
-                        if (!active) {
-                          audioService.playChime('click', 0.3);
-                        }
-                      }}
-                      className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border ${active
-                          ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
-                          : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
-                        }`}
-                    >
-                      <Check className={`w-3.5 h-3.5 ${active ? 'opacity-100' : 'opacity-30'}`} />
-                      <span>{label}</span>
-                      <span className="text-[10px] opacity-75 font-mono">({pts}ن)</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* CARD 3: QURAN, SPORT, STUDY (35 Points) */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-indigo-400" />
-                  <h3 className="text-sm font-bold text-white">القرآن والرياضة والتعلّم</h3>
-                </div>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  {Math.round(scoreResult.c.quran + scoreResult.c.sport + scoreResult.c.study)} / 35 نقطة
-                </span>
-              </div>
-
-              {/* Quran */}
-              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">ورد القرآن</span>
-                    <span className="text-[10px] text-slate-400">الهدف: {settings.quran} صفحات (10ن)</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleStep('quran', -1, 1)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
-                    {dayRecord.quran} ص
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleStep('quran', 1, 1)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Sport */}
-              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <Activity className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">رياضة وحركة</span>
-                    <span className="text-[10px] text-slate-400">الهدف: {settings.sport} دقيقة (10ن)</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleStep('sport', -1, 5)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
-                    {dayRecord.sport} د
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleStep('sport', 1, 5)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Study */}
-              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    <GraduationCap className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
-                    <span className="text-[10px] text-slate-400">الهدف: {settings.study} دقيقة (15ن)</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleStep('study', -1, 15)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
-                    {dayRecord.study} د
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleStep('study', 1, 15)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 4: HEALTH (10 Points) */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Droplets className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-sm font-bold text-white">الصحة والراحة</h3>
-                </div>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  {Math.round(scoreResult.c.health)} / 10 نقاط
-                </span>
-              </div>
-
-              {/* Sleep */}
-              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                    <Moon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">النوم</span>
-                    <span className="text-[10px] text-slate-400">الهدف: {settings.sleep} ساعات (4ن)</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleStep('sleep', -1, 0.5)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
-                    {dayRecord.sleep} س
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleStep('sleep', 1, 0.5)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Water */}
-              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                    <Droplets className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">شرب الماء</span>
-                    <span className="text-[10px] text-slate-400">الهدف: {settings.water} أكواب (3ن)</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleStep('water', -1, 1)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
-                    {dayRecord.water} كوب
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleStep('water', 1, 1)}
-                    className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Food & Weight */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Clean Food Toggle */}
-                <button
-                  type="button"
-                  onClick={() => updateCurrentDay({ food: !dayRecord.food })}
-                  className={`p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${dayRecord.food
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                      : 'bg-slate-950/50 text-slate-400 border-slate-800 hover:border-slate-700'
-                    }`}
-                >
+            {/* CARD 4B: CUSTOM HABITS & ITEMS ADDED BY USER */}
+            {((settings.customHabits || []).length > 0 || isEditMode) && (
+              <div className="p-5 rounded-3xl bg-gradient-to-br from-purple-950/20 via-slate-900/90 to-slate-900/80 border border-purple-500/30 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
-                    <Utensils className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-bold">أكل نضيف ومنتظم (3ن)</span>
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-sm font-bold text-white">بنود وعادات مخصصة</h3>
                   </div>
-                  <div
-                    className={`w-6 h-6 rounded-lg border flex items-center justify-center ${dayRecord.food ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-700'
-                      }`}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAddModal('habit')}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    {dayRecord.food && <Check className="w-4 h-4" />}
-                  </div>
-                </button>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة عادة / عدّاد</span>
+                  </button>
+                </div>
 
-                {/* Weight Input */}
-                <div className="p-3 rounded-2xl bg-slate-950/50 border border-slate-800 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-300">الوزن (اختياري)</span>
+                {(settings.customHabits || []).length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-3">
+                    يمكنك إضافة أي عادة يومية أو عدّاد خاص بك (مثل: قراءة كتاب، صدقة، جلسة علاج...) ليُحسب تلقائياً ضمن تقييم يومك!
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {(settings.customHabits || []).map((h) => {
+                      const val = (dayRecord.customValues || {})[h.id] || 0;
+                      const doneToggle = val > 0;
+                      if (h.kind === 'toggle') {
+                        return (
+                          <div key={h.id} className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = { ...(dayRecord.customValues || {}), [h.id]: doneToggle ? 0 : 1 };
+                                updateCurrentDay({ customValues: next });
+                                if (!doneToggle) audioService.playChime('click', 0.3);
+                              }}
+                              className={`flex-1 p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${
+                                doneToggle
+                                  ? 'bg-purple-600/25 text-purple-200 border-purple-400/50'
+                                  : 'bg-slate-950/60 text-slate-300 border-slate-800 hover:border-slate-700'
+                              }`}
+                            >
+                              <span className="text-xs font-bold">{h.label} ({h.points}ن)</span>
+                              <div className={`w-6 h-6 rounded-lg border flex items-center justify-center ${
+                                doneToggle ? 'bg-purple-500 border-purple-400 text-white' : 'border-slate-700'
+                              }`}>
+                                {doneToggle && <Check className="w-4 h-4" />}
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => dailySystemService.removeCustomHabit(h.id)}
+                              className="p-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 cursor-pointer"
+                              title="حذف هذا البند"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={h.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800 gap-2">
+                          <div>
+                            <span className="text-xs font-bold text-white block">{h.label}</span>
+                            <span className="text-[10px] text-slate-400">
+                              الهدف: {h.target} {h.unit} ({h.points}ن)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextVal = Math.max(0, val - h.step);
+                                updateCurrentDay({ customValues: { ...(dayRecord.customValues || {}), [h.id]: nextVal } });
+                              }}
+                              className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-[54px] text-center font-mono font-black text-white text-xs">
+                              {val} {h.unit}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextVal = val + h.step;
+                                updateCurrentDay({ customValues: { ...(dayRecord.customValues || {}), [h.id]: nextVal } });
+                              }}
+                              className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                            >
+                              +
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => dailySystemService.removeCustomHabit(h.id)}
+                              className="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 cursor-pointer"
+                              title="حذف هذا البند"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* CARD 5: WORK - UNLIMITED AUTO-IMPORTED & CUSTOM TASKS */}
+            {!hiddenSet.has('card_work') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-amber-400" />
+                    <h3 className="text-sm font-bold text-white">الشغل ومهام اليوم</h3>
+                    {settings.autoImportTasks && (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+                        <Zap className="w-3 h-3 text-emerald-400" />
+                        استيراد تلقائي نشط
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={dayRecord.weight}
-                      onChange={(e) => updateCurrentDay({ weight: e.target.value })}
-                      placeholder="0.0"
-                      className="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs text-center focus:outline-none focus:border-cyan-500"
-                    />
-                    <span className="text-xs text-slate-400">كجم</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 5: WORK - TOP 3 TASKS (20 Points) */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-sm font-bold text-white">الشغل: أهم ٣ مهام اليوم</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      dailySystemService.importTasksFromWorkList(tasks, currentDateKey);
-                      showToast('تم استيراد مهام اليوم بنجاح!');
-                    }}
-                    className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer font-semibold"
-                    title="استيراد المهام المجدولة اليوم تلقائياً"
-                  >
-                    <DownloadCloud className="w-3.5 h-3.5" />
-                    <span>استيراد من المهام</span>
-                  </button>
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    {Math.round(scoreResult.c.work)} / 20 نقطة
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                {dayRecord.tasks.map((task, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800"
-                  >
                     <button
                       type="button"
                       onClick={() => {
-                        const newTasks = [...dayRecord.tasks];
-                        newTasks[idx] = { ...newTasks[idx], d: !newTasks[idx].d };
-                        updateCurrentDay({ tasks: newTasks });
-                        if (!task.d) {
-                          audioService.playChime('success', 0.4);
-                        }
+                        dailySystemService.importTasksFromWorkList(tasks, currentDateKey);
+                        showToast('تمت مزامنة واستيراد كافة مهام اليوم تلقائياً ✓');
                       }}
-                      className={`w-7 h-7 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${task.d
-                          ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/25'
-                          : 'border-slate-700 bg-slate-900 hover:border-slate-600'
-                        }`}
+                      className="px-2.5 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                      title="استعادة ومزامنة مهام العمل لهذا اليوم"
                     >
-                      {task.d && <Check className="w-4 h-4" />}
+                      <DownloadCloud className="w-3.5 h-3.5" />
+                      <span>مزامنة الكل</span>
                     </button>
 
-                    <input
-                      type="text"
-                      value={task.t}
-                      onChange={(e) => {
-                        const newTasks = [...dayRecord.tasks];
-                        newTasks[idx] = { ...newTasks[idx], t: e.target.value };
-                        updateCurrentDay({ tasks: newTasks });
-                      }}
-                      placeholder={`المهمة ${idx + 1}...`}
-                      className={`flex-1 bg-transparent border-none text-xs text-white focus:outline-none ${task.d ? 'line-through text-slate-500' : ''
-                        }`}
-                    />
+                    {dayRecord.tasks.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('هل تريد حذف كل مهام هذه القائمة لليوم؟')) {
+                            updateCurrentDay({ tasks: [] });
+                            showToast('تم مسح مهام اليوم');
+                          }
+                        }}
+                        className="p-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 cursor-pointer"
+                        title="مسح كافة المهام في هذه القائمة"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      {Math.round(scoreResult.c.work)} / {scoreResult.maxByCat.work} نقطة
+                    </span>
+
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_work')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
-                ))}
+                </div>
+
+                {/* Inline Quick Add Task Row */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleAddDailyTask(quickDailyTaskTitle);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    value={quickDailyTaskTitle}
+                    onChange={(e) => setQuickDailyTaskTitle(e.target.value)}
+                    placeholder="اكتب أي مهمة جديدة لإضافتها لنظام اليوم..."
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950/70 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>إضافة</span>
+                  </button>
+                </form>
+
+                <div className="space-y-2">
+                  {dayRecord.tasks.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-slate-500">
+                      لا توجد مهام مسجلة لهذا اليوم بعد — سيتم استيراد أي مهمة تضاف تلقائياً هنا.
+                    </div>
+                  ) : (
+                    dayRecord.tasks.map((task, idx) => (
+                      <div
+                        key={task.id || idx}
+                        className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextDone = !task.d;
+                            const newTasks = [...dayRecord.tasks];
+                            newTasks[idx] = { ...newTasks[idx], d: nextDone };
+                            updateCurrentDay({ tasks: newTasks });
+                            if (task.sourceTaskId && onToggleTask) {
+                              onToggleTask(task.sourceTaskId);
+                            }
+                            if (nextDone) {
+                              audioService.playChime('success', 0.4);
+                            }
+                          }}
+                          className={`w-7 h-7 rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 ${task.d
+                              ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/25'
+                              : 'border-slate-700 bg-slate-900 hover:border-slate-600'
+                            }`}
+                        >
+                          {task.d && <Check className="w-4 h-4" />}
+                        </button>
+
+                        <input
+                          type="text"
+                          value={task.t}
+                          onChange={(e) => {
+                            const newTasks = [...dayRecord.tasks];
+                            newTasks[idx] = { ...newTasks[idx], t: e.target.value };
+                            updateCurrentDay({ tasks: newTasks });
+                          }}
+                          placeholder={`المهمة ${idx + 1}...`}
+                          className={`flex-1 bg-transparent border-none text-xs text-white focus:outline-none ${task.d ? 'line-through text-slate-500' : ''
+                            }`}
+                        />
+
+                        {task.sourceTaskId && (
+                          <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold shrink-0">
+                            تلقائي
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDailyTask(idx)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer shrink-0"
+                          title="حذف هذه المهمة من اليوم"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* CARD 5B: ALL WORK TASKS & ATTACHMENTS IN DAILY SYSTEM */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-sm font-bold text-white">سجل مهام العمل الشامل والمرفقات</h3>
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                    {tasks.length} مهمة
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => setDayTasksMode('all')}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                        dayTasksMode === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      كل المهام ({tasks.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDayTasksMode('day')}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                        dayTasksMode === 'day' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      مهام اليوم ({dayWorkTasks.length})
-                    </button>
+            {!hiddenSet.has('card_all_tasks') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-sm font-bold text-white">سجل مهام العمل الشامل والمرفقات</h3>
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                      {tasks.length} مهمة
+                    </span>
                   </div>
 
-                  {onOpenTasksTab && (
-                    <button
-                      type="button"
-                      onClick={onOpenTasksTab}
-                      className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 text-[11px] font-bold border border-slate-700 cursor-pointer"
-                    >
-                      فتح المهام ↗
-                    </button>
-                  )}
-                </div>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setDayTasksMode('all')}
+                        className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                          dayTasksMode === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        كل المهام ({tasks.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDayTasksMode('day')}
+                        className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                          dayTasksMode === 'day' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        مهام اليوم ({dayWorkTasks.length})
+                      </button>
+                    </div>
 
-              {(dayTasksMode === 'all' ? tasks : dayWorkTasks).length === 0 ? (
-                <div className="text-center py-6 text-xs text-slate-400">
-                  {dayTasksMode === 'all'
-                    ? 'لا توجد مهام عمل مضافة حتى الآن.'
-                    : `لا توجد مهام مجدولة بتاريخ ${currentDateKey}. يمكنك التبديل إلى "كل المهام".`}
+                    {onOpenTasksTab && (
+                      <button
+                        type="button"
+                        onClick={onOpenTasksTab}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 text-[11px] font-bold border border-slate-700 cursor-pointer"
+                      >
+                        فتح المهام ↗
+                      </button>
+                    )}
+
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_all_tasks')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5">
-                  {(dayTasksMode === 'all' ? tasks : dayWorkTasks).map((t) => renderWorkTaskRow(t))}
-                </div>
-              )}
-            </div>
+
+                {(dayTasksMode === 'all' ? tasks : dayWorkTasks).length === 0 ? (
+                  <div className="text-center py-6 text-xs text-slate-400">
+                    {dayTasksMode === 'all'
+                      ? 'لا توجد مهام عمل مضافة حتى الآن.'
+                      : `لا توجد مهام مجدولة بتاريخ ${currentDateKey}. يمكنك التبديل إلى "كل المهام".`}
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5">
+                    {(dayTasksMode === 'all' ? tasks : dayWorkTasks).map((t) => renderWorkTaskRow(t))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* CARD 6: EVENING REVIEW / JOURNAL */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-                <FileText className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-sm font-bold text-white">مراجعة آخر اليوم</h3>
+            {!hiddenSet.has('card_notes') && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-sm font-bold text-white">مراجعة آخر اليوم</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAddModal('note')}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>إضافة سؤال</span>
+                    </button>
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.hideBuiltInItem('card_notes')}
+                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {!hiddenSet.has('note_good') && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-300">
+                          ✨ إيه اللي نجح النهارده؟ (أبرز إنجازاتك)
+                        </label>
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('note_good')}
+                            className="text-rose-400 hover:text-rose-300 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={dayRecord.notes.good}
+                        onChange={(e) =>
+                          updateCurrentDay({ notes: { ...dayRecord.notes, good: e.target.value } })
+                        }
+                        placeholder="مثال: خلصت كشوفات العيادة، وصليت السنن في وقتها..."
+                        className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
+
+                  {!hiddenSet.has('note_block') && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-300">
+                          🚧 إيه اللي عطّلني؟ (المعوقات والمشتتات)
+                        </label>
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('note_block')}
+                            className="text-rose-400 hover:text-rose-300 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={dayRecord.notes.block}
+                        onChange={(e) =>
+                          updateCurrentDay({ notes: { ...dayRecord.notes, block: e.target.value } })
+                        }
+                        placeholder="مثال: تصفح الهاتف بدون تركيز، تأخر موعد نوم الأمس..."
+                        className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
+
+                  {!hiddenSet.has('note_tomorrow') && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-300">
+                          🎯 أهم حاجة لازم أعملها بكرة؟ (أولوية الغد الأولى)
+                        </label>
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('note_tomorrow')}
+                            className="text-rose-400 hover:text-rose-300 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={dayRecord.notes.tomorrow}
+                        onChange={(e) =>
+                          updateCurrentDay({ notes: { ...dayRecord.notes, tomorrow: e.target.value } })
+                        }
+                        placeholder="مثال: إتمام التقرير الطبي ومقابلة الساعة 3..."
+                        className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
+
+                  {(settings.customNotePrompts || []).map((cp) => (
+                    <div key={cp.id}>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-emerald-300">{cp.label}</label>
+                        <button
+                          type="button"
+                          onClick={() => dailySystemService.removeCustomNotePrompt(cp.id)}
+                          className="text-rose-400 hover:text-rose-300 cursor-pointer"
+                          title="حذف هذا السؤال"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={(dayRecord.customNotes || {})[cp.id] || ''}
+                        onChange={(e) =>
+                          updateCurrentDay({
+                            customNotes: { ...(dayRecord.customNotes || {}), [cp.id]: e.target.value },
+                          })
+                        }
+                        placeholder={cp.placeholder || 'اكتب ملاحظاتك هنا...'}
+                        className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ✨ إيه اللي نجح النهارده؟ (أبرز إنجازاتك)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={dayRecord.notes.good}
-                    onChange={(e) =>
-                      updateCurrentDay({ notes: { ...dayRecord.notes, good: e.target.value } })
-                    }
-                    placeholder="مثال: خلصت كشوفات العيادة، وصليت السنن في وقتها..."
-                    className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    🚧 إيه اللي عطّلني؟ (المعوقات والمشتتات)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={dayRecord.notes.block}
-                    onChange={(e) =>
-                      updateCurrentDay({ notes: { ...dayRecord.notes, block: e.target.value } })
-                    }
-                    placeholder="مثال: تصفح الهاتف بدون تركيز، تأخر موعد نوم الأمس..."
-                    className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    🎯 أهم حاجة لازم أعملها بكرة؟ (أولوية الغد الأولى)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={dayRecord.notes.tomorrow}
-                    onChange={(e) =>
-                      updateCurrentDay({ notes: { ...dayRecord.notes, tomorrow: e.target.value } })
-                    }
-                    placeholder="مثال: إتمام التقرير الطبي ومقابلة الساعة 3..."
-                    className="w-full p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1636,12 +2330,134 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               </div>
             </div>
 
+            {/* Auto-Import Work Tasks Settings */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-emerald-500/20 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-emerald-400" />
+                  <span>الاستيراد التلقائي لمهام العمل في نظامي</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dailySystemService.importTasksFromWorkList(tasks, currentDateKey);
+                    showToast('⚡ تمت مزامنة مهام اليوم تلقائياً');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-all"
+                >
+                  مزامنة مهام اليوم الآن ⚡
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-emerald-500/30 transition-all">
+                  <div>
+                    <div className="text-sm font-bold text-slate-100">
+                      استيراد مهام اليوم تلقائياً في نظامي
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      أي مهمة تضيفها أو تعدلها في تبويب «المهام» بتظهر وتتزامن تلقائياً داخل «الشغل ومهام اليوم»
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.autoImportTasks !== false}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      dailySystemService.updateSettings({ autoImportTasks: enabled });
+                      if (enabled) {
+                        dailySystemService.autoSyncWorkTasksForDay(tasks, currentDateKey);
+                        showToast('✓ تم تفعيل الاستيراد التلقائي ومزامنة مهام اليوم');
+                      } else {
+                        showToast('تم إيقاف الاستيراد التلقائي للمهام');
+                      }
+                    }}
+                    className="w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-emerald-500/30 transition-all">
+                  <div>
+                    <div className="text-sm font-bold text-slate-100">
+                      تضمين المهام المؤجلة/غير المنجزة من أيام سابقة
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      استيراد المهام المتأخرة التي لم تكتمل بعد تلقائياً مع مهام اليوم
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.autoImportIncludePendingPrevious !== false}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      dailySystemService.updateSettings({ autoImportIncludePendingPrevious: enabled });
+                      if (settings.autoImportTasks !== false) {
+                        dailySystemService.autoSyncWorkTasksForDay(tasks, currentDateKey);
+                      }
+                      showToast(enabled ? '✓ سيتم تضمين المهام غير المنجزة' : 'سيتم استيراد مهام تاريخ اليوم فقط');
+                    }}
+                    className="w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Deleted / Hidden Built-in Items Recovery */}
+            {(settings.hiddenBuiltIns || []).length > 0 && (
+              <div className="p-5 rounded-3xl bg-slate-900/80 border border-rose-500/20 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-rose-400" />
+                    <span>العناصر والأقسام المحذوفة / المخفية ({(settings.hiddenBuiltIns || []).length})</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dailySystemService.restoreAllBuiltIns();
+                      showToast('✓ تمت استعادة كل العناصر الافتراضية');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-all"
+                  >
+                    استعادة كل العناصر الافتراضية ↻
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {(settings.hiddenBuiltIns || []).map((key) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between gap-2 p-3 rounded-2xl bg-slate-950/70 border border-slate-800"
+                    >
+                      <span className="text-xs font-bold text-slate-200 truncate">
+                        {BUILT_IN_LABELS[key] || key}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          dailySystemService.restoreBuiltInItem(key);
+                          showToast(`✓ تمت استعادة: ${BUILT_IN_LABELS[key] || key}`);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold hover:bg-emerald-500/25 transition-all shrink-0"
+                      >
+                        استعادة ✓
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Points Distribution Breakdown */}
             <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
-              <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
-                <span>توزيع الـ 100 نقطة اليومية</span>
-                <span className="text-xs font-mono font-bold text-emerald-400">المجموع = 100 نقطة</span>
-              </h3>
+              <div className="border-b border-slate-800 pb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-white">توزيع الـ 100 نقطة اليومية</h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    يُعاد توزيع المجموع تلقائياً إلى 100% عند إضافة بنود مخصصة أو إخفاء أي قسم
+                  </p>
+                </div>
+                <span className="text-xs font-mono font-bold text-emerald-400">المجموع النهائي = 100 نقطة</span>
+              </div>
 
               <div className="divide-y divide-slate-800 text-xs">
                 <div className="flex items-center justify-between py-2.5">
@@ -1712,6 +2528,210 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Add Custom Item / Habit Modal */}
+      {addModalKind && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setAddModalKind(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-700/80 shadow-2xl overflow-hidden"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">إضافة بند جديد إلى نظامي</h3>
+                  <p className="text-[11px] text-slate-400">خصّص عباداتك، أذكارك، عاداتك، مهامك، وأسئلة المراجعة بحرية</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddModalKind(null)}
+                className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomItem} className="p-5 space-y-4">
+              {/* Kind Switcher */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-2">نوع البند</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(
+                    [
+                      { k: 'habit', label: 'عادة / هدف مخصص' },
+                      { k: 'prayer', label: 'عبادة / نافلة' },
+                      { k: 'adhkar', label: 'ذكر / دعاء' },
+                      { k: 'task', label: 'مهمة يومية' },
+                      { k: 'note', label: 'سؤال مراجعة' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.k}
+                      type="button"
+                      onClick={() => {
+                        setAddModalKind(opt.k);
+                        if (!newItemLabel.trim()) {
+                          setNewItemPoints(opt.k === 'adhkar' ? 2 : opt.k === 'prayer' ? 3 : 5);
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        addModalKind === opt.k
+                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Name Input */}
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  {addModalKind === 'note'
+                    ? 'نص سؤال المراجعة'
+                    : addModalKind === 'task'
+                      ? 'عنوان المهمة'
+                      : addModalKind === 'prayer'
+                        ? 'اسم العبادة / الصلاة'
+                        : addModalKind === 'adhkar'
+                          ? 'اسم الذكر / الورد'
+                          : 'اسم العادة أو البند'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={newItemLabel}
+                  onChange={(e) => setNewItemLabel(e.target.value)}
+                  placeholder={
+                    addModalKind === 'prayer'
+                      ? 'مثال: صلاة الضحى / الوتر'
+                      : addModalKind === 'adhkar'
+                        ? 'مثال: الاستغفار 100 مرة'
+                        : addModalKind === 'task'
+                          ? 'مثال: مراجعة بريد العمل'
+                          : addModalKind === 'note'
+                            ? 'مثال: أهم إنجاز فخور بيه اليوم؟'
+                            : 'مثال: قراءة كتاب / تمارين تنفس'
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Points Weight (for scored categories) */}
+              {(addModalKind === 'habit' || addModalKind === 'prayer' || addModalKind === 'adhkar') && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                    عدد النقاط (الوزن في التقييم اليومي)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={25}
+                    value={newItemPoints}
+                    onChange={(e) => setNewItemPoints(Number(e.target.value) || 1)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              )}
+
+              {/* Habit Specific Options */}
+              {addModalKind === 'habit' && (
+                <div className="space-y-3 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5">طريقة الحساب</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewHabitKind('toggle')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          newHabitKind === 'toggle'
+                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        ✓ تم / لم يتم
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewHabitKind('counter')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          newHabitKind === 'counter'
+                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        + / - عداد برقم وهدف
+                      </button>
+                    </div>
+                  </div>
+
+                  {newHabitKind === 'counter' && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 mb-1">الهدف اليومي</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newHabitTarget}
+                          onChange={(e) => setNewHabitTarget(Math.max(1, Number(e.target.value) || 1))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 mb-1">مقدار الزيادة</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newHabitStep}
+                          onChange={(e) => setNewHabitStep(Math.max(1, Number(e.target.value) || 1))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 mb-1">الوحدة</label>
+                        <input
+                          type="text"
+                          value={newHabitUnit}
+                          onChange={(e) => setNewHabitUnit(e.target.value)}
+                          placeholder="مرة / دقيقة"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setAddModalKind(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-500/20 transition-all"
+                >
+                  حفظ وإضافة إلى نظامي ✓
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* PDF Report Export Studio Modal */}
       <PdfExportModal

@@ -234,6 +234,11 @@ export function App() {
   // Tasks
   const [tasks, setTasks] = useState<Task[]>(() => taskService.getTasks());
 
+  // Automatically sync Work Tasks into Today's Daily System whenever tasks update
+  useEffect(() => {
+    dailySystemService.autoSyncWorkTasksForDay(tasks, getLocalDateStr());
+  }, [tasks]);
+
   // Scheduled Custom Audio Files
   const [scheduledAudios, setScheduledAudios] = useState<ScheduledAudio[]>(() =>
     audioStorageService.getScheduledAudios()

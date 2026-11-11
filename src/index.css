@@ -1,13 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-cairo: 'Cairo', system-ui, sans-serif;
-  --font-tajawal: 'Tajawal', system-ui, sans-serif;
+  --font-cairo: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  --font-tajawal: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  --font-mono: 'Plus Jakarta Sans', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Luxury Obsidian Surface Palette override for seamless dark depth */
+  --color-slate-950: #06080D;
+  --color-slate-900: #0C1019;
+  --color-slate-800: #141A27;
+  --color-slate-700: #1E2738;
+  --color-slate-600: #364359;
+  --color-slate-500: #64748B;
+  --color-slate-400: #94A3B8;
+  --color-slate-300: #CBD5E1;
 }
 
 :root {
-  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --lux-bg: #06080D;
+  --lux-surface: #0C1019;
+  --lux-surface-2: #121826;
+  --lux-border: rgba(255, 255, 255, 0.07);
+  --lux-border-strong: rgba(255, 255, 255, 0.13);
+  --lux-emerald: #10B981;
+  --lux-gold: #D4AF37;
+  --lux-gold-soft: #E7C66C;
+  font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
 }
 
@@ -15,11 +34,16 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: #0b1120;
-  color: #f1f5f9;
+  background-color: #06080D;
+  background-image:
+    radial-gradient(ellipse 85% 40% at 50% -8%, rgba(16, 185, 129, 0.085), transparent 68%),
+    radial-gradient(ellipse 55% 32% at 88% 4%, rgba(212, 175, 55, 0.055), transparent 62%);
+  color: #F1F5F9;
   direction: rtl;
   text-align: right;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom Scrollbar */
@@ -29,29 +53,253 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #06080D;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: rgba(148, 163, 184, 0.35);
 }
 
-/* Glow effects */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================================================
+   LUXURY ATELIER DESIGN PRIMITIVES
+   ========================================================= */
+
+.lux-card {
+  background: linear-gradient(180deg, rgba(16, 21, 33, 0.94) 0%, rgba(10, 14, 23, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 20px 44px -22px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.lux-card-interactive {
+  background: linear-gradient(180deg, rgba(16, 21, 33, 0.94) 0%, rgba(10, 14, 23, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 18px 40px -22px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.lux-card-interactive:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 24px 48px -20px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.lux-card-emerald {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.12) 0%, rgba(12, 16, 26, 0.96) 52%, rgba(9, 13, 21, 0.99) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  box-shadow:
+    0 24px 50px -20px rgba(16, 185, 129, 0.18),
+    inset 0 1px 0 rgba(52, 211, 153, 0.14);
+}
+
+.lux-card-gold {
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.11) 0%, rgba(13, 17, 27, 0.96) 55%, rgba(9, 13, 21, 0.99) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.26);
+  box-shadow:
+    0 22px 45px -20px rgba(212, 175, 55, 0.14),
+    inset 0 1px 0 rgba(231, 198, 108, 0.14);
+}
+
+.lux-well {
+  background: rgba(5, 7, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.lux-modal {
+  background: linear-gradient(180deg, rgba(15, 20, 32, 0.98) 0%, rgba(8, 11, 19, 0.99) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 32px 96px -12px rgba(0, 0, 0, 0.92),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Signature Tactile Buttons */
+.btn-lux-primary {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  border: 1px solid rgba(52, 211, 153, 0.42);
+  color: #FFFFFF;
+  box-shadow:
+    0 8px 22px -6px rgba(16, 185, 129, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-lux-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #16C78C 0%, #06A372 100%);
+  box-shadow:
+    0 12px 26px -6px rgba(16, 185, 129, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+.btn-lux-primary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.btn-lux-gold {
+  background: linear-gradient(180deg, #ECD07B 0%, #C99D2D 100%);
+  border: 1px solid rgba(246, 224, 152, 0.55);
+  color: #07090E;
+  box-shadow:
+    0 8px 22px -6px rgba(212, 175, 55, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-lux-gold:hover:not(:disabled) {
+  background: linear-gradient(180deg, #F3DA8D 0%, #D4A736 100%);
+  transform: translateY(-1px);
+}
+.btn-lux-gold:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.btn-lux-secondary {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.095);
+  color: #E2E8F0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.18s ease;
+}
+.btn-lux-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+.btn-lux-secondary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.btn-lux-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.16s ease;
+}
+.btn-lux-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.btn-lux-icon:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* Uniform Squircle Icon Frames */
+.icon-squircle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.icon-squircle-emerald {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.07) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #34D399;
+  box-shadow: inset 0 1px 0 rgba(52, 211, 153, 0.16);
+}
+
+.icon-squircle-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.06) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.30);
+  color: #E7C66C;
+  box-shadow: inset 0 1px 0 rgba(246, 224, 152, 0.18);
+}
+
+/* Luxury Form Inputs */
+.lux-input {
+  background: rgba(6, 9, 15, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.095);
+  color: #F8FAFC;
+  border-radius: 0.875rem;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+.lux-input:focus {
+  outline: none;
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+  background: rgba(8, 12, 20, 0.96);
+}
+
+/* Subtle Glow Helpers (Toned for Prestige) */
 .glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 14px 40px -16px rgba(16, 185, 129, 0.28), inset 0 1px 0 rgba(52, 211, 153, 0.12);
 }
 
 .glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 14px 36px -16px rgba(212, 175, 55, 0.25), inset 0 1px 0 rgba(231, 198, 108, 0.12);
 }
 
 .glow-blue {
-  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 14px 36px -16px rgba(59, 130, 246, 0.22), inset 0 1px 0 rgba(96, 165, 250, 0.12);
+}
+
+.glow-cyan {
+  box-shadow: 0 14px 36px -16px rgba(6, 182, 212, 0.22), inset 0 1px 0 rgba(34, 211, 238, 0.12);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle Entrance Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in,
+.animate-fadeIn {
+  animation: fadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spinSlow 24s linear infinite;
 }
 
 /* Sound wave animation */
@@ -60,7 +308,7 @@ body {
     height: 6px;
   }
   50% {
-    height: 24px;
+    height: 22px;
   }
 }
 

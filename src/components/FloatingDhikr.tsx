@@ -130,18 +130,18 @@ export const FloatingDhikr: React.FC = () => {
 
   return (
     <div
-      className="fixed bottom-20 sm:bottom-6 left-4 sm:left-6 z-50 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 rounded-3xl p-5 shadow-2xl shadow-emerald-950/60 transition-all animate-bounce-short select-none text-right dir-rtl"
+      className="fixed bottom-24 sm:bottom-6 left-4 sm:left-6 z-50 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] lux-modal border-emerald-500/35 rounded-3xl p-5 shadow-2xl transition-all select-none text-right"
       dir="rtl"
     >
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-            <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
+      <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="icon-squircle-emerald w-8 h-8">
+            <Sparkles className="w-4 h-4" strokeWidth={1.75} />
           </div>
           <div>
-            <h4 className="text-xs font-black text-emerald-400">
-              ذكر تلقائي (برنامج أذكاري) 🕊️
+            <h4 className="text-xs font-extrabold text-emerald-300">
+              ذكر تلقائي
             </h4>
             <span className="text-[10px] text-slate-400">
               {currentDhikr.title || 'من نفحات ذكر الله تعالى'}
@@ -153,16 +153,16 @@ export const FloatingDhikr: React.FC = () => {
           <button
             onClick={handleCycleNext}
             title="ذكر آخر"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="btn-lux-icon !w-7 !h-7 text-slate-400 hover:text-white cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
           </button>
           <button
             onClick={() => setIsVisible(false)}
             title="إغلاق"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+            className="btn-lux-icon !w-7 !h-7 text-slate-400 hover:text-rose-400 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" strokeWidth={1.75} />
           </button>
         </div>
       </div>

@@ -342,69 +342,63 @@ export const AthkarView: React.FC = () => {
     <div className="space-y-6 sm:space-y-8 animate-fade-in pb-16 text-right dir-rtl select-none" dir="rtl">
       
       {/* 1. Header Banner & Main Controls */}
-      <div className="rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-teal-950/40 p-6 sm:p-8 border border-emerald-500/30 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 text-center lg:text-right">
-            <div className="flex items-center justify-center lg:justify-start gap-2.5">
-              <span className="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/20">
-                <Sparkles className="w-5 h-5 animate-pulse" />
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white">
-                أذكاري 🕊️ (حصن المسلم والسبحة الذكية)
+      <div className="lux-card-emerald rounded-3xl p-5 sm:p-7 relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-5 relative z-10">
+          <div className="space-y-1.5 text-center lg:text-right">
+            <div className="flex items-center justify-center lg:justify-start gap-3">
+              <div className="icon-squircle-emerald w-10 h-10 shrink-0">
+                <Sparkles className="w-5 h-5" strokeWidth={1.75} />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                أذكاري وحصن المسلم
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-              تطبيق أذكاري الشامل: أذكار الصباح والمساء، الرقية الشرعية، أدعية تفريج الكرب، والسبحة الإلكترونية مع ميزة الأذكار التلقائية العائمة على الشاشة.
+              أذكار الصباح والمساء، الرقية الشرعية، أدعية تفريج الكرب، والمسبحة الإلكترونية مع الأذكار التلقائية.
             </p>
           </div>
 
-          {/* Quick Actions Row */}
           <div className="flex flex-wrap items-center justify-center gap-2.5">
-            {/* Floating Dhikr Toggle Button */}
             <button
               onClick={() => setIsSettingsModalOpen(true)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                 floatingSettings.enabled
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/20'
-                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                  : 'lux-well text-slate-400 hover:text-white'
               }`}
               title="إعدادات ظهور الأذكار على الشاشة"
             >
-              <Smartphone className="w-4 h-4 text-emerald-400" />
-              <span>أذكار الشاشة: {floatingSettings.enabled ? 'مفعلة 🟢' : 'معطلة'}</span>
+              <Smartphone className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
+              <span>أذكار الشاشة: {floatingSettings.enabled ? 'مفعلة' : 'معطلة'}</span>
             </button>
 
-            {/* Add Custom Dhikr Button */}
             <button
               onClick={() => setIsCustomModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition-all cursor-pointer shadow-md"
+              className="btn-lux-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
-              <span>إضافة ذكر خاص ✍️</span>
+              <Plus className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2} />
+              <span>إضافة ذكر خاص</span>
             </button>
 
-            {/* Font Size Adjuster */}
-            <div className="flex items-center bg-slate-800/80 rounded-2xl p-1 border border-slate-700 text-xs">
+            <div className="lux-well flex items-center rounded-xl p-1 text-xs">
               <button
                 onClick={() => setFontSize('md')}
-                className={`px-2.5 py-1 rounded-xl transition-all cursor-pointer font-bold ${fontSize === 'md' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold ${fontSize === 'md' ? 'btn-lux-primary' : 'text-slate-400 hover:text-white'}`}
                 title="خط متوسط"
               >
                 A
               </button>
               <button
                 onClick={() => setFontSize('lg')}
-                className={`px-2.5 py-1 rounded-xl transition-all cursor-pointer font-bold text-sm ${fontSize === 'lg' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold text-sm ${fontSize === 'lg' ? 'btn-lux-primary' : 'text-slate-400 hover:text-white'}`}
                 title="خط كبير"
               >
                 A+
               </button>
               <button
                 onClick={() => setFontSize('xl')}
-                className={`px-2.5 py-1 rounded-xl transition-all cursor-pointer font-bold text-base ${fontSize === 'xl' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
-                title="خط عريض جداً"
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold text-base ${fontSize === 'xl' ? 'btn-lux-primary' : 'text-slate-400 hover:text-white'}`}
+                title="خط عريض"
               >
                 A++
               </button>
@@ -413,32 +407,34 @@ export const AthkarView: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. "كيف تشعر اليوم؟" (Azkari Mood Selector) */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-3">
+      {/* 2. Calm Mood Selector */}
+      <div className="lux-card p-4 sm:p-5 rounded-3xl space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" />
-            <h4 className="text-xs sm:text-sm font-black text-white">
-              كيف تشعر اليوم يا دكتور عبد العزيز؟ 💭 (ميزة أذكاري المميزة)
+          <div className="flex items-center gap-2.5">
+            <div className="icon-squircle-emerald w-8 h-8">
+              <Activity className="w-4 h-4" strokeWidth={1.75} />
+            </div>
+            <h4 className="text-xs sm:text-sm font-extrabold text-white">
+              أذكار مخصصة لحالتك الآن
             </h4>
           </div>
           {activeMood && (
             <button
               onClick={() => setActiveMood(null)}
-              className="text-[11px] text-rose-400 hover:underline cursor-pointer"
+              className="text-[11px] text-rose-400 hover:underline cursor-pointer font-semibold"
             >
-              عرض كافة الأذكار ✕
+              عرض الكل
             </button>
           )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
           {[
-            { id: 'anxiety', label: 'قلق أو متوتر 😌', desc: 'طمأنينة وسكينة' },
-            { id: 'distress', label: 'حزين أو مهموم 🤲', desc: 'تفريج الكرب' },
-            { id: 'fatigue', label: 'مجهد أو متعب 🥱', desc: 'طلب العافية والنشاط' },
-            { id: 'guidance', label: 'في حيرة من أمري 🌿', desc: 'استخارة وهداية' },
-            { id: 'gratitude', label: 'سعيد وشاكر 😊', desc: 'حمد وشكر لله' },
+            { id: 'anxiety', label: 'قلق أو متوتر', desc: 'طمأنينة وسكينة' },
+            { id: 'distress', label: 'مهموم أو مكروب', desc: 'تفريج الكرب' },
+            { id: 'fatigue', label: 'مجهد أو متعب', desc: 'طلب العافية' },
+            { id: 'guidance', label: 'طلب الهداية', desc: 'استخارة وتيسير' },
+            { id: 'gratitude', label: 'حمد وشكر', desc: 'شكر النعم' },
           ].map((m) => (
             <button
               key={m.id}
@@ -448,57 +444,55 @@ export const AthkarView: React.FC = () => {
               }}
               className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                 activeMood === m.id
-                  ? 'bg-gradient-to-b from-emerald-600 to-teal-700 text-white border-emerald-400 shadow-lg shadow-emerald-600/30 font-bold scale-[1.02]'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700/80 hover:border-slate-600'
+                  ? 'lux-card-emerald border-emerald-400/50 text-white font-bold'
+                  : 'lux-well hover:border-white/[0.12] text-slate-300'
               }`}
             >
-              <div className="text-xs sm:text-sm font-black">{m.label}</div>
+              <div className="text-xs font-extrabold">{m.label}</div>
               <div className="text-[10px] text-slate-400 mt-0.5">{m.desc}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* 3. Electronic Misbaha Card (السبحة الإلكترونية المتطورة مثل برنامج أذكاري) */}
-      <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-emerald-950/40 p-6 sm:p-8 border border-emerald-500/30 shadow-2xl relative overflow-hidden">
+      {/* 3. Luxury Electronic Misbaha */}
+      <div className="lux-card-emerald rounded-3xl p-6 sm:p-8 relative overflow-hidden">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-          
-          {/* Left: Text & Presets */}
           <div className="space-y-4 flex-1 text-center lg:text-right w-full">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                السبحة الإلكترونية الذكية التفاعلية
+              <span className="text-xs font-extrabold text-[#E7C66C] tracking-wide flex items-center gap-2">
+                <Sparkles className="w-4 h-4" strokeWidth={1.75} />
+                المسبحة الإلكترونية الذكية
               </span>
 
-              {/* Haptic & Sound Toggles */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsTasbeehHapticEnabled(!isTasbeehHapticEnabled)}
                   className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
-                    isTasbeehHapticEnabled ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-800 text-slate-500 border-slate-700'
+                    isTasbeehHapticEnabled
+                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                      : 'lux-well text-slate-500'
                   }`}
-                  title="الاهتزاز مع كل تسبيحة"
                 >
                   الاهتزاز {isTasbeehHapticEnabled ? '✓' : '✕'}
                 </button>
                 <button
                   onClick={() => setIsTasbeehSoundEnabled(!isTasbeehSoundEnabled)}
-                  className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                    isTasbeehSoundEnabled ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-800 text-slate-500 border-slate-700'
+                  className={`btn-lux-icon !w-8 !h-8 cursor-pointer ${
+                    isTasbeehSoundEnabled
+                      ? '!bg-emerald-500/15 !border-emerald-500/35 text-emerald-300'
+                      : 'text-slate-500'
                   }`}
-                  title="الصوت مع كل تسبيحة"
                 >
                   {isTasbeehSoundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-black text-white font-serif leading-relaxed">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-white font-serif leading-relaxed">
               {selectedTasbeehText}
             </h3>
 
-            {/* Presets Grid */}
             <div className="flex flex-wrap gap-2 pt-1 justify-center lg:justify-start max-h-36 overflow-y-auto scrollbar-none">
               {tasbeehPresets.map((p, idx) => (
                 <button
@@ -509,55 +503,54 @@ export const AthkarView: React.FC = () => {
                   }}
                   className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                     selectedTasbeehText === p
-                      ? 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 font-bold shadow-sm'
-                      : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:text-white hover:border-slate-600'
+                      ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/45 font-bold'
+                      : 'lux-well text-slate-300 hover:text-white hover:border-white/[0.15]'
                   }`}
                 >
-                  {p.length > 30 ? p.substring(0, 30) + '...' : p}
+                  {p.length > 32 ? p.substring(0, 32) + '...' : p}
                 </button>
               ))}
             </div>
 
-            {/* Target Selectors & Stats */}
-            <div className="flex flex-wrap items-center gap-3 pt-2 justify-center lg:justify-start text-xs text-slate-300">
+            <div className="flex flex-wrap items-center gap-2.5 pt-2 justify-center lg:justify-start text-xs text-slate-300">
               <span className="font-bold text-slate-400">الهدف:</span>
               {[33, 100, 500, 1000, 0].map((t) => (
                 <button
                   key={t}
                   onClick={() => setTasbeehTarget(t)}
-                  className={`px-3 py-1 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-xl border text-xs font-bold cursor-pointer transition-all tabular-nums ${
                     tasbeehTarget === t
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                      ? 'btn-lux-primary'
+                      : 'lux-well text-slate-300 hover:border-white/[0.15]'
                   }`}
                 >
-                  {t === 0 ? 'مفتوح (حر)' : t}
+                  {t === 0 ? 'حر' : t}
                 </button>
               ))}
 
-              <div className="flex items-center gap-3 mr-auto text-[11px] text-slate-400">
+              <div className="flex items-center gap-3 mr-auto text-[11px] text-slate-400 tabular-nums">
                 <span>جلسة: <strong className="text-white">{totalTasbeehSession}</strong></span>
                 <span>اليوم: <strong className="text-emerald-400">{dailyTasbeeh}</strong></span>
-                <span>الكلي: <strong className="text-amber-400">{allTimeTasbeeh}</strong></span>
+                <span>الإجمالي: <strong className="text-[#E7C66C]">{allTimeTasbeeh}</strong></span>
               </div>
             </div>
           </div>
 
-          {/* Right: Big Interactive Misbaha Bead Button */}
+          {/* Right: Luxury Gold-Emerald Misbaha Sphere */}
           <div className="flex flex-col items-center shrink-0">
             <button
               onClick={handleTasbeehClick}
-              className="relative w-48 h-48 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 p-2 shadow-2xl shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center group"
+              className="relative w-48 h-48 sm:w-52 sm:h-52 rounded-full bg-gradient-to-br from-[#ECD07B] via-emerald-500 to-emerald-700 p-[3px] shadow-[0_16px_45px_-10px_rgba(16,185,129,0.45)] hover:scale-[1.03] active:scale-[0.96] transition-all cursor-pointer flex items-center justify-center group"
             >
-              <div className="w-full h-full rounded-full bg-slate-900 border-2 border-emerald-400/30 flex flex-col items-center justify-center p-4">
-                <span className="text-5xl sm:text-6xl font-mono font-black text-white group-hover:text-emerald-300 transition-colors">
+              <div className="w-full h-full rounded-full bg-[#090D16] border border-white/10 flex flex-col items-center justify-center p-4">
+                <span className="text-5xl sm:text-6xl font-mono font-extrabold tabular-nums text-white group-hover:text-emerald-300 transition-colors">
                   {tasbeehCount}
                 </span>
-                <span className="text-xs text-slate-400 mt-1">
-                  {tasbeehTarget > 0 ? `/ ${tasbeehTarget}` : 'تسبيح حر'}
+                <span className="text-xs text-slate-400 font-mono tabular-nums mt-1">
+                  {tasbeehTarget > 0 ? `/ ${tasbeehTarget}` : 'تسبيح مفتوح'}
                 </span>
-                <span className="text-[11px] text-emerald-400 font-bold mt-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-0.5 rounded-full">
-                  المس للتسبيح 📿
+                <span className="text-[11px] text-[#E7C66C] font-bold mt-2.5 bg-[#D4AF37]/12 border border-[#D4AF37]/30 px-3 py-0.5 rounded-full">
+                  اضغط للتسبيح
                 </span>
               </div>
             </button>

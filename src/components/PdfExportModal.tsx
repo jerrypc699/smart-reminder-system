@@ -147,19 +147,19 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/82 backdrop-blur-lg animate-fade-in"
       dir="rtl"
     >
-      <div className="relative w-full max-w-2xl rounded-3xl bg-slate-900 border border-emerald-500/30 p-5 sm:p-6 shadow-2xl max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-2xl rounded-3xl lux-modal p-5 sm:p-6 max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-white/[0.07] pb-4 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-              <FileText className="w-5 h-5" />
+            <div className="icon-squircle-gold w-11 h-11 shrink-0">
+              <FileText className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black text-white">
-                تصدير التقارير بصيغة PDF احترافي
+              <h3 className="text-base sm:text-lg font-extrabold text-white">
+                تصدير التقارير بصيغة PDF
               </h3>
               <p className="text-xs text-slate-400">
                 اختر نطاق التقرير والمهام المطلوب تضمينها (الكل أو مهام محددة)
@@ -169,9 +169,9 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="btn-lux-icon text-slate-400 hover:text-white cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" strokeWidth={1.75} />
           </button>
         </div>
 

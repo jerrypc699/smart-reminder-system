@@ -90,32 +90,32 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/82 backdrop-blur-lg animate-fade-in">
       <div 
-        className={`relative w-full ${isVideo ? 'max-w-2xl' : 'max-w-lg'} p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-900 border shadow-2xl transition-all duration-300 ${
+        className={`relative w-full ${isVideo ? 'max-w-2xl' : 'max-w-lg'} p-5 sm:p-8 rounded-3xl lux-modal transition-all duration-300 ${
           isPrayer
-            ? 'border-emerald-500/50 glow-emerald'
+            ? 'border-emerald-500/45 glow-emerald'
             : isVideo
-            ? 'border-purple-500/50 shadow-purple-500/20'
+            ? 'border-[#D4AF37]/40 glow-amber'
             : isScheduledMedia
-            ? 'border-cyan-500/50 glow-cyan'
+            ? 'border-emerald-500/35 glow-emerald'
             : isUrgent
-            ? 'border-rose-500/50 shadow-rose-500/20'
-            : 'border-blue-500/50 glow-blue'
+            ? 'border-rose-500/45 shadow-rose-500/20'
+            : 'border-white/[0.12]'
         }`}
       >
-        {/* Glow decoration */}
+        {/* Subtle Signature Badge Icon */}
         <div 
-          className={`absolute -top-10 sm:-top-12 left-1/2 -translate-x-1/2 w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center shadow-xl ring-4 ring-slate-900 ${
+          className={`absolute -top-9 sm:-top-11 left-1/2 -translate-x-1/2 w-18 h-18 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-2xl ring-4 ring-[#06080D] ${
             isPrayer 
-              ? 'bg-gradient-to-tr from-emerald-600 to-teal-400' 
+              ? 'bg-gradient-to-br from-emerald-500 to-emerald-700' 
               : isVideo
-              ? 'bg-gradient-to-tr from-purple-600 to-indigo-500'
+              ? 'bg-gradient-to-br from-[#ECD07B] to-[#C89B2B] text-[#06080D]'
               : isScheduledMedia
-              ? 'bg-gradient-to-tr from-cyan-600 to-blue-500'
+              ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
               : isUrgent 
-              ? 'bg-gradient-to-tr from-rose-600 to-amber-500' 
-              : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
+              ? 'bg-gradient-to-br from-rose-500 to-amber-500' 
+              : 'bg-gradient-to-br from-emerald-600 to-teal-700'
           }`}
         >
           {isPrayer ? (

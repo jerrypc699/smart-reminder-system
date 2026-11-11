@@ -1182,7 +1182,12 @@ export function App() {
   const pendingTasksCount = tasks.filter((t) => t.status !== 'completed').length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-['Cairo']">
+    <div className="min-h-screen bg-[#06080D] text-slate-100 flex flex-col font-['Cairo'] relative">
+      {/* Subtle Ambient Zenith Halo */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_75%_55%_at_50%_0%,rgba(16,185,129,0.075),transparent_70%)] z-0"
+      />
       {/* Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -1206,7 +1211,7 @@ export function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-16">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-16">
         {activeTab === 'dashboard' && (
           <Dashboard
             prayerTimes={prayerCalc.prayers}
@@ -1339,18 +1344,18 @@ export function App() {
       <FloatingDhikr />
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-900/60 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>نظام التذكير الصوتي الذكي • مهام العمل ومواقيت الصلاة</span>
+      <footer className="relative z-10 border-t border-white/[0.06] bg-[#070A11]/90 py-5 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+            <span className="font-semibold">نظام د. عبد العزيز الذكي • إدارة المهام ومواقيت الصلاة</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-[11px] text-slate-500">
             <span>تزامن فلكي دقيق</span>
-            <span>•</span>
-            <span>نطق صوتي ذكي باللغة العربية</span>
-            <span>•</span>
-            <span>إشعارات سطح المكتب</span>
+            <span className="text-slate-700">•</span>
+            <span>نطق صوتي عربي ذكي</span>
+            <span className="text-slate-700">•</span>
+            <span>واتساب ومزامنة سحابية</span>
           </div>
         </div>
       </footer>

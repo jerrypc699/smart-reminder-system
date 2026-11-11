@@ -167,33 +167,29 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/82 backdrop-blur-lg animate-fadeIn">
       <div 
-        className="w-full max-w-lg rounded-3xl bg-slate-900 border border-emerald-500/30 p-6 shadow-2xl space-y-6 relative overflow-hidden"
+        className="w-full max-w-lg rounded-3xl lux-modal p-6 space-y-5 relative overflow-hidden max-h-[92vh] overflow-y-auto"
         dir="rtl"
       >
-        {/* Glow Effects */}
-        <div className="absolute -top-20 -left-20 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -right-20 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white">
-              <Sparkles className="w-5 h-5" />
+            <div className="icon-squircle-gold w-10 h-10 shrink-0">
+              <Sparkles className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-extrabold text-white">
                 إضافة مهمة بالصوت الذكي
               </h3>
-              <p className="text-xs text-slate-400">تحدث بالعامية أو الفصحى، وسيقوم النظام بتحديد الموعد والتفاصيل</p>
+              <p className="text-[11px] text-slate-400">تحدث بطبيعتك وسيُضبط التاريخ والوقت والتصنيف تلقائياً</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="btn-lux-icon text-slate-400 hover:text-white cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" strokeWidth={1.75} />
           </button>
         </div>
 

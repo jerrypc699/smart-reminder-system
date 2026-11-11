@@ -9,13 +9,12 @@ import {
   Settings,
   Sparkles,
   Play,
-  Calendar,
   Layers,
-  Radio,
   Film,
   Cloud,
   RefreshCw,
-  Award
+  Award,
+  MapPin
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings } from '../types';
 
@@ -54,14 +53,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onRequestNotification,
   pendingTasksCount,
   scheduledAudiosCount = 0,
-  onOpenInstallModal,
   isCloudConnected = false,
   onOpenCloudModal,
   onManualSync,
   isManualSyncing = false,
 }) => {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ar-EG', {
+    return date.toLocaleTimeString('ar-EG-u-nu-latn', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -79,113 +77,121 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: Layers },
-    { id: 'daily_system', label: 'نظامي اليومي 📊', icon: Award },
+    { id: 'daily_system', label: 'نظامي اليومي', icon: Award },
     { id: 'prayers', label: 'مواقيت الصلاة', icon: Compass },
     {
       id: 'tasks',
       label: 'مهام العمل',
       icon: CheckSquare,
-      badge: pendingTasksCount > 0 ? pendingTasksCount : undefined
+      badge: pendingTasksCount > 0 ? pendingTasksCount : undefined,
     },
     {
       id: 'audio_scheduler',
       label: 'الوسائط المجدولة',
       icon: Film,
-      badge: scheduledAudiosCount > 0 ? scheduledAudiosCount : undefined
+      badge: scheduledAudiosCount > 0 ? scheduledAudiosCount : undefined,
     },
-    { id: 'athkar', label: 'أذكاري والسبحة 📿', icon: Sparkles },
+    { id: 'athkar', label: 'أذكاري والسبحة', icon: Sparkles },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg">
+    <header className="sticky top-0 z-40 pt-safe bg-[#07090F]/88 backdrop-blur-2xl border-b border-white/[0.065] shadow-[0_8px_32px_rgba(0,0,0,0.65)]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between min-h-[4rem] sm:h-20 py-1.5 sm:py-0">
-
-          {/* Logo & Clock Info */}
-          <div className="flex items-center gap-2.5 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="relative group shrink-0">
-                <div className="w-10 h-10 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-200 to-amber-500 p-[2px] shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/40 overflow-hidden">
-                  <img
-                    src="/logo.png"
-                    alt="شعار د. عبد العزيز الرسمي"
-                    className="w-full h-full object-cover rounded-[14px] bg-slate-950"
-                  />
-                </div>
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center text-[7px] sm:text-[8px] text-white font-black shadow">✓</span>
+        <div className="flex items-center justify-between gap-2 min-h-[3.85rem] sm:h-[4.5rem] py-2 sm:py-0">
+          {/* Brand Identity & Dates (Clean non-wrapping layout on mobile) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('dashboard')}
+            className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 text-right cursor-pointer group"
+          >
+            <div className="relative shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl p-[1.5px] bg-gradient-to-br from-[#F1D583] via-[#D4AF37] to-[#8C6A1B] shadow-[0_4px_16px_rgba(212,175,55,0.22)]">
+                <img
+                  src="/logo.png"
+                  alt="شعار د. عبد العزيز الرسمي"
+                  className="w-full h-full object-cover rounded-[10px] sm:rounded-[14px] bg-[#06080D]"
+                />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-sm sm:text-xl font-black bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent truncate">
-                    د. عبد العزيز
-                  </h1>
-                  <span className="hidden sm:inline-flex text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold items-center gap-1 shrink-0">
-                    <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
-                    المساعد الذكي
+              <span
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#07090F] shadow-sm"
+                title="متصل ونشط"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-[15px] sm:text-lg font-extrabold text-white tracking-tight whitespace-nowrap group-hover:text-[#F1D583] transition-colors">
+                  د. عبد العزيز
+                </h1>
+                <span className="hidden lg:inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full bg-[#D4AF37]/12 text-[#E7C66C] border border-[#D4AF37]/25 font-bold shrink-0">
+                  <Sparkles className="w-2.5 h-2.5" strokeWidth={2} />
+                  المساعد التنفيذي
+                </span>
+              </div>
+
+              <div className="mt-0.5 flex flex-col leading-tight">
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-200 truncate">
+                  {hijriDate}
+                </span>
+                <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[11px] text-slate-400 font-medium mt-0.5">
+                  <span className="tabular-nums truncate">{formatGregorianDate(currentTime)} م</span>
+                  <span className="text-slate-600 hidden sm:inline">•</span>
+                  <span className="hidden sm:inline-flex items-center gap-0.5 text-emerald-400 font-semibold shrink-0">
+                    <MapPin className="w-3 h-3" strokeWidth={1.75} />
+                    {prayerSettings.cityName}
                   </span>
                 </div>
-                <div className="mt-0.5 flex flex-col text-[10px] sm:text-xs leading-snug">
-                  <div className="flex items-center gap-1.5 font-semibold text-slate-200">
-                    <span className="truncate">{hijriDate}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[9px] sm:text-[11px] text-slate-400 font-medium mt-0.5">
-                    <span className="text-slate-300">{formatGregorianDate(currentTime)} م</span>
-                    <span className="text-slate-600">•</span>
-                    <span className="text-emerald-400 font-semibold truncate">{prayerSettings.cityName}</span>
-                  </div>
-                </div>
               </div>
             </div>
-          </div>
+          </button>
 
-          {/* Time & Audio Live Waves */}
-          <div className="hidden lg:flex items-center gap-6 bg-slate-800/60 px-5 py-2.5 rounded-2xl border border-slate-700/60 shadow-inner">
-            <div className="text-right">
-              <div className="text-lg font-mono font-bold text-white tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-400" />
-                {formatTime(currentTime)}
-              </div>
+          {/* Center Chronometer Pill (Desktop) */}
+          <div className="hidden lg:flex items-center gap-5 lux-well px-4 py-2 rounded-2xl">
+            <div className="flex items-center gap-2 text-base font-mono font-bold text-white tabular-nums tracking-wide">
+              <Clock className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
+              <span dir="ltr">{formatTime(currentTime)}</span>
             </div>
 
-            {/* Speaking Audio Visualizer */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/50">
-              <div className="text-xs text-slate-400 ml-1">
+            <div className="h-4 w-px bg-white/10" />
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold">
                 {isSpeaking ? (
-                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span className="text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                     صوت نشط
                   </span>
                 ) : (
-                  'جاهز للتنبيه'
+                  <span className="text-slate-400">الصوت جاهز</span>
                 )}
-              </div>
-              <div className="flex items-end gap-1 h-5 w-12 justify-center">
-                <span className={`w-1 rounded-full bg-emerald-400 ${isSpeaking ? 'animate-wave-1' : 'h-1.5'}`}></span>
-                <span className={`w-1 rounded-full bg-emerald-400 ${isSpeaking ? 'animate-wave-2' : 'h-2'}`}></span>
-                <span className={`w-1 rounded-full bg-emerald-400 ${isSpeaking ? 'animate-wave-3' : 'h-1.5'}`}></span>
-                <span className={`w-1 rounded-full bg-emerald-400 ${isSpeaking ? 'animate-wave-4' : 'h-2.5'}`}></span>
-                <span className={`w-1 rounded-full bg-emerald-400 ${isSpeaking ? 'animate-wave-5' : 'h-1'}`}></span>
+              </span>
+              <div className="flex items-end gap-0.5 h-4 w-8 justify-center">
+                <span className={`w-0.5 rounded-full bg-emerald-400/80 ${isSpeaking ? 'animate-wave-1' : 'h-1.5'}`} />
+                <span className={`w-0.5 rounded-full bg-emerald-400/80 ${isSpeaking ? 'animate-wave-2' : 'h-2.5'}`} />
+                <span className={`w-0.5 rounded-full bg-emerald-400/80 ${isSpeaking ? 'animate-wave-3' : 'h-1.5'}`} />
+                <span className={`w-0.5 rounded-full bg-emerald-400/80 ${isSpeaking ? 'animate-wave-4' : 'h-3'}`} />
+                <span className={`w-0.5 rounded-full bg-emerald-400/80 ${isSpeaking ? 'animate-wave-5' : 'h-1'}`} />
               </div>
             </div>
           </div>
 
-          {/* Symmetrical Action Pill Toolbar */}
-          <div className="flex items-center p-1 rounded-2xl bg-slate-950/80 border border-slate-800/80 shadow-md gap-1 shrink-0">
+          {/* Uniform Control Capsule */}
+          <div className="flex items-center gap-1 p-1 rounded-2xl lux-well shrink-0">
             {onOpenCloudModal && (
               <button
                 type="button"
                 onClick={onOpenCloudModal}
-                title={isCloudConnected ? "السحابة متصلة وتعمل بالمزامنة الفورية بين PC والموبايل" : "ربط قاعدة البيانات السحابية (Firebase)"}
-                className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
+                title={isCloudConnected ? 'السحابة متصلة ومتزامنة لحظياً' : 'إعداد الاتصال السحابي'}
+                className={`relative btn-lux-icon !w-8 !h-8 sm:!w-9 sm:!h-9 cursor-pointer ${
                   isCloudConnected
-                    ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? '!bg-emerald-500/12 !border-emerald-500/25 text-emerald-400'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Cloud className="w-4 h-4" />
+                <Cloud className="w-[15px] h-[15px] sm:w-4 sm:h-4" strokeWidth={1.75} />
                 {isCloudConnected && (
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 )}
               </button>
             )}
@@ -195,20 +201,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 onClick={onManualSync}
                 disabled={isManualSyncing}
-                title="مزامنة فورية الآن لجميع الفيديوهات والمهام بين الكمبيوتر والموبايل"
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-cyan-400 hover:bg-cyan-500/20 transition-all cursor-pointer disabled:opacity-50"
+                title="مزامنة سحابية فورية"
+                className="btn-lux-icon !w-8 !h-8 sm:!w-9 sm:!h-9 text-slate-300 hover:text-emerald-300 cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 ${isManualSyncing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-[15px] h-[15px] sm:w-4 sm:h-4 ${isManualSyncing ? 'animate-spin text-emerald-400' : ''}`}
+                  strokeWidth={1.75}
+                />
               </button>
             )}
 
             <button
               type="button"
               onClick={onTestAudio}
-              title="اختبار الصوت والتنبيه الصوتي"
-              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
+              title="تجربة الصوت والتنبيه"
+              className="btn-lux-icon !w-8 !h-8 sm:!w-9 sm:!h-9 text-emerald-400 hover:text-emerald-300 cursor-pointer"
             >
-              <Play className="w-4 h-4" />
+              <Play className="w-[15px] h-[15px] sm:w-4 sm:h-4" strokeWidth={1.85} />
             </button>
 
             <button
@@ -220,47 +229,55 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }))
               }
               title={audioSettings.soundMuted ? 'إلغاء كتم الصوت' : 'كتم الصوت'}
-              className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
+              className={`btn-lux-icon !w-8 !h-8 sm:!w-9 sm:!h-9 cursor-pointer ${
                 audioSettings.soundMuted
-                  ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
-                  : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800'
+                  ? '!bg-rose-500/15 !border-rose-500/30 text-rose-400'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
-              {audioSettings.soundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              {audioSettings.soundMuted ? (
+                <VolumeX className="w-[15px] h-[15px] sm:w-4 sm:h-4" strokeWidth={1.75} />
+              ) : (
+                <Volume2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" strokeWidth={1.75} />
+              )}
             </button>
 
             {!hasNotificationPermission && (
               <button
                 type="button"
                 onClick={onRequestNotification}
-                title="تفعيل الإشعارات والأذان على الهاتف"
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer animate-pulse"
+                title="تفعيل إذن الإشعارات"
+                className="btn-lux-icon !w-8 !h-8 sm:!w-9 sm:!h-9 !bg-[#D4AF37]/15 !border-[#D4AF37]/35 text-[#E7C66C] cursor-pointer"
               >
-                <Bell className="w-4 h-4" />
+                <Bell className="w-[15px] h-[15px] sm:w-4 sm:h-4" strokeWidth={1.75} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Navigation Tabs (Desktop only - Mobile uses bottom nav) */}
-        <nav className="hidden md:flex items-center justify-center gap-1.5 overflow-x-auto pb-3 pt-1 scrollbar-none">
+        {/* Desktop Refined Navigation Strip */}
+        <nav className="hidden md:flex items-center justify-center gap-1 pb-3 pt-0.5 overflow-x-auto scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer select-none ${
+                className={`relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer select-none border ${
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md shadow-emerald-500/10'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 border border-transparent'
+                    ? 'bg-emerald-500/14 text-emerald-300 border-emerald-500/30 shadow-[0_4px_16px_-6px_rgba(16,185,129,0.45)]'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04] border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <Icon
+                  className={`w-4 h-4 transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}
+                  strokeWidth={isActive ? 2 : 1.75}
+                />
                 <span>{item.label}</span>
                 {item.badge !== undefined && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-[#E7C66C] text-[#06080D] tabular-nums leading-none">
                     {item.badge}
                   </span>
                 )}

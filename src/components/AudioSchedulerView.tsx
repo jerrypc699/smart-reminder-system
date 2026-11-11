@@ -422,23 +422,19 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Header Banner - Symmetrical Hero Card */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-slate-950/90 border border-slate-800/80 p-5 sm:p-6 shadow-2xl backdrop-blur-xl overflow-hidden">
-        {/* Glow ambient effects */}
-        <div className="absolute -top-16 -right-16 w-44 h-44 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-44 h-44 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+      {/* Header Banner - Symmetrical Luxury Media Studio */}
+      <div className="relative rounded-3xl lux-card-gold p-5 sm:p-7 overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[11px] font-bold mb-2.5">
-              <Film className="w-3.5 h-3.5 text-purple-400" />
-              <span>المركز الإعلامي والتنبيهات المجدولة</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF37]/12 border border-[#D4AF37]/25 text-[#E7C66C] text-[11px] font-bold mb-2.5">
+              <Film className="w-3.5 h-3.5" strokeWidth={1.85} />
+              <span>استوديو الوسائط والتشغيل المجدول</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-              <span>مكتبة الوسائط والجدولة التلقائية</span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              مكتبة الفيديو والصوت التلقائية
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed max-w-xl">
-              ارفع الفيديوهات والتسجيلات ليتم تشغيلها تلقائياً كمنبه رسمي يوقظ الهاتف حتى في الوضع الصامت.
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 leading-relaxed max-w-xl">
+              ارفع الفيديوهات والتسجيلات الصوتية لتفتح وتشتغل تلقائياً كمنبه صريح حتى لو كان الهاتف صامتاً أو مقفلاً.
             </p>
           </div>
         </div>
@@ -459,37 +455,34 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
           className="hidden"
         />
 
-        {/* 2x2 Master Action Matrix for Absolute Symmetry */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mt-5">
-          {/* Action 1: Upload Video */}
+        {/* Uniform 2x2 Action Matrix (Refined Obsidian Squircle Cards) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
           <label
             htmlFor="video-upload-input"
-            className="group relative flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 hover:bg-purple-950/40 border border-purple-500/30 hover:border-purple-400/80 transition-all duration-200 cursor-pointer shadow-lg shadow-purple-950/20 active:scale-[0.98]"
+            className="lux-card-interactive group flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer active:scale-[0.985]"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-purple-500/30 shrink-0 group-hover:scale-105 transition-transform">
-              <Video className="w-5 h-5 text-white" />
+            <div className="icon-squircle-gold w-10 h-10 sm:w-11 sm:h-11 shrink-0 group-hover:scale-105 transition-transform">
+              <Video className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1 text-right">
               <div className="text-xs sm:text-sm font-bold text-white truncate">رفع فيديو (MP4)</div>
-              <div className="text-[10px] sm:text-[11px] text-purple-300/80 truncate">عروض مرئية وتوعوية</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 truncate">عروض مرئية مجدولة</div>
             </div>
           </label>
 
-          {/* Action 2: Upload Audio */}
           <label
             htmlFor="audio-upload-input"
-            className="group relative flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 hover:bg-cyan-950/40 border border-cyan-500/30 hover:border-cyan-400/80 transition-all duration-200 cursor-pointer shadow-lg shadow-cyan-950/20 active:scale-[0.98]"
+            className="lux-card-interactive group flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer active:scale-[0.985]"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-cyan-500/30 shrink-0 group-hover:scale-105 transition-transform">
-              <UploadCloud className="w-5 h-5 text-white" />
+            <div className="icon-squircle w-10 h-10 sm:w-11 sm:h-11 text-slate-200 shrink-0 group-hover:scale-105 transition-transform">
+              <UploadCloud className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1 text-right">
               <div className="text-xs sm:text-sm font-bold text-white truncate">رفع صوت (MP3)</div>
-              <div className="text-[10px] sm:text-[11px] text-cyan-300/80 truncate">أذكار وأصوات مسجلة</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 truncate">أذكار وأصوات محفوظة</div>
             </div>
           </label>
 
-          {/* Action 3: Mic Recording */}
           <button
             type="button"
             onClick={() => {
@@ -498,18 +491,17 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
               setRecordingSeconds(0);
               setIsRecordingModalOpen(true);
             }}
-            className="group relative flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 hover:bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-400/80 transition-all duration-200 cursor-pointer shadow-lg shadow-emerald-950/20 active:scale-[0.98]"
+            className="lux-card-interactive group flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer active:scale-[0.985]"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/30 shrink-0 group-hover:scale-105 transition-transform">
-              <Mic className="w-5 h-5 text-white" />
+            <div className="icon-squircle-emerald w-10 h-10 sm:w-11 sm:h-11 shrink-0 group-hover:scale-105 transition-transform">
+              <Mic className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1 text-right">
               <div className="text-xs sm:text-sm font-bold text-white truncate">تسجيل صوتي</div>
-              <div className="text-[10px] sm:text-[11px] text-emerald-300/80 truncate">تسجيل بصوتك فوراً</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 truncate">تسجيل فوري بالميكروفون</div>
             </div>
           </button>
 
-          {/* Action 4: Schedule */}
           <button
             type="button"
             onClick={() => {
@@ -519,20 +511,20 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
               }
               setIsScheduleModalOpen(true);
             }}
-            className="group relative flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-400/80 transition-all duration-200 cursor-pointer shadow-lg shadow-amber-950/20 active:scale-[0.98]"
+            className="btn-lux-primary group flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer text-right"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white shadow-md shadow-amber-500/30 shrink-0 group-hover:scale-105 transition-transform">
-              <Plus className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
+              <Plus className="w-5 h-5" strokeWidth={2} />
             </div>
             <div className="min-w-0 flex-1 text-right">
-              <div className="text-xs sm:text-sm font-bold text-white truncate">جدولة تشغيل</div>
-              <div className="text-[10px] sm:text-[11px] text-amber-300/80 truncate">تحديد الموعد والتكرار</div>
+              <div className="text-xs sm:text-sm font-extrabold text-white truncate">جدولة تشغيل</div>
+              <div className="text-[10px] sm:text-[11px] text-emerald-100/85 truncate">تحديد الموعد والتكرار</div>
             </div>
           </button>
         </div>
 
-        {/* Cloud Command Bar (Full-Width Symmetrical Bar) */}
-        <div className="mt-3.5 pt-3.5 border-t border-slate-800/80">
+        {/* Cloud Command Bar */}
+        <div className="mt-4 pt-3.5 border-t border-white/[0.06]">
           <button
             type="button"
             onClick={async () => {
@@ -545,7 +537,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                 if (res.success) {
                   await loadLibrary();
                   onRefreshScheduled();
-                  setUploadSuccess(`🎉 تمت المزامنة السحابية بنجاح! متطابق الآن: ${res.scheduledCount} وسائط مجدولة و ${res.tasksCount} مهمة.`);
+                  setUploadSuccess(`تمت المزامنة السحابية بنجاح — متطابق الآن: ${res.scheduledCount} وسائط مجدولة و ${res.tasksCount} مهمة.`);
                 } else {
                   setUploadError(res.error || 'تعذرت المزامنة السحابية.');
                 }
@@ -556,22 +548,24 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
               }
             }}
             disabled={isSyncingCloud}
-            className="w-full flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 hover:bg-slate-950 border border-cyan-500/30 hover:border-cyan-400/70 text-cyan-200 transition-all duration-200 cursor-pointer disabled:opacity-50 shadow-inner group"
+            className="lux-well w-full flex items-center justify-between p-3 sm:p-3.5 rounded-2xl hover:border-emerald-500/35 transition-all cursor-pointer disabled:opacity-50 group"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
-                <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+            <div className="flex items-center gap-3">
+              <div className="icon-squircle-emerald w-9 h-9 shrink-0">
+                <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} strokeWidth={1.75} />
               </div>
               <div className="text-right">
                 <div className="text-xs font-bold text-white flex items-center gap-2">
-                  <span>{isSyncingCloud ? 'جاري المزامنة السحابية...' : 'مزامنة السحابة الفورية'}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-medium">سحابي ومحلي</span>
+                  <span>{isSyncingCloud ? 'جاري المزامنة السحابية...' : 'مزامنة السحابة الآن'}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] text-slate-300 border border-white/[0.08] font-semibold">
+                    سحابي ومحلي
+                  </span>
                 </div>
-                <div className="text-[11px] text-slate-400">تحديث وتطابق فوري لكافة الفيديوهات والمهام بين الهاتف والحاسوب</div>
+                <div className="text-[11px] text-slate-400">تطابق فوري للفيديوهات والملفات الصوتية بين الكمبيوتر والهاتف</div>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-300 font-bold bg-emerald-500/12 px-3 py-1.5 rounded-xl border border-emerald-500/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               <span>جاهز للمزامنة</span>
             </div>
           </button>
@@ -603,18 +597,17 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
         </div>
       )}
 
-      {/* Top Stat Cards - 4-Column Balanced Grid */}
+      {/* Top Stat Cards - 4-Column Refined Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Scheduled Alerts */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 shadow-xl flex flex-col justify-between hover:border-cyan-500/40 transition-all min-h-[115px]">
+        <div className="lux-card-interactive p-4 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[112px]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400">التنبيهات المجدولة</span>
-            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <Clock className="w-4 h-4" />
+            <div className="icon-squircle-emerald w-8 h-8">
+              <Clock className="w-4 h-4" strokeWidth={1.75} />
             </div>
           </div>
           <div>
-            <p className="text-2xl sm:text-3xl font-black text-white mt-2 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white mt-2 tabular-nums font-mono">
               {scheduledAudios.length}
             </p>
             <span className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1.5 font-medium">
@@ -624,35 +617,33 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Videos */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 shadow-xl flex flex-col justify-between hover:border-purple-500/40 transition-all min-h-[115px]">
+        <div className="lux-card-interactive p-4 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[112px]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400">مقاطع الفيديو</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
-              <Video className="w-4 h-4" />
+            <div className="icon-squircle-gold w-8 h-8">
+              <Video className="w-4 h-4" strokeWidth={1.75} />
             </div>
           </div>
           <div>
-            <p className="text-2xl sm:text-3xl font-black text-white mt-2 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white mt-2 tabular-nums font-mono">
               {videoCount}
             </p>
-            <span className="text-[11px] text-purple-300 mt-1 flex items-center gap-1.5 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-              فيديو جاهز للعرض التلقائي
+            <span className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E7C66C]" />
+              جاهز للعرض التلقائي
             </span>
           </div>
         </div>
 
-        {/* Card 3: Audio Files */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 shadow-xl flex flex-col justify-between hover:border-emerald-500/40 transition-all min-h-[115px]">
+        <div className="lux-card-interactive p-4 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[112px]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400">الملفات الصوتية</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <FileAudio className="w-4 h-4" />
+            <div className="icon-squircle w-8 h-8 text-slate-300">
+              <FileAudio className="w-4 h-4" strokeWidth={1.75} />
             </div>
           </div>
           <div>
-            <p className="text-2xl sm:text-3xl font-black text-white mt-2 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white mt-2 tabular-nums font-mono">
               {audioCount}
             </p>
             <span className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
@@ -662,21 +653,20 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
           </div>
         </div>
 
-        {/* Card 4: Memory Consumed */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 shadow-xl flex flex-col justify-between hover:border-amber-500/40 transition-all min-h-[115px]">
+        <div className="lux-card-interactive p-4 sm:p-5 rounded-2xl flex flex-col justify-between min-h-[112px]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">حجم الذاكرة المستهلك</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Sliders className="w-4 h-4" />
+            <span className="text-xs font-bold text-slate-400">المساحة المستخدمة</span>
+            <div className="icon-squircle w-8 h-8 text-slate-300">
+              <Sliders className="w-4 h-4" strokeWidth={1.75} />
             </div>
           </div>
           <div>
-            <p className="text-2xl sm:text-3xl font-black text-white mt-2 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white mt-2 tabular-nums font-mono" dir="ltr">
               {formatSize(mediaLibrary.reduce((acc, cur) => acc + cur.size, 0))}
             </p>
             <span className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              تخزين آمن في IndexedDB
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              محفوظ محلياً وسحابياً
             </span>
           </div>
         </div>
@@ -767,20 +757,20 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
       )}
 
       {/* Tabs Switcher: Symmetrical Segmented Control */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-3 gap-3">
-        <div className="flex items-center p-1.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 gap-1.5 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3 gap-3">
+        <div className="lux-well flex items-center p-1.5 rounded-2xl gap-1.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab('scheduled')}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
               activeTab === 'scheduled'
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30 scale-[1.02]'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+                ? 'btn-lux-primary'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <span>جدول التشغيل والمنبه</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              activeTab === 'scheduled' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums ${
+              activeTab === 'scheduled' ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'
             }`}>
               {scheduledAudios.length}
             </span>
@@ -791,13 +781,13 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
             onClick={() => setActiveTab('library')}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
               activeTab === 'library'
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30 scale-[1.02]'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+                ? 'btn-lux-primary'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <span>مكتبة الملفات والوسائط</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              activeTab === 'library' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums ${
+              activeTab === 'library' ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'
             }`}>
               {mediaLibrary.length}
             </span>

@@ -146,44 +146,49 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Settings className="w-6 h-6 text-emerald-400" />
-            إعدادات النظام والتخصيص
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            تخصيص مواقيت الصلاة، الصوت العربي، نبرة الصوت، والإشعارات لسطح مكتب ويندوز
-          </p>
+        <div className="flex items-center gap-3.5">
+          <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+            <Settings className="w-6 h-6" strokeWidth={1.75} />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              إعدادات النظام والتخصيص
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              تخصيص مواقيت الصلاة، الصوت العربي الذكي، بوابة واتساب، والمزامنة السحابية
+            </p>
+          </div>
         </div>
 
         {savedAlert && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold animate-fade-in">
-            <Check className="w-4 h-4" />
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold animate-fade-in">
+            <Check className="w-4 h-4" strokeWidth={2} />
             <span>تم حفظ التغييرات تلقائياً</span>
           </div>
         )}
       </div>
 
       {/* Profile Card for Dr. Abdelaziz */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/30 p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-3xl lux-card-gold p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 via-emerald-500 to-teal-400 p-[2px] shadow-lg shadow-amber-500/20 shrink-0">
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-black text-amber-400 leading-none">دكتور</span>
-              <span className="text-xs font-black text-white leading-tight">عبد العزيز</span>
-            </div>
+          <div className="w-14 h-14 rounded-2xl p-[1.5px] bg-gradient-to-br from-[#F1D583] via-[#D4AF37] to-[#8C6A1B] shadow-[0_6px_20px_rgba(212,175,55,0.22)] shrink-0">
+            <img
+              src="/logo.png"
+              alt="شعار د. عبد العزيز الرسمي"
+              className="w-full h-full object-cover rounded-[14px] bg-[#06080D]"
+            />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-white">
-                النظام مخصص حصرياً لـ: دكتور عبد العزيز
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base sm:text-lg font-extrabold text-white">
+                الحساب التنفيذي: دكتور عبد العزيز
               </h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20 font-bold">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#E7C66C] border border-[#D4AF37]/30 font-bold">
                 VIP Profile
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              يتم بدء جميع التنبيهات الصوتية والمواعيد التلقائية بمناداتك: «يا دكتور عبد العزيز»
+            <p className="text-xs text-slate-400 mt-1">
+              جميع التنبيهات الصوتية والمواعيد التلقائية تبدأ بمناداتك: «يا دكتور عبد العزيز»
             </p>
           </div>
         </div>
@@ -191,19 +196,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <button
           type="button"
           onClick={() => audioService.playDoctorWelcome(audioSettings.masterVolume)}
-          className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 shadow-md"
+          className="btn-lux-gold px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center gap-2 shrink-0"
         >
-          <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-          <span>تجربة نداء التنبيه: «يا دكتور عبد العزيز»</span>
+          <Volume2 className="w-4 h-4" strokeWidth={2} />
+          <span>تجربة نداء الترحيب</span>
         </button>
       </div>
 
       {/* PWA Mobile App Card in Settings */}
       {onOpenInstallModal && (
-        <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="lux-card rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-              <Smartphone className="w-6 h-6 text-emerald-400" />
+            <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+              <Smartphone className="w-6 h-6" strokeWidth={1.75} />
             </div>
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -218,20 +223,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <button
             type="button"
             onClick={onOpenInstallModal}
-            className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0"
+            className="btn-lux-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2 shrink-0"
           >
-            <Download className="w-4 h-4 text-emerald-400" />
+            <Download className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
             <span>عرض تعليمات التثبيت</span>
           </button>
         </div>
       )}
 
       {/* Location & Prayer Calculation Settings */}
-      <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl space-y-6">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <Globe className="w-5 h-5 text-emerald-400" />
-          الموقع الجغرافي وطريقة حساب مواقيت الصلاة
-        </h3>
+      <div className="lux-card rounded-3xl p-5 sm:p-7 space-y-5">
+        <div className="flex items-center gap-3 border-b border-white/[0.06] pb-4">
+          <div className="icon-squircle-emerald w-10 h-10 shrink-0">
+            <Globe className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <h3 className="text-base sm:text-lg font-bold text-white">
+            الموقع الجغرافي وطريقة حساب مواقيت الصلاة
+          </h3>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Preset City Dropdown */}
@@ -871,29 +880,34 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {/* Windows & Mobile Notifications & Web Push */}
-      <div className="rounded-2xl sm:rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-6">
-        <div className="space-y-1 text-center sm:text-right">
-          <h3 className="text-base font-bold text-white flex items-center justify-center sm:justify-start gap-2">
-            <Bell className="w-5 h-5 text-emerald-400" />
-            إشعارات الهاتف المحمول والكمبيوتر (Mobile Web Push & Desktop)
-          </h3>
-          <p className="text-xs text-slate-400">
-            تضمن استلام إشعارات الأذان والمهام حتى لو كان الهاتف مقفلاً أو التطبيق في الخلفية.
-          </p>
+      <div className="lux-card rounded-3xl p-5 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5">
+        <div className="flex items-center gap-3.5 text-center sm:text-right">
+          <div className="icon-squircle-emerald w-11 h-11 hidden sm:inline-flex shrink-0">
+            <Bell className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+              <Bell className="w-4 h-4 text-emerald-400 sm:hidden" />
+              إشعارات الهاتف والكمبيوتر (Push & Desktop)
+            </h3>
+            <p className="text-xs text-slate-400">
+              تضمن استلام إشعارات الأذان والمهام حتى لو كان الهاتف مقفلاً أو التطبيق في الخلفية.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2.5 shrink-0 w-full sm:w-auto">
           {hasNotificationPermission ? (
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
-              <Check className="w-4 h-4" />
-              <span>الإشعارات مفعلة ✓</span>
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/12 text-emerald-300 border border-emerald-500/25 text-xs font-bold">
+              <Check className="w-4 h-4" strokeWidth={2} />
+              <span>الإشعارات مفعلة</span>
             </div>
           ) : (
             <button
               onClick={onRequestNotification}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-600/20 transition-all cursor-pointer animate-pulse"
+              className="btn-lux-gold w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer"
             >
-              منح إذن الإشعارات الآن
+              منح إذن الإشعارات
             </button>
           )}
 
@@ -902,36 +916,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               const res = await mobileBackgroundService.sendTestPush();
               alert(res.message);
             }}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            className="btn-lux-secondary w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <Send className="w-3.5 h-3.5 text-emerald-400" />
+            <Send className="w-3.5 h-3.5 text-emerald-400" strokeWidth={1.75} />
             <span>تجربة إشعار الهاتف</span>
           </button>
         </div>
       </div>
 
       {/* Realtime Cloud Database (Firebase) */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 border border-emerald-500/30 p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="lux-card-emerald rounded-3xl p-5 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <Cloud className="w-6 h-6 text-emerald-400" />
+          <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+            <Cloud className="w-6 h-6" strokeWidth={1.75} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-base font-bold text-white">قاعدة البيانات السحابية (Firebase Cloud)</h4>
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-base font-bold text-white">المزامنة السحابية الفورية</h4>
               {isCloudConnected ? (
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  متصل ومتزامن لحظياً 🟢
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  متصل ومتزامن لحظياً
                 </span>
               ) : (
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                  غير مربوط بالسحابة
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-white/[0.05] text-slate-400 border border-white/[0.08]">
+                  غير مربوط
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              مزامنة فورية وتلقائية: أي مهمة أو فيديو ترفعه على الكمبيوتر يظهر فوراً على الموبايل والعكس بدون الحاجة لنقل ملفات يدوياً.
+              أي مهمة أو ملف أو إعداد ترفعه على الكمبيوتر يظهر فوراً على الموبايل والعكس تلقائياً.
             </p>
           </div>
         </div>
@@ -940,24 +954,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <button
             type="button"
             onClick={onOpenCloudModal}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-2 transition-all cursor-pointer shrink-0"
+            className="btn-lux-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shrink-0"
           >
-            <Cloud className="w-4 h-4" />
-            <span>{isCloudConnected ? 'إدارة الاتصال السحابي' : 'ربط قاعدة بيانات Firebase'}</span>
+            <Cloud className="w-4 h-4" strokeWidth={1.75} />
+            <span>{isCloudConnected ? 'إدارة الاتصال السحابي' : 'ربط قاعدة البيانات'}</span>
           </button>
         )}
       </div>
 
       {/* Data Backup & Device Sync (PC & Mobile) */}
-      <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl space-y-4">
-        <div>
-          <h4 className="text-base font-bold text-white flex items-center gap-2">
-            <UploadCloud className="w-5 h-5 text-emerald-400" />
-            <span>المزامنة والنسخ الاحتياطي بين الكمبيوتر والموبايل</span>
-          </h4>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-            نظراً لأن النظام يعمل محلياً بالكامل (Offline-First) حفاظاً على خصوصية د. عبد العزيز، يمكنك تصدير بياناتك ومهامك من الكمبيوتر في ملف نسخة احتياطية واستيراده على الموبايل بضغطة زر واحدة.
-          </p>
+      <div className="lux-card rounded-3xl p-5 sm:p-7 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="icon-squircle-gold w-10 h-10 shrink-0">
+            <UploadCloud className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <div>
+            <h4 className="text-base font-bold text-white">
+              النسخ الاحتياطي وتصدير البيانات
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              تصدير واستيراد نسخة احتياطية كاملة للمهام والمواعيد والإعدادات بملف JSON مشترك.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">

@@ -455,17 +455,17 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
       )}
 
       {/* Header & Sub-Tabs */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 backdrop-blur-xl shadow-xl">
-        <div className="flex flex-col gap-4 border-b border-slate-800/80 pb-5">
+      <div className="lux-card rounded-3xl p-5 sm:p-6">
+        <div className="flex flex-col gap-4 border-b border-white/[0.06] pb-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                <Award className="w-6 h-6" />
+              <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+                <Award className="w-6 h-6" strokeWidth={1.75} />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white flex flex-wrap items-center gap-2 tracking-tight">
                   نظامي اليومي
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#E7C66C] border border-[#D4AF37]/30">
                     متابعة وتقارير
                   </span>
                 </h1>
@@ -478,46 +478,49 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             <button
               type="button"
               onClick={() => setIsPdfModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25 transition-all cursor-pointer shrink-0"
+              className="btn-lux-gold flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer shrink-0"
             >
-              <FileText className="w-4 h-4" />
-              <span>تصدير تقرير PDF 📄</span>
+              <FileText className="w-4 h-4" strokeWidth={1.85} />
+              <span>تصدير تقرير PDF</span>
             </button>
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div className="grid grid-cols-3 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 gap-1">
+          <div className="grid grid-cols-3 p-1 lux-well rounded-2xl gap-1">
             <button
               onClick={() => setActiveTab('day')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'day'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'day'
+                  ? 'btn-lux-primary'
                   : 'text-slate-400 hover:text-white'
-                }`}
+              }`}
             >
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-4 h-4" strokeWidth={1.75} />
               <span>اليوم</span>
             </button>
 
             <button
               onClick={() => setActiveTab('month')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'month'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'month'
+                  ? 'btn-lux-primary'
                   : 'text-slate-400 hover:text-white'
-                }`}
+              }`}
             >
-              <TrendingUp className="w-4 h-4" />
-              <span>التقرير الشهري والمهام</span>
+              <TrendingUp className="w-4 h-4" strokeWidth={1.75} />
+              <span>التقرير الشهري</span>
             </button>
 
             <button
               onClick={() => setActiveTab('settings')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'settings'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'btn-lux-primary'
                   : 'text-slate-400 hover:text-white'
-                }`}
+              }`}
             >
-              <Award className="w-4 h-4" />
-              <span>الأهداف والنقاط</span>
+              <Award className="w-4 h-4" strokeWidth={1.75} />
+              <span>الأهداف والتخصيص</span>
             </button>
           </div>
         </div>

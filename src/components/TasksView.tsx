@@ -527,35 +527,39 @@ export const TasksView: React.FC<TasksViewProps> = ({
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Top Controls: Search, Add Button, Statistics */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-emerald-400" />
-            مهام العمل والمواعيد مع التذكير الصوتي
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            إدارة وتنظيم المهام مع نطق صوتي ذكي وتحذير تلقائي من التعارض مع مواقيت الصلاة
-          </p>
+        <div className="flex items-center gap-3.5">
+          <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+            <CheckSquare className="w-6 h-6" strokeWidth={1.75} />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              مهام العمل والمواعيد
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              تنظيم المواعيد مع التذكير الصوتي الذكي وإرسال رسائل واتساب في الموعد
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setIsPdfModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-200 font-bold text-xs sm:text-sm border border-indigo-500/40 transition-all cursor-pointer"
+            className="btn-lux-secondary h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
             title="تصدير مهام العمل المختارة إلى PDF"
           >
-            <FileText className="w-4 h-4 text-indigo-300" />
-            <span>تصدير PDF 📄</span>
+            <FileText className="w-4 h-4 text-slate-300" strokeWidth={1.75} />
+            <span>تصدير PDF</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsVoiceModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 hover:from-amber-400 hover:to-rose-400 text-white font-black text-xs sm:text-sm shadow-lg shadow-rose-500/25 transition-all cursor-pointer animate-pulse"
+            className="btn-lux-gold h-10 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer"
             title="إضافة مهمة سريعة بالصوت للدكتور عبد العزيز"
           >
-            <Mic className="w-4 h-4 text-white" />
-            <span>إضافة بالصوت 🎙️</span>
+            <Mic className="w-4 h-4" strokeWidth={2} />
+            <span>إملاء بالصوت</span>
           </button>
 
           <button
@@ -564,10 +568,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
               resetForm();
               setIsAddModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+            className="btn-lux-primary h-10 px-4 sm:px-5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>إضافة يدوية ✍️</span>
+            <Plus className="w-4 h-4" strokeWidth={2} />
+            <span>إضافة مهمة</span>
           </button>
         </div>
 
@@ -598,25 +602,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
       )}
 
       {/* Filter and Search Bar */}
-      <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="lux-card p-4 sm:p-5 rounded-3xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
             <input
               type="text"
               placeholder="البحث في المهام والاجتماعات..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
+              className="lux-input w-full pr-10 pl-4 py-2.5 text-sm placeholder-slate-500"
             />
           </div>
 
           {/* Category Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <span className="text-xs text-slate-400 whitespace-nowrap ml-1">التصنيف:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap ml-1">التصنيف:</span>
             {[
               { id: 'all', label: 'الكل' },
+              { id: 'clinic', label: 'عيادة' },
               { id: 'work', label: 'عمل' },
               { id: 'meeting', label: 'اجتماعات' },
               { id: 'dev', label: 'برمجة' },
@@ -625,10 +630,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                   selectedCategory === cat.id
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                    : 'bg-white/[0.03] text-slate-400 border-white/[0.07] hover:text-white'
                 }`}
               >
                 {cat.label}
@@ -638,7 +643,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         </div>
 
         {/* Status Filters */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 pt-3 border-t border-white/[0.06] overflow-x-auto scrollbar-none">
           {[
             { id: 'all', label: 'كافة المهام', count: tasks.length },
             { id: 'today', label: 'مهام اليوم', count: tasks.filter((t) => t.dueDate === todayStr).length },
@@ -649,14 +654,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
             <button
               key={f.id}
               onClick={() => setSelectedFilter(f.id as any)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                 selectedFilter === f.id
-                  ? 'bg-slate-700 text-white border-slate-600'
-                  : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200'
+                  ? 'bg-white/[0.08] text-white border-white/[0.14]'
+                  : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.03]'
               }`}
             >
               <span>{f.label}</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums bg-white/[0.07] text-slate-200">
                 {f.count}
               </span>
             </button>
@@ -666,20 +671,23 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <div className="text-center py-16 px-4 rounded-3xl bg-slate-900 border border-slate-800">
-          <CheckSquare className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-slate-300 mb-1">لا توجد مهام مطابقة</h3>
-          <p className="text-xs text-slate-500 mb-6">
-            يمكنك إضافة مهمة جديدة وتحديد موعد تذكير صوتي لها في أي وقت.
+        <div className="lux-card text-center py-16 px-4 rounded-3xl">
+          <div className="icon-squircle w-14 h-14 mx-auto mb-3 text-slate-500">
+            <CheckSquare className="w-7 h-7" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-base font-bold text-white mb-1">لا توجد مهام مطابقة</h3>
+          <p className="text-xs text-slate-400 mb-6">
+            يمكنك إضافة مهمة جديدة وتحديد موعد تذكير صوتي لها أو إرسالها عبر واتساب.
           </p>
           <button
             onClick={() => {
               resetForm();
               setIsAddModalOpen(true);
             }}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
+            className="btn-lux-primary px-5 py-2.5 rounded-xl text-xs font-bold cursor-pointer inline-flex items-center gap-2"
           >
-            إضافة مهمة الآن
+            <Plus className="w-4 h-4" strokeWidth={2} />
+            <span>إضافة مهمة الآن</span>
           </button>
         </div>
       ) : (
@@ -692,12 +700,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
             return (
               <div
                 key={task.id}
-                className={`p-5 rounded-3xl border transition-all ${
+                className={`p-5 rounded-3xl transition-all ${
                   isCompleted
-                    ? 'bg-slate-900/40 border-slate-800/80 opacity-70'
+                    ? 'lux-card opacity-60'
                     : isUrgent
-                    ? 'bg-slate-900 border-rose-500/40 shadow-rose-500/10'
-                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                      ? 'lux-card-interactive border-rose-500/35 shadow-[0_12px_32px_-18px_rgba(244,63,94,0.35)]'
+                      : 'lux-card-interactive'
                 }`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -949,18 +957,22 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {/* Add / Edit Task Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <CheckSquare className="w-5 h-5 text-emerald-400" />
-                {editingTask ? 'تعديل مهمة العمل' : 'إضافة مهمة عمل جديدة'}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-lg p-6 sm:p-8 rounded-3xl lux-modal max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <div className="icon-squircle-emerald w-10 h-10">
+                  <CheckSquare className="w-5 h-5" strokeWidth={1.75} />
+                </div>
+                <h3 className="text-lg font-extrabold text-white">
+                  {editingTask ? 'تعديل مهمة العمل' : 'إضافة مهمة عمل جديدة'}
+                </h3>
+              </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                className="btn-lux-icon text-slate-400 hover:text-white cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" strokeWidth={1.75} />
               </button>
             </div>
 
@@ -1508,19 +1520,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 </span>
               </div>
 
-              <div className="pt-4 border-t border-slate-800 grid grid-cols-2 gap-3">
+              <div className="pt-4 border-t border-white/[0.07] grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                  className="btn-lux-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 cursor-pointer"
+                  className="btn-lux-primary px-6 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
                 >
-                  {editingTask ? 'حفظ التعديلات' : 'إضافة وجدولة المهمة'}
+                  {editingTask ? 'حفظ التعديلات' : 'حفظ وجدولة المهمة'}
                 </button>
               </div>
             </form>

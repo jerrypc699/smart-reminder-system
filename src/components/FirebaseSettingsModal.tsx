@@ -143,15 +143,13 @@ export const FirebaseSettingsModal: React.FC<FirebaseSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/82 backdrop-blur-lg animate-fade-in">
+      <div className="relative w-full max-w-xl lux-modal rounded-3xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 bg-gradient-to-br from-slate-900 via-emerald-950/20 to-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-5 sm:p-6 border-b border-white/[0.07] flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-emerald-500 to-teal-400 p-[2px] shadow-lg shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-emerald-400">
-                <Cloud className="w-6 h-6 animate-pulse" />
-              </div>
+            <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+              <Cloud className="w-6 h-6" strokeWidth={1.75} />
             </div>
             <div>
               <div className="flex items-center gap-2">

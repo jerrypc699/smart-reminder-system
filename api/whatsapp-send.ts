@@ -409,7 +409,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           contentType: 'application/json',
           addRandomSuffix: false,
           allowOverwrite: true,
-        }).catch(() => {});
+        }).catch(() => { });
       }
 
       return res.status(200).json({
@@ -459,7 +459,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contentType: 'application/json',
         addRandomSuffix: false,
         allowOverwrite: true,
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     return res.status(200).json(result);

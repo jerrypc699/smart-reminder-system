@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Bell, 
   Compass, 
@@ -12,7 +12,8 @@ import {
   FileAudio,
   Music,
   Video,
-  Film
+  Film,
+  Maximize2
 } from 'lucide-react';
 import { ActiveAlert } from '../types';
 
@@ -31,12 +32,59 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
   onStopAudio,
   isSpeaking,
 }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [needsUnmuteTap, setNeedsUnmuteTap] = useState(false);
+
+  useEffect(() => {
+    if (!alert?.videoUrl) return;
+
+    const timer = setTimeout(() => {
+      const vid = videoRef.current;
+      if (!vid) return;
+      vid.muted = false;
+      vid.volume = 1.0;
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setNeedsUnmuteTap(false);
+        }).catch((err) => {
+          console.warn('Autoplay with sound blocked, falling back to muted autoplay:', err);
+          vid.muted = true;
+          setNeedsUnmuteTap(true);
+          vid.play().catch(console.warn);
+        });
+      }
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [alert?.videoUrl, alert?.id]);
+
   if (!alert) return null;
 
   const isPrayer = alert.type === 'azan' || alert.type === 'pre_azan';
   const isVideo = alert.mediaType === 'video' || !!alert.videoUrl;
   const isScheduledMedia = alert.type === 'scheduled_audio' || alert.type === 'scheduled_media' || isVideo;
   const isUrgent = alert.priority === 'urgent';
+
+  const handleUnmuteVideo = () => {
+    const vid = videoRef.current;
+    if (vid) {
+      vid.muted = false;
+      vid.volume = 1.0;
+      vid.play().catch(console.warn);
+    }
+    setNeedsUnmuteTap(false);
+  };
+
+  const handleFullscreen = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.requestFullscreen) {
+      vid.requestFullscreen().catch(() => {});
+    } else if ((vid as any).webkitEnterFullscreen) {
+      (vid as any).webkitEnterFullscreen();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
@@ -129,14 +177,33 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
 
           {/* Embedded Video Player if Video */}
           {alert.videoUrl && (
-            <div className="mb-5 rounded-2xl overflow-hidden border border-purple-500/40 bg-black shadow-2xl relative aspect-video ring-1 ring-purple-500/20">
+            <div className="mb-5 rounded-2xl overflow-hidden border border-purple-500/40 bg-black shadow-2xl relative aspect-video ring-1 ring-purple-500/20 group">
               <video
+                ref={videoRef}
                 src={alert.videoUrl}
                 controls
                 autoPlay
                 playsInline
                 className="w-full h-full object-contain"
               />
+              <button
+                type="button"
+                onClick={handleFullscreen}
+                title="ملء الشاشة"
+                className="absolute top-2.5 left-2.5 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md transition-all cursor-pointer opacity-80 hover:opacity-100"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+              {needsUnmuteTap && (
+                <button
+                  type="button"
+                  onClick={handleUnmuteVideo}
+                  className="absolute bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-purple-600/95 hover:bg-purple-500 text-white text-xs font-bold shadow-xl border border-purple-300/40 flex items-center gap-2 animate-bounce cursor-pointer z-20"
+                >
+                  <Volume2 className="w-4 h-4" />
+                  <span>اضغط لتشغيل الصوت</span>
+                </button>
+              )}
             </div>
           )}
 

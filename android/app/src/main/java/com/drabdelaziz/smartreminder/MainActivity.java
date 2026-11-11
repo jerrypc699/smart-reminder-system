@@ -1,24 +1,72 @@
 package com.drabdelaziz.smartreminder;
 
 import android.Manifest;
+import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.WindowManager;
+import android.webkit.WebSettings;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(VideoAlarmPlugin.class);
         super.onCreate(savedInstanceState);
+        configureWebViewForAutoplay();
         setupAlarmNotificationChannels();
+        MediaAlarmHelper.ensureMediaLaunchChannel(this);
         requestAudioPermissions();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        setIntent(intent);
+        applyLockscreenFlags(intent);
+        super.onNewIntent(intent);
+    }
+
+    private void applyLockscreenFlags(Intent intent) {
+        boolean isMediaAlarm = intent != null &&
+                MediaAlarmHelper.ACTION_PLAY_SCHEDULED_MEDIA.equals(intent.getAction());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(isMediaAlarm);
+            setTurnScreenOn(isMediaAlarm);
+            if (isMediaAlarm) {
+                KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+                if (km != null && km.isKeyguardLocked() && !km.isKeyguardSecure()) {
+                    km.requestDismissKeyguard(this, null);
+                }
+            }
+        }
+
+        if (isMediaAlarm) {
+            getWindow().addFlags(
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+            );
+        }
+    }
+
+    private void configureWebViewForAutoplay() {
+        try {
+            if (this.bridge != null && this.bridge.getWebView() != null) {
+                WebSettings settings = this.bridge.getWebView().getSettings();
+                settings.setMediaPlaybackRequiresUserGesture(false);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void requestAudioPermissions() {

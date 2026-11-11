@@ -15,7 +15,7 @@ import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { cloudSyncService } from './services/cloudSyncService';
 import { vercelCloudSync } from './services/vercelCloudSync';
 import { mobileBackgroundService } from './services/mobileBackgroundService';
-import { NativeAlarmService } from './services/nativeAlarmService';
+import { NativeAlarmService, getLocalDateStr } from './services/nativeAlarmService';
 import { dailySystemService } from './services/dailySystemService';
 
 import type { 
@@ -466,6 +466,133 @@ export function App() {
     }
   }, [prayerSettings.azanReciter, audioSettings.masterVolume, audioSettings.enableTts]);
 
+  const audioSettingsRef = useRef(audioSettings);
+  useEffect(() => {
+    audioSettingsRef.current = audioSettings;
+  }, [audioSettings]);
+
+  const recentMediaTriggersRef = useRef<Map<string, number>>(new Map());
+
+  const triggerScheduledMediaPlayback = async (params: {
+    scheduledId?: string;
+    mediaId: string;
+    mediaName?: string;
+    mediaType?: 'video' | 'audio';
+    title?: string;
+    description?: string;
+    cloudUrl?: string;
+    isVideo?: boolean;
+    isTestAlarm?: boolean;
+    volume?: number;
+  }) => {
+    try {
+      const dedupeKey = `${params.scheduledId || params.mediaId}_${params.isTestAlarm ? 'test' : 'sched'}`;
+      const nowMs = Date.now();
+      const prevMs = recentMediaTriggersRef.current.get(dedupeKey) || 0;
+      if (nowMs - prevMs < 55000) {
+        return;
+      }
+      recentMediaTriggersRef.current.set(dedupeKey, nowMs);
+
+      const schedList = audioStorageService.getScheduledMedias();
+      const matchedItem = params.scheduledId
+        ? schedList.find((s) => s.id === params.scheduledId)
+        : schedList.find((s) => s.mediaId === params.mediaId);
+
+      if (!params.isTestAlarm && matchedItem) {
+        audioStorageService.updateScheduledMedia(matchedItem.id, {
+          lastPlayedAt: new Date(nowMs).toISOString(),
+          enabled: matchedItem.repeat === 'none' ? false : true,
+        });
+        const updatedList = audioStorageService.getScheduledMedias();
+        setScheduledAudios(updatedList);
+        NativeAlarmService.scheduleMediaItems(updatedList).catch(console.warn);
+      }
+
+      const isVideo =
+        params.isVideo ??
+        (params.mediaType === 'video' || matchedItem?.mediaType === 'video');
+      const resolvedMediaId = params.mediaId || matchedItem?.mediaId || '';
+      const resolvedCloudUrl = params.cloudUrl || matchedItem?.cloudUrl;
+      const playUrl = await audioStorageService.getMediaObjectUrl(
+        resolvedMediaId,
+        resolvedCloudUrl
+      );
+      const finalUrl = playUrl || resolvedCloudUrl;
+      const displayName = params.mediaName || matchedItem?.mediaName || 'ملف وسائط';
+      const displayTitle =
+        params.title ||
+        matchedItem?.title ||
+        (isVideo ? '🎬 تشغيل فيديو مجدول' : '📻 تشغيل وسائط مجدولة');
+      const displayDesc =
+        params.description ||
+        matchedItem?.description ||
+        (isVideo
+          ? `يا دكتور عبد العزيز: حان موعد عرض مقطع الفيديو: ${displayName}`
+          : `يا دكتور عبد العزيز: حان موعد تشغيل الملف الصوتي: ${displayName}`);
+
+      setActiveTab('audio_scheduler');
+      setActiveAlert({
+        id: `alert-sched-${resolvedMediaId || Date.now()}-${nowMs}`,
+        type: isVideo ? 'scheduled_media' : 'scheduled_audio',
+        title: displayTitle,
+        message: displayDesc,
+        timestamp: new Date(nowMs).toISOString(),
+        scheduledMediaId: matchedItem?.id || params.scheduledId,
+        mediaName: displayName,
+        mediaType: isVideo ? 'video' : 'audio',
+        videoUrl: isVideo ? (finalUrl || undefined) : undefined,
+        audioName: displayName,
+        isCustomAudio: !isVideo,
+        canSnooze: false,
+      });
+
+      const currAudio = audioSettingsRef.current;
+      if (!isVideo && !currAudio.soundMuted && finalUrl) {
+        audioService.initAudioContext();
+        audioService.playCustomAudio(
+          finalUrl,
+          (params.volume ?? matchedItem?.volume ?? 0.9) * currAudio.masterVolume
+        );
+      }
+    } catch (err) {
+      console.warn('triggerScheduledMediaPlayback error:', err);
+    }
+  };
+
+  // Handle Native Android Scheduled Video Auto-Launch (Cold start & Warm start)
+  useEffect(() => {
+    let listenerHandle: { remove: () => Promise<void> } | null = null;
+    let isCancelled = false;
+
+    const setupAutoLaunch = async () => {
+      const pending = await NativeAlarmService.consumePendingMediaLaunch();
+      if (!isCancelled && pending) {
+        triggerScheduledMediaPlayback(pending);
+      }
+
+      const handle = await NativeAlarmService.onMediaAutoLaunch((data) => {
+        if (!isCancelled) {
+          triggerScheduledMediaPlayback(data);
+        }
+      });
+      if (isCancelled && handle) {
+        handle.remove().catch(() => {});
+      } else {
+        listenerHandle = handle;
+      }
+    };
+
+    setupAutoLaunch().catch(console.warn);
+
+    return () => {
+      isCancelled = true;
+      if (listenerHandle) {
+        listenerHandle.remove().catch(() => {});
+      }
+    };
+  }, []);
+
   // Handle Native Android / iOS Hardware Alarm Taps
   useEffect(() => {
     const handleNativeTap = (e: any) => {
@@ -494,29 +621,7 @@ export function App() {
         audioService.initAudioContext();
         audioService.playAzan(reciter as any, audioSettings.masterVolume);
       } else if (extra?.type === 'scheduled_media' || extra?.type === 'scheduled_audio') {
-        const isVideo = !!extra.isVideo || extra.mediaType === 'video';
-        audioStorageService.getMediaObjectUrl(extra.mediaId, extra.cloudUrl).then((playUrl) => {
-          const finalUrl = playUrl || extra.cloudUrl;
-          setActiveAlert({
-            id: `alert-sched-${extra.mediaId || Date.now()}-${Date.now()}`,
-            type: isVideo ? 'scheduled_media' : 'scheduled_audio',
-            title: extra.title || (isVideo ? '🎬 عرض فيديو مجدول' : '📻 تشغيل وسائط مجدولة'),
-            message: extra.description || (isVideo ? `يا دكتور عبد العزيز: حان موعد عرض فيديو ${extra.mediaName || ''}` : `يا دكتور عبد العزيز: حان موعد تشغيل ${extra.mediaName || ''}`),
-            timestamp: new Date().toISOString(),
-            scheduledMediaId: extra.mediaId,
-            mediaName: extra.mediaName,
-            mediaType: isVideo ? 'video' : 'audio',
-            videoUrl: isVideo ? (finalUrl || undefined) : undefined,
-            audioName: extra.mediaName,
-            isCustomAudio: !isVideo,
-            canSnooze: false,
-          });
-
-          if (!isVideo && !audioSettings.soundMuted && finalUrl) {
-            audioService.initAudioContext();
-            audioService.playCustomAudio(finalUrl, audioSettings.masterVolume);
-          }
-        }).catch(console.warn);
+        triggerScheduledMediaPlayback(extra);
       }
     };
     window.addEventListener('native_notification_tapped', handleNativeTap);
@@ -539,7 +644,7 @@ export function App() {
   useEffect(() => {
     const checkReminders = () => {
       const now = new Date();
-      const todayDateStr = now.toISOString().split('T')[0];
+      const todayDateStr = getLocalDateStr(now);
       const currentHours = now.getHours().toString().padStart(2, '0');
       const currentMinutes = now.getMinutes().toString().padStart(2, '0');
 
@@ -737,7 +842,7 @@ export function App() {
 
       // 4. Check Scheduled Custom Audio and Video Files
       const schedList = audioStorageService.getScheduledMedias();
-      schedList.forEach(async (item) => {
+      schedList.forEach((item) => {
         if (!item.enabled) return;
 
         let shouldPlay = false;
@@ -765,42 +870,17 @@ export function App() {
 
         if (shouldPlay) {
           if (!item.lastPlayedAt || (now.getTime() - new Date(item.lastPlayedAt).getTime()) > 65000) {
-            audioStorageService.updateScheduledMedia(item.id, {
-              lastPlayedAt: now.toISOString(),
-              enabled: item.repeat === 'none' ? false : true,
-            });
-            setScheduledAudios(audioStorageService.getScheduledMedias());
-
-            const isVideo = item.mediaType === 'video';
-            const mediaUrl = await audioStorageService.getMediaObjectUrl(item.mediaId, item.cloudUrl);
-            const playUrl = mediaUrl || item.cloudUrl;
-
-            notificationService.showNotification(
-              isVideo ? `🎬 تشغيل فيديو تلقائي: ${item.title}` : `📻 تشغيل صوتي تلقائي: ${item.title}`,
-              {
-                body: item.description || (isVideo ? `حان موعد عرض مقطع الفيديو: ${item.mediaName}` : `جاري تشغيل الملف الصوتي: ${item.mediaName}`),
-                tag: `sched-media-${item.id}`,
-              }
-            );
-
-            setActiveAlert({
-              id: `alert-sched-${item.id}-${Date.now()}`,
-              type: isVideo ? 'scheduled_media' : 'scheduled_audio',
-              title: item.title,
-              message: item.description || (isVideo ? `حان موعد تشغيل مقطع الفيديو: ${item.mediaName}` : `حان موعد تشغيل الملف الصوتي: ${item.mediaName}`),
-              timestamp: now.toISOString(),
-              scheduledMediaId: item.id,
+            triggerScheduledMediaPlayback({
+              scheduledId: item.id,
+              mediaId: item.mediaId,
               mediaName: item.mediaName,
               mediaType: item.mediaType,
-              videoUrl: isVideo ? (playUrl || undefined) : undefined,
-              audioName: item.mediaName,
-              isCustomAudio: !isVideo,
-              canSnooze: false,
+              title: item.title,
+              description: item.description,
+              cloudUrl: item.cloudUrl,
+              isVideo: item.mediaType === 'video',
+              volume: item.volume,
             });
-
-            if (!isVideo && !audioSettings.soundMuted && playUrl) {
-              audioService.playCustomAudio(playUrl, (item.volume ?? 0.9) * audioSettings.masterVolume);
-            }
           }
         }
       });

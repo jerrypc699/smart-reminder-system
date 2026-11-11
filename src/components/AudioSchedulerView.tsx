@@ -23,12 +23,15 @@ import {
   Video,
   Eye,
   RefreshCw,
-  Cloud
+  Cloud,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { ScheduledMedia, StoredMediaMeta, TaskRepeat, MediaType } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
 import { vercelCloudSync } from '../services/vercelCloudSync';
-import { NativeAlarmService } from '../services/nativeAlarmService';
+import { NativeAlarmService, getLocalDateStr } from '../services/nativeAlarmService';
+import type { AutoLaunchPermissionsStatus } from '../services/videoAlarmPlugin';
 
 interface AudioSchedulerViewProps {
   scheduledAudios: ScheduledMedia[];
@@ -47,12 +50,14 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'video' | 'audio'>('all');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
+  const [autoLaunchPerms, setAutoLaunchPerms] = useState<AutoLaunchPermissionsStatus | null>(null);
+  const isAndroidNative = NativeAlarmService.isAndroidNative();
 
   // Form states for scheduling
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedMediaId, setSelectedMediaId] = useState('');
-  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
+  const [scheduledDate, setScheduledDate] = useState(() => getLocalDateStr(new Date(Date.now() + 15 * 60 * 1000)));
   const [scheduledTime, setScheduledTime] = useState(() => {
     const d = new Date(Date.now() + 15 * 60 * 1000);
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -95,8 +100,27 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
     }
   };
 
+  const refreshAutoLaunchPerms = async () => {
+    if (!isAndroidNative) return;
+    const perms = await NativeAlarmService.getAutoLaunchPermissions();
+    if (perms) setAutoLaunchPerms(perms);
+  };
+
   useEffect(() => {
     loadLibrary();
+    refreshAutoLaunchPerms();
+
+    const handleResume = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAutoLaunchPerms();
+      }
+    };
+    window.addEventListener('focus', refreshAutoLaunchPerms);
+    document.addEventListener('visibilitychange', handleResume);
+    return () => {
+      window.removeEventListener('focus', refreshAutoLaunchPerms);
+      document.removeEventListener('visibilitychange', handleResume);
+    };
   }, []);
 
   // Cleanup active audio preview on unmount
@@ -311,7 +335,9 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
     setIsScheduleModalOpen(false);
     setTitle('');
     setDescription('');
-    setUploadSuccess(`تمت جدولة تشغيل "${title.trim()}" بنجاح كمنبه هاردوير رسمي!`);
+    setUploadSuccess(
+      `تمت جدولة تشغيل "${title.trim()}" بنجاح! عند حلول الموعد سيفتح التطبيق تلقائياً ويبدأ التشغيل مباشرة.`
+    );
   };
 
   // Toggle enabled
@@ -656,6 +682,90 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
         </div>
       </div>
 
+      {/* Android Auto-Launch Readiness Card (Native Android Only) */}
+      {isAndroidNative && autoLaunchPerms && (
+        <div className={`p-4 sm:p-5 rounded-3xl border shadow-xl transition-all ${
+          autoLaunchPerms.overlayGranted && autoLaunchPerms.fullScreenGranted && autoLaunchPerms.exactAlarmGranted
+            ? 'bg-emerald-950/25 border-emerald-500/30'
+            : 'bg-gradient-to-br from-amber-950/35 via-slate-900 to-purple-950/25 border-amber-500/40'
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                autoLaunchPerms.overlayGranted && autoLaunchPerms.fullScreenGranted && autoLaunchPerms.exactAlarmGranted
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse'
+              }`}>
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-black text-white flex items-center gap-2 flex-wrap">
+                  <span>تفعيل الفتح التلقائي للتطبيق وتشغيل الفيديو بالموعد</span>
+                  {autoLaunchPerms.overlayGranted && autoLaunchPerms.fullScreenGranted && autoLaunchPerms.exactAlarmGranted && (
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                      ✓ جاهز بالكامل
+                    </span>
+                  )}
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                  {autoLaunchPerms.overlayGranted && autoLaunchPerms.fullScreenGranted && autoLaunchPerms.exactAlarmGranted
+                    ? 'نظام الفتح التلقائي مفعل! سيفتح التطبيق تلقائياً على الشاشة ويشغّل الفيديو بصوت واضح في موعده حتى لو كان مغلقاً أو الشاشة مقفلة.'
+                    : 'لفتح التطبيق تلقائياً فوق شاشة الهاتف وتشغيل الفيديو فور حلول وقته حتى لو كان مغلقاً، يرجى تفعيل الأذونات المطلوبة بضغطة واحدة:'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {(!autoLaunchPerms.overlayGranted || !autoLaunchPerms.fullScreenGranted || !autoLaunchPerms.exactAlarmGranted || !autoLaunchPerms.batteryIgnored) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3.5 pt-3.5 border-t border-slate-800/80">
+              {!autoLaunchPerms.overlayGranted && (
+                <button
+                  type="button"
+                  onClick={() => NativeAlarmService.requestOverlayPermission()}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <span>1. الظهور فوق التطبيقات الأخرى</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 text-[10px] font-black">تفعيل الآن</span>
+                </button>
+              )}
+
+              {!autoLaunchPerms.fullScreenGranted && (
+                <button
+                  type="button"
+                  onClick={() => NativeAlarmService.requestFullScreenPermission()}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/50 text-purple-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <span>2. منبه ملء الشاشة التلقائي</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-purple-400 text-slate-950 text-[10px] font-black">تفعيل الآن</span>
+                </button>
+              )}
+
+              {!autoLaunchPerms.exactAlarmGranted && (
+                <button
+                  type="button"
+                  onClick={() => NativeAlarmService.requestExactAlarmPermission()}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <span>3. إذن المنبهات الدقيقة</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-rose-400 text-slate-950 text-[10px] font-black">تفعيل الآن</span>
+                </button>
+              )}
+
+              {!autoLaunchPerms.batteryIgnored && (
+                <button
+                  type="button"
+                  onClick={() => NativeAlarmService.requestBatteryOptimizationExemption()}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-200 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <span>عدم إغلاق التطبيق بالبطارية</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-cyan-400 text-slate-950 text-[10px] font-black">سماح</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs Switcher: Symmetrical Segmented Control */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-3 gap-3">
         <div className="flex items-center p-1.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 gap-1.5 w-full sm:w-auto">
@@ -949,14 +1059,37 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                           </span>
                         </div>
 
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleDeleteScheduled(item.id)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          title="حذف هذا التنبيه"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {isAndroidNative && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const ok = await NativeAlarmService.scheduleTestAutoLaunchAlarm(item, 10);
+                                if (ok) {
+                                  setUploadSuccess(
+                                    `⚡ تم ضبط تجربة الفتح التلقائي بعد 10 ثوانٍ لـ "${item.title}"! أغلق التطبيق أو اقفل الشاشة الآن وسيُفتح تلقائياً.`
+                                  );
+                                } else {
+                                  setUploadError('تعذر ضبط منبه التجربة. تأكد من صلاحية المنبهات الدقيقة.');
+                                }
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                              title="اختبار الفتح التلقائي للتطبيق وتشغيل الفيديو بعد 10 ثواني"
+                            >
+                              <Zap className="w-3.5 h-3.5 text-amber-400" />
+                              <span>تجربة 10ث</span>
+                            </button>
+                          )}
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDeleteScheduled(item.id)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="حذف هذا التنبيه"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Relative countdown */}

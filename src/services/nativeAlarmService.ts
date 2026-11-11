@@ -1,16 +1,33 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
 import type { Task, ScheduledMedia } from '../types';
+import {
+  VideoAlarm,
+  type NativeScheduledAlarmPayload,
+  type ScheduledMediaLaunchEvent,
+  type AutoLaunchPermissionsStatus,
+} from './videoAlarmPlugin';
 
 const CAIRO_LAT = 30.0444;
 const CAIRO_LNG = 31.2357;
+
+export function getLocalDateStr(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export class NativeAlarmService {
   private static isInitialized = false;
 
   public static isNative(): boolean {
     return Capacitor.isNativePlatform();
+  }
+
+  public static isAndroidNative(): boolean {
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   }
 
   /**
@@ -275,7 +292,9 @@ export class NativeAlarmService {
     if (!this.isNative()) return;
     try {
       const pending = await LocalNotifications.getPending();
-      const taskNotifs = pending.notifications.filter(n => n.id >= 2000);
+      const taskNotifs = pending.notifications.filter(
+        n => n.id >= 2000 && !(n.id >= 3000 && n.id < 4000)
+      );
       if (taskNotifs.length > 0) {
         await LocalNotifications.cancel({
           notifications: taskNotifs.map(n => ({ id: n.id }))
@@ -393,12 +412,15 @@ export class NativeAlarmService {
   }
 
   /**
-   * Schedule all enabled media & video items into native hardware AlarmManager (IDs 3000 - 3999)
-   * Plays with alarm stream attributes and pops up active alert modal with video player!
+   * Schedule all enabled media & video items into native hardware AlarmManager.
+   * On Android: uses VideoAlarmPlugin (AlarmManager.setAlarmClock + FullScreenIntent + StartActivity)
+   * so the app wakes up, opens automatically onto the screen, and plays the video immediately!
+   * On iOS: uses high-priority LocalNotifications.
    */
   public static async scheduleMediaItems(mediaList: ScheduledMedia[]): Promise<void> {
     if (!this.isNative()) return;
     try {
+      // Clear any legacy/iOS 3000..3999 LocalNotifications so there is never duplicate ringing
       const pending = await LocalNotifications.getPending();
       const mediaNotifs = pending.notifications.filter(n => n.id >= 3000 && n.id < 4000);
       if (mediaNotifs.length > 0) {
@@ -408,7 +430,8 @@ export class NativeAlarmService {
       }
 
       const now = new Date();
-      const notificationsToSchedule: any[] = [];
+      const nativeAlarms: NativeScheduledAlarmPayload[] = [];
+      const iosNotifications: any[] = [];
 
       for (const item of mediaList) {
         if (!item.enabled || !item.scheduledTime) continue;
@@ -417,24 +440,22 @@ export class NativeAlarmService {
         if (isNaN(hour) || isNaN(min)) continue;
 
         const isVideo = item.mediaType === 'video';
-        const numericId = 3000 + (Math.abs(NativeAlarmService.getNumericIdForTask(item.id)) % 900);
+        const baseHash = Math.abs(NativeAlarmService.getNumericIdForTask(item.id));
+        const androidBaseId = 30000 + (baseHash % 9000) * 10;
+        const iosBaseId = 3000 + (baseHash % 90);
 
-        // Calculate occurrence dates
+        // Calculate local occurrence dates
         const targetDates: Date[] = [];
 
         if (item.repeat === 'none') {
-          let dateStr = item.scheduledDate;
-          if (!dateStr) {
-            dateStr = now.toISOString().split('T')[0];
-          }
+          const dateStr = item.scheduledDate || getLocalDateStr(now);
           const [year, month, day] = dateStr.split('-').map(Number);
           const candidate = new Date(year, month - 1, day, hour, min, 0, 0);
           if (candidate.getTime() > now.getTime()) {
             targetDates.push(candidate);
           }
         } else if (item.repeat === 'daily') {
-          // Schedule for next 3 days
-          for (let d = 0; d < 3; d++) {
+          for (let d = 0; d < 4; d++) {
             const candidate = new Date();
             candidate.setDate(candidate.getDate() + d);
             candidate.setHours(hour, min, 0, 0);
@@ -454,19 +475,40 @@ export class NativeAlarmService {
             }
           }
         } else if (item.repeat === 'weekly') {
-          for (let w = 0; w < 3; w++) {
+          const baseDateStr = item.scheduledDate || getLocalDateStr(now);
+          const [by, bm, bd] = baseDateStr.split('-').map(Number);
+          const baseDate = new Date(by, bm - 1, bd, hour, min, 0, 0);
+          const targetDayOfWeek = baseDate.getDay();
+
+          for (let d = 0; d < 22; d++) {
             const candidate = new Date();
-            candidate.setDate(candidate.getDate() + (w * 7));
+            candidate.setDate(candidate.getDate() + d);
             candidate.setHours(hour, min, 0, 0);
-            if (candidate.getTime() > now.getTime()) {
+            if (candidate.getDay() === targetDayOfWeek && candidate.getTime() > now.getTime()) {
               targetDates.push(candidate);
             }
           }
         }
 
         targetDates.forEach((targetDate, idx) => {
-          notificationsToSchedule.push({
-            id: numericId + (idx * 10),
+          if (idx >= 9) return;
+          const mediaTypeValue: 'video' | 'audio' = isVideo ? 'video' : 'audio';
+
+          nativeAlarms.push({
+            alarmId: androidBaseId + idx,
+            triggerAtMs: targetDate.getTime(),
+            scheduledId: item.id,
+            mediaId: item.mediaId || item.id,
+            mediaName: item.mediaName || item.audioName || 'ملف وسائط',
+            mediaType: mediaTypeValue,
+            title: item.title,
+            description: item.description || '',
+            cloudUrl: item.cloudUrl || '',
+            isVideo,
+          });
+
+          iosNotifications.push({
+            id: (iosBaseId * 10) + idx,
             title: isVideo ? `🎬 موعد تشغيل فيديو: ${item.title}` : `📻 موعد تشغيل وسائط: ${item.title}`,
             body: item.description || (isVideo ? `يا دكتور عبد العزيز: حان موعد عرض فيديو ${item.mediaName}` : `يا دكتور عبد العزيز: حان موعد تشغيل ${item.mediaName}`),
             schedule: {
@@ -479,9 +521,10 @@ export class NativeAlarmService {
             foreground: true,
             extra: {
               type: 'scheduled_media',
+              scheduledId: item.id,
               mediaId: item.mediaId || item.id,
               mediaName: item.mediaName || item.audioName || 'ملف وسائط',
-              mediaType: item.mediaType || 'audio',
+              mediaType: mediaTypeValue,
               title: item.title,
               description: item.description,
               cloudUrl: item.cloudUrl,
@@ -491,15 +534,112 @@ export class NativeAlarmService {
         });
       }
 
-      if (notificationsToSchedule.length > 0) {
+      if (this.isAndroidNative()) {
+        const result = await VideoAlarm.syncVideoAlarms({ alarms: nativeAlarms });
+        console.log(`[NativeAlarmService] Synced ${result.scheduledCount} Android auto-launch video alarms.`);
+      } else if (iosNotifications.length > 0) {
         await LocalNotifications.schedule({
-          notifications: notificationsToSchedule
+          notifications: iosNotifications
         });
-        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} media alarms in AlarmManager.`);
+        console.log(`[NativeAlarmService] Scheduled ${iosNotifications.length} iOS media alerts.`);
       }
     } catch (err) {
       console.error('[NativeAlarmService] scheduleMediaItems error:', err);
     }
+  }
+
+  /**
+   * Schedule an immediate 10-second test alarm to verify automatic app launch & video auto-play.
+   */
+  public static async scheduleTestAutoLaunchAlarm(
+    item: {
+      id?: string;
+      mediaId: string;
+      mediaName: string;
+      mediaType: 'video' | 'audio';
+      title: string;
+      description?: string;
+      cloudUrl?: string;
+    },
+    delaySeconds: number = 10
+  ): Promise<boolean> {
+    if (!this.isAndroidNative()) return false;
+    try {
+      const triggerAtMs = Date.now() + delaySeconds * 1000;
+      const isVideo = item.mediaType === 'video';
+      const result = await VideoAlarm.scheduleSingleAlarm({
+        alarm: {
+          alarmId: 99501,
+          triggerAtMs,
+          scheduledId: item.id || `test_${item.mediaId}`,
+          mediaId: item.mediaId,
+          mediaName: item.mediaName,
+          mediaType: item.mediaType,
+          title: item.title,
+          description: item.description || '',
+          cloudUrl: item.cloudUrl || '',
+          isVideo,
+          isTestAlarm: true,
+        },
+      });
+      return result.scheduled;
+    } catch (e) {
+      console.warn('[NativeAlarmService] scheduleTestAutoLaunchAlarm error:', e);
+      return false;
+    }
+  }
+
+  public static async consumePendingMediaLaunch(): Promise<ScheduledMediaLaunchEvent | null> {
+    if (!this.isAndroidNative()) return null;
+    try {
+      const res = await VideoAlarm.getPendingLaunchMedia();
+      if (res.hasPending && res.media) {
+        return res.media;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  public static async onMediaAutoLaunch(
+    callback: (data: ScheduledMediaLaunchEvent) => void
+  ): Promise<PluginListenerHandle | null> {
+    if (!this.isAndroidNative()) return null;
+    try {
+      return await VideoAlarm.addListener('scheduledMediaLaunch', callback);
+    } catch {
+      return null;
+    }
+  }
+
+  public static async getAutoLaunchPermissions(): Promise<AutoLaunchPermissionsStatus | null> {
+    if (!this.isAndroidNative()) return null;
+    try {
+      return await VideoAlarm.getAutoLaunchPermissions();
+    } catch {
+      return null;
+    }
+  }
+
+  public static async requestOverlayPermission(): Promise<void> {
+    if (!this.isAndroidNative()) return;
+    await VideoAlarm.requestOverlayPermission().catch(console.warn);
+  }
+
+  public static async requestFullScreenPermission(): Promise<void> {
+    if (!this.isAndroidNative()) return;
+    await VideoAlarm.requestFullScreenPermission().catch(console.warn);
+  }
+
+  public static async requestBatteryOptimizationExemption(): Promise<void> {
+    if (!this.isAndroidNative()) return;
+    await VideoAlarm.requestBatteryOptimizationExemption().catch(console.warn);
+  }
+
+  public static async requestExactAlarmPermission(): Promise<void> {
+    if (!this.isAndroidNative()) return;
+    await VideoAlarm.requestExactAlarmPermission().catch(console.warn);
   }
 
   /**

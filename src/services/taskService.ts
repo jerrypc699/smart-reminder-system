@@ -2,6 +2,8 @@ import { Task, TaskStatus, PrayerInfo, Employee } from '../types';
 
 const STORAGE_KEY = 'smart_reminder_tasks_v2';
 const EMPLOYEES_STORAGE_KEY = 'smart_reminder_employees_v1';
+const DELETED_TASKS_KEY = 'dr_abdelaziz_deleted_tasks_v1';
+const DELETED_EMPLOYEES_KEY = 'dr_abdelaziz_deleted_employees_v1';
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   {
@@ -102,6 +104,59 @@ export class TaskService {
     return () => this.employeeListeners.delete(cb);
   }
 
+  // --- Deletion Tombstones (Ensures deleted tasks/employees never resurrect) ---
+  public getDeletedTaskIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(DELETED_TASKS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public markTaskDeleted(id: string): void {
+    if (typeof window === 'undefined' || !id) return;
+    try {
+      const current = new Set(this.getDeletedTaskIds());
+      current.add(id);
+      localStorage.setItem(DELETED_TASKS_KEY, JSON.stringify(Array.from(current)));
+    } catch (e) {
+      console.warn('Failed to mark task as deleted:', e);
+    }
+  }
+
+  public isTaskDeleted(id: string): boolean {
+    if (typeof window === 'undefined' || !id) return false;
+    return this.getDeletedTaskIds().includes(id);
+  }
+
+  public getDeletedEmployeeIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(DELETED_EMPLOYEES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public markEmployeeDeleted(id: string): void {
+    if (typeof window === 'undefined' || !id) return;
+    try {
+      const current = new Set(this.getDeletedEmployeeIds());
+      current.add(id);
+      localStorage.setItem(DELETED_EMPLOYEES_KEY, JSON.stringify(Array.from(current)));
+    } catch (e) {
+      console.warn('Failed to mark employee as deleted:', e);
+    }
+  }
+
+  public isEmployeeDeleted(id: string): boolean {
+    if (typeof window === 'undefined' || !id) return false;
+    return this.getDeletedEmployeeIds().includes(id);
+  }
+
   public triggerCloudSync(): void {
     if (typeof window === 'undefined') return;
     clearTimeout(this.cloudSyncDebounce);
@@ -121,16 +176,18 @@ export class TaskService {
   }
 
   /**
-   * Load tasks from LocalStorage
+   * Load tasks from LocalStorage, always filtering out tombstoned deletions
    */
   public getTasks(): Task[] {
     if (typeof window === 'undefined') return INITIAL_TASKS;
     try {
+      const deletedIds = new Set(this.getDeletedTaskIds());
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        return INITIAL_TASKS;
+        return INITIAL_TASKS.filter((t) => !deletedIds.has(t.id));
       }
-      return JSON.parse(data);
+      const parsed: Task[] = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed.filter((t) => t && t.id && !deletedIds.has(t.id)) : [];
     } catch {
       return INITIAL_TASKS;
     }
@@ -142,10 +199,12 @@ export class TaskService {
   public saveTasks(tasks: Task[], skipCloudSync = false): void {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      const deletedIds = new Set(this.getDeletedTaskIds());
+      const filtered = Array.isArray(tasks) ? tasks.filter((t) => t && t.id && !deletedIds.has(t.id)) : [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
       this.taskListeners.forEach((cb) => {
         try {
-          cb(tasks);
+          cb(filtered);
         } catch (e) {
           console.warn('Task listener error:', e);
         }
@@ -224,13 +283,17 @@ export class TaskService {
   }
 
   /**
-   * Delete task
+   * Delete task permanently with tombstone tracking & dual-cloud synchronization
    */
   public deleteTask(taskId: string): Task[] {
+    this.markTaskDeleted(taskId);
     const tasks = this.getTasks().filter((t) => t.id !== taskId);
-    this.saveTasks(tasks);
+    this.saveTasks(tasks, true);
     import('./vercelCloudSync').then(({ vercelCloudSync }) => {
-      vercelCloudSync.pushCurrentState({ tasks, deletedTaskIds: [taskId] }).catch(console.warn);
+      vercelCloudSync.pushCurrentState({ 
+        tasks, 
+        deletedTaskIds: this.getDeletedTaskIds() 
+      }).catch(console.warn);
     }).catch(console.warn);
     import('./supabaseService').then(({ supabaseService }) => {
       if (supabaseService.isConfigured()) {
@@ -278,16 +341,18 @@ export class TaskService {
   }
 
   /**
-   * Get all Employees / Staff profiles
+   * Get all Employees / Staff profiles, filtering out tombstoned deletions
    */
   public getEmployees(): Employee[] {
     if (typeof window === 'undefined') return INITIAL_EMPLOYEES;
     try {
+      const deletedIds = new Set(this.getDeletedEmployeeIds());
       const data = localStorage.getItem(EMPLOYEES_STORAGE_KEY);
       if (!data) {
-        return INITIAL_EMPLOYEES;
+        return INITIAL_EMPLOYEES.filter((e) => !deletedIds.has(e.id));
       }
-      return JSON.parse(data);
+      const parsed: Employee[] = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed.filter((e) => e && e.id && !deletedIds.has(e.id)) : [];
     } catch {
       return INITIAL_EMPLOYEES;
     }
@@ -299,10 +364,12 @@ export class TaskService {
   public saveEmployees(employees: Employee[], skipCloudSync = false): void {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(employees));
+      const deletedIds = new Set(this.getDeletedEmployeeIds());
+      const filtered = Array.isArray(employees) ? employees.filter((e) => e && e.id && !deletedIds.has(e.id)) : [];
+      localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(filtered));
       this.employeeListeners.forEach((cb) => {
         try {
-          cb(employees);
+          cb(filtered);
         } catch (e) {
           console.warn('Employee listener error:', e);
         }
@@ -345,13 +412,17 @@ export class TaskService {
   }
 
   /**
-   * Delete employee profile
+   * Delete employee profile permanently with tombstone tracking & dual-cloud synchronization
    */
   public deleteEmployee(id: string): Employee[] {
+    this.markEmployeeDeleted(id);
     const list = this.getEmployees().filter((emp) => emp.id !== id);
-    this.saveEmployees(list);
+    this.saveEmployees(list, true);
     import('./vercelCloudSync').then(({ vercelCloudSync }) => {
-      vercelCloudSync.pushCurrentState({ employees: list, deletedEmployeeIds: [id] }).catch(console.warn);
+      vercelCloudSync.pushCurrentState({ 
+        employees: list, 
+        deletedEmployeeIds: this.getDeletedEmployeeIds() 
+      }).catch(console.warn);
     }).catch(console.warn);
     import('./supabaseService').then(({ supabaseService }) => {
       if (supabaseService.isConfigured()) {

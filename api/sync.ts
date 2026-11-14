@@ -157,18 +157,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let data = await readBlobJson<any>(STATE_PATH);
       const forceSeed = req.query.seed === '1' || req.query.seed === 'true';
 
-      const needsTasksSeed = forceSeed || !data || !Array.isArray(data.tasks) || data.tasks.length === 0;
-      const needsEmployeesSeed = forceSeed || !data || !Array.isArray(data.employees) || data.employees.length === 0;
+      const tombstones = data?.tombstones || {
+        taskIds: [],
+        employeeIds: [],
+        scheduledIds: [],
+        habitIds: [],
+      };
+      const hasTombstones = (tombstones.taskIds?.length || 0) > 0 || (tombstones.employeeIds?.length || 0) > 0;
 
-      if (!data || needsTasksSeed || needsEmployeesSeed) {
+      if ((!data && !hasTombstones) || forceSeed) {
         data = {
-          ...(data || {}),
-          tasks: needsTasksSeed ? SEED_TASKS : (data?.tasks || []),
-          employees: needsEmployeesSeed ? SEED_EMPLOYEES : (data?.employees || []),
-          scheduledMedia: data?.scheduledMedia || [],
-          mediaLibrary: data?.mediaLibrary || [],
-          whatsappSettings: data?.whatsappSettings || {},
-          dailySystem: data?.dailySystem || null,
+          tombstones: { taskIds: [], employeeIds: [], scheduledIds: [], habitIds: [] },
+          tasks: SEED_TASKS,
+          employees: SEED_EMPLOYEES,
+          scheduledMedia: [],
+          mediaLibrary: [],
+          whatsappSettings: {},
+          dailySystem: null,
           updatedAt: new Date().toISOString(),
           seeded: true,
         };
@@ -182,6 +187,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch (saveErr) {
           console.warn('Could not auto-persist seed to blob:', saveErr);
         }
+      } else if (data) {
+        // Filter out any tombstoned deletions before returning to client
+        const taskTombSet = new Set<string>(tombstones.taskIds || []);
+        const empTombSet = new Set<string>(tombstones.employeeIds || []);
+        const schedTombSet = new Set<string>(tombstones.scheduledIds || []);
+        const habitTombSet = new Set<string>(tombstones.habitIds || []);
+
+        if (Array.isArray(data.tasks)) {
+          data.tasks = data.tasks.filter((t: any) => t && t.id && !taskTombSet.has(t.id));
+        }
+        if (Array.isArray(data.employees)) {
+          data.employees = data.employees.filter((e: any) => e && e.id && !empTombSet.has(e.id));
+        }
+        if (Array.isArray(data.scheduledMedia)) {
+          data.scheduledMedia = data.scheduledMedia.filter((s: any) => s && s.id && !schedTombSet.has(s.id));
+        }
+        if (data.dailySystem?.settings) {
+          if (Array.isArray(data.dailySystem.settings.customHabits)) {
+            data.dailySystem.settings.customHabits = data.dailySystem.settings.customHabits.filter(
+              (h: any) => h && h.id && !habitTombSet.has(h.id)
+            );
+          }
+          if (Array.isArray(data.dailySystem.settings.customPrayers)) {
+            data.dailySystem.settings.customPrayers = data.dailySystem.settings.customPrayers.filter(
+              (p: any) => p && p.id && !habitTombSet.has(p.id)
+            );
+          }
+          if (Array.isArray(data.dailySystem.settings.customAdhkar)) {
+            data.dailySystem.settings.customAdhkar = data.dailySystem.settings.customAdhkar.filter(
+              (a: any) => a && a.id && !habitTombSet.has(a.id)
+            );
+          }
+        }
       }
 
       return res.status(200).json(data);
@@ -194,37 +232,80 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fetch existing cloud state
       const existingData: any = (await readBlobJson<any>(STATE_PATH)) || {};
 
-      const deletedTaskIds: string[] = Array.isArray(body.deletedTaskIds) ? body.deletedTaskIds : [];
-      const deletedEmployeeIds: string[] = Array.isArray(body.deletedEmployeeIds) ? body.deletedEmployeeIds : [];
-      const deletedScheduledIds: string[] = Array.isArray(body.deletedScheduledIds) ? body.deletedScheduledIds : [];
+      const existingTombstones = existingData.tombstones || {
+        taskIds: [],
+        employeeIds: [],
+        scheduledIds: [],
+        habitIds: [],
+      };
 
-      // Smart Merge by ID: Merges local tasks with existing cloud tasks so neither mobile nor PC overwrites the other!
-      let mergedTasks = existingData.tasks || [];
-      if (Array.isArray(body.tasks) && body.tasks.length > 0) {
-        mergedTasks = mergeItemsById(existingData.tasks || [], body.tasks, deletedTaskIds);
-      } else if (deletedTaskIds.length > 0) {
-        mergedTasks = (existingData.tasks || []).filter((t: any) => !deletedTaskIds.includes(t.id));
+      const incomingDeletedTasks: string[] = Array.isArray(body.deletedTaskIds) ? body.deletedTaskIds : [];
+      const incomingDeletedEmployees: string[] = Array.isArray(body.deletedEmployeeIds) ? body.deletedEmployeeIds : [];
+      const incomingDeletedScheduled: string[] = Array.isArray(body.deletedScheduledIds) ? body.deletedScheduledIds : [];
+      const incomingDeletedHabits: string[] = Array.isArray(body.deletedHabitIds) ? body.deletedHabitIds : [];
+
+      const allDeletedTasks = Array.from(new Set([...(existingTombstones.taskIds || []), ...incomingDeletedTasks]));
+      const allDeletedEmployees = Array.from(new Set([...(existingTombstones.employeeIds || []), ...incomingDeletedEmployees]));
+      const allDeletedScheduled = Array.from(new Set([...(existingTombstones.scheduledIds || []), ...incomingDeletedScheduled]));
+      const allDeletedHabits = Array.from(new Set([...(existingTombstones.habitIds || []), ...incomingDeletedHabits]));
+
+      const updatedTombstones = {
+        taskIds: allDeletedTasks,
+        employeeIds: allDeletedEmployees,
+        scheduledIds: allDeletedScheduled,
+        habitIds: allDeletedHabits,
+      };
+
+      // Smart Merge by ID: Merges local tasks with existing cloud tasks, ALWAYS filtering against all tombstones
+      let mergedTasks: any[] = [];
+      if (body.forceWipe) {
+        mergedTasks = [];
+      } else if (Array.isArray(body.tasks)) {
+        mergedTasks = mergeItemsById(existingData.tasks || [], body.tasks, allDeletedTasks);
+      } else {
+        mergedTasks = (existingData.tasks || []).filter((t: any) => !allDeletedTasks.includes(t.id));
       }
 
-      let mergedEmployees = existingData.employees || [];
-      if (Array.isArray(body.employees) && body.employees.length > 0) {
-        mergedEmployees = mergeItemsById(existingData.employees || [], body.employees, deletedEmployeeIds);
-      } else if (deletedEmployeeIds.length > 0) {
-        mergedEmployees = (existingData.employees || []).filter((e: any) => !deletedEmployeeIds.includes(e.id));
+      let mergedEmployees: any[] = [];
+      if (body.forceWipe) {
+        mergedEmployees = [];
+      } else if (Array.isArray(body.employees)) {
+        mergedEmployees = mergeItemsById(existingData.employees || [], body.employees, allDeletedEmployees);
+      } else {
+        mergedEmployees = (existingData.employees || []).filter((e: any) => !allDeletedEmployees.includes(e.id));
       }
 
-      let mergedScheduledMedia = existingData.scheduledMedia || [];
-      if (Array.isArray(body.scheduledMedia) && body.scheduledMedia.length > 0) {
-        mergedScheduledMedia = mergeItemsById(existingData.scheduledMedia || [], body.scheduledMedia, deletedScheduledIds);
-      } else if (deletedScheduledIds.length > 0) {
-        mergedScheduledMedia = (existingData.scheduledMedia || []).filter((m: any) => !deletedScheduledIds.includes(m.id));
+      let mergedScheduledMedia: any[] = [];
+      if (body.forceWipe) {
+        mergedScheduledMedia = [];
+      } else if (Array.isArray(body.scheduledMedia)) {
+        mergedScheduledMedia = mergeItemsById(existingData.scheduledMedia || [], body.scheduledMedia, allDeletedScheduled);
+      } else {
+        mergedScheduledMedia = (existingData.scheduledMedia || []).filter((m: any) => !allDeletedScheduled.includes(m.id));
       }
 
       // Smart merge dailySystem so days, custom habits, and voice alert settings are preserved across devices
       let mergedDailySystem = existingData.dailySystem || null;
       if (body.dailySystem) {
+        const rawHabits = body.dailySystem.settings?.customHabits ?? existingData.dailySystem?.settings?.customHabits ?? [];
+        const rawPrayers = body.dailySystem.settings?.customPrayers ?? existingData.dailySystem?.settings?.customPrayers ?? [];
+        const rawAdhkar = body.dailySystem.settings?.customAdhkar ?? existingData.dailySystem?.settings?.customAdhkar ?? [];
+
+        const habitTombSet = new Set(allDeletedHabits);
+        const cleanHabits = rawHabits.filter((h: any) => h && h.id && !habitTombSet.has(h.id));
+        const cleanPrayers = rawPrayers.filter((p: any) => p && p.id && !habitTombSet.has(p.id));
+        const cleanAdhkar = rawAdhkar.filter((a: any) => a && a.id && !habitTombSet.has(a.id));
+
         if (!mergedDailySystem) {
-          mergedDailySystem = body.dailySystem;
+          mergedDailySystem = {
+            ...body.dailySystem,
+            settings: {
+              ...(body.dailySystem.settings || {}),
+              customHabits: cleanHabits,
+              customPrayers: cleanPrayers,
+              customAdhkar: cleanAdhkar,
+            },
+          };
         } else {
           mergedDailySystem = {
             ...mergedDailySystem,
@@ -240,9 +321,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             settings: {
               ...(mergedDailySystem.settings || {}),
               ...(body.dailySystem.settings || {}),
-              customHabits: body.dailySystem.settings?.customHabits ?? mergedDailySystem.settings?.customHabits ?? [],
-              customPrayers: body.dailySystem.settings?.customPrayers ?? mergedDailySystem.settings?.customPrayers ?? [],
-              customAdhkar: body.dailySystem.settings?.customAdhkar ?? mergedDailySystem.settings?.customAdhkar ?? [],
+              customHabits: cleanHabits,
+              customPrayers: cleanPrayers,
+              customAdhkar: cleanAdhkar,
               builtInSchedules: {
                 ...(mergedDailySystem.settings?.builtInSchedules || {}),
                 ...(body.dailySystem.settings?.builtInSchedules || {}),
@@ -255,8 +336,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const payload = {
         ...existingData,
         ...body,
-        tasks: mergedTasks.length > 0 ? mergedTasks : (existingData.tasks || SEED_TASKS),
-        employees: mergedEmployees.length > 0 ? mergedEmployees : (existingData.employees || SEED_EMPLOYEES),
+        tombstones: updatedTombstones,
+        tasks: mergedTasks,
+        employees: mergedEmployees,
         scheduledMedia: mergedScheduledMedia,
         mediaLibrary: body.mediaLibrary ?? existingData.mediaLibrary ?? [],
         dailySystem: mergedDailySystem,

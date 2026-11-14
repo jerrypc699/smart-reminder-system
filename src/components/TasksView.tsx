@@ -1940,14 +1940,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           معاينة الرسالة التي ستُرسل في الموعد:
                         </span>
                         {buildTaskWhatsAppMessage({
+                          id: editingTask?.id,
                           title: title || 'عنوان المهمة',
                           description,
                           dueDate,
                           dueTime,
+                          priority,
+                          category,
+                          employeeName: employees.find((e) => e.id === selectedEmployeeId)?.name,
                           attachments,
                           whatsapp: {
                             enabled: true,
                             phoneNumber: waPhone,
+                            recipientName: waRecipientName || employees.find((e) => e.id === selectedEmployeeId)?.name,
                             customMessage: waCustomMessage,
                             includeAttachmentsLinks: waIncludeAttachments,
                           },

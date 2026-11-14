@@ -169,6 +169,7 @@ export const DEFAULT_DAILY_SETTINGS: DailySettings = {
 };
 
 export const STORAGE_KEY = 'dr_abdelaziz_daily_system_v1';
+export const DELETED_HABITS_KEY = 'dr_abdelaziz_deleted_habits_v1';
 
 export function padZero(n: number): string {
   return String(n).padStart(2, '0');
@@ -767,7 +768,35 @@ class DailySystemService {
     });
   }
 
+  // --- Habit Deletion Tombstones ---
+  public getDeletedHabitIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(DELETED_HABITS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public markHabitDeleted(id: string): void {
+    if (typeof window === 'undefined' || !id) return;
+    try {
+      const current = new Set(this.getDeletedHabitIds());
+      current.add(id);
+      localStorage.setItem(DELETED_HABITS_KEY, JSON.stringify(Array.from(current)));
+    } catch (e) {
+      console.warn('Failed to mark habit as deleted:', e);
+    }
+  }
+
+  public isHabitDeleted(id: string): boolean {
+    if (typeof window === 'undefined' || !id) return false;
+    return this.getDeletedHabitIds().includes(id);
+  }
+
   public removeCustomPrayer(id: string) {
+    this.markHabitDeleted(id);
     this.updateSettings({
       customPrayers: (this.settings.customPrayers || []).filter((i) => i.id !== id),
     });
@@ -798,6 +827,7 @@ class DailySystemService {
   }
 
   public removeCustomAdhkar(id: string) {
+    this.markHabitDeleted(id);
     this.updateSettings({
       customAdhkar: (this.settings.customAdhkar || []).filter((i) => i.id !== id),
     });
@@ -820,6 +850,7 @@ class DailySystemService {
   }
 
   public removeCustomHabit(id: string) {
+    this.markHabitDeleted(id);
     this.updateSettings({
       customHabits: (this.settings.customHabits || []).filter((h) => h.id !== id),
     });
@@ -1104,10 +1135,18 @@ class DailySystemService {
       changed = true;
     }
     if (cloudData.settings) {
+      const deletedHabits = new Set(this.getDeletedHabitIds());
+      const rawHabits = cloudData.settings.customHabits || this.settings.customHabits || [];
+      const rawPrayers = cloudData.settings.customPrayers || this.settings.customPrayers || [];
+      const rawAdhkar = cloudData.settings.customAdhkar || this.settings.customAdhkar || [];
+
       this.settings = {
         ...DEFAULT_DAILY_SETTINGS,
         ...this.settings,
         ...cloudData.settings,
+        customHabits: rawHabits.filter((h) => h && h.id && !deletedHabits.has(h.id)),
+        customPrayers: rawPrayers.filter((p) => p && p.id && !deletedHabits.has(p.id)),
+        customAdhkar: rawAdhkar.filter((a) => a && a.id && !deletedHabits.has(a.id)),
         builtInSchedules: {
           ...(this.settings.builtInSchedules || {}),
           ...(cloudData.settings.builtInSchedules || {}),

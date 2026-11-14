@@ -16,6 +16,13 @@ export interface CloudSyncPayload {
   deletedTaskIds?: string[];
   deletedEmployeeIds?: string[];
   deletedScheduledIds?: string[];
+  deletedHabitIds?: string[];
+  tombstones?: {
+    taskIds?: string[];
+    employeeIds?: string[];
+    scheduledIds?: string[];
+    habitIds?: string[];
+  };
   forceWipe?: boolean;
 }
 
@@ -207,6 +214,19 @@ class VercelCloudSyncService {
       const dailySystem = partial?.dailySystem || dailySystemService.exportForCloud();
       const whatsappSettings = partial?.whatsappSettings || whatsappService.getSettings();
 
+      const deletedTaskIds = Array.from(
+        new Set([...(partial?.deletedTaskIds || []), ...taskService.getDeletedTaskIds()])
+      );
+      const deletedEmployeeIds = Array.from(
+        new Set([...(partial?.deletedEmployeeIds || []), ...taskService.getDeletedEmployeeIds()])
+      );
+      const deletedScheduledIds = Array.from(
+        new Set([...(partial?.deletedScheduledIds || []), ...audioStorageService.getDeletedScheduledIds()])
+      );
+      const deletedHabitIds = Array.from(
+        new Set([...(partial?.deletedHabitIds || []), ...dailySystemService.getDeletedHabitIds()])
+      );
+
       return await this.pushToCloud({
         tasks,
         employees,
@@ -216,9 +236,10 @@ class VercelCloudSyncService {
         whatsappSettings,
         prayerSettings: partial?.prayerSettings,
         audioSettings: partial?.audioSettings,
-        deletedTaskIds: partial?.deletedTaskIds,
-        deletedEmployeeIds: partial?.deletedEmployeeIds,
-        deletedScheduledIds: partial?.deletedScheduledIds,
+        deletedTaskIds,
+        deletedEmployeeIds,
+        deletedScheduledIds,
+        deletedHabitIds,
         forceWipe: partial?.forceWipe,
       });
     } catch (err) {

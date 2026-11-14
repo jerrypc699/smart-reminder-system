@@ -9,6 +9,7 @@ const SCHEDULED_STORE = 'scheduled_audios';
 const SCHEDULED_STORAGE_KEY = 'smart_reminder_scheduled_media_v2';
 const LEGACY_STORAGE_KEY = 'smart_reminder_scheduled_audios_v1';
 const MEDIA_META_STORAGE_KEY = 'smart_reminder_media_meta_v2';
+const DELETED_SCHED_KEY = 'dr_abdelaziz_deleted_sched_v1';
 
 class AudioStorageService {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -467,21 +468,51 @@ class AudioStorageService {
     return this.deleteMediaFile(id);
   }
 
+  // --- Scheduled Media Deletion Tombstones ---
+  public getDeletedScheduledIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(DELETED_SCHED_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public markScheduledDeleted(id: string): void {
+    if (typeof window === 'undefined' || !id) return;
+    try {
+      const current = new Set(this.getDeletedScheduledIds());
+      current.add(id);
+      localStorage.setItem(DELETED_SCHED_KEY, JSON.stringify(Array.from(current)));
+    } catch (e) {
+      console.warn('Failed to mark scheduled media as deleted:', e);
+    }
+  }
+
+  public isScheduledDeleted(id: string): boolean {
+    if (typeof window === 'undefined' || !id) return false;
+    return this.getDeletedScheduledIds().includes(id);
+  }
+
   /**
    * Scheduled Media management
    */
   public getScheduledMedias(): ScheduledMedia[] {
     if (typeof window === 'undefined') return [];
     try {
+      const deletedIds = new Set(this.getDeletedScheduledIds());
       const saved = localStorage.getItem(SCHEDULED_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (!saved) return [];
       const parsed: ScheduledMedia[] = JSON.parse(saved);
-      return parsed.map((item) => ({
-        ...item,
-        mediaId: item.mediaId || item.audioId || '',
-        mediaName: item.mediaName || item.audioName || 'ملف وسائط',
-        mediaType: item.mediaType || 'audio',
-      }));
+      return parsed
+        .filter((item) => item && item.id && !deletedIds.has(item.id))
+        .map((item) => ({
+          ...item,
+          mediaId: item.mediaId || item.audioId || '',
+          mediaName: item.mediaName || item.audioName || 'ملف وسائط',
+          mediaType: item.mediaType || 'audio',
+        }));
     } catch {
       return [];
     }
@@ -494,8 +525,10 @@ class AudioStorageService {
   public saveScheduledMedias(list: ScheduledMedia[]): void {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(list));
-      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(list));
+      const deletedIds = new Set(this.getDeletedScheduledIds());
+      const filtered = Array.isArray(list) ? list.filter((item) => item && item.id && !deletedIds.has(item.id)) : [];
+      localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(filtered));
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(filtered));
     } catch (e) {
       console.error('Failed to save scheduled medias', e);
     }
@@ -578,11 +611,15 @@ class AudioStorageService {
   }
 
   public deleteScheduledMedia(id: string): ScheduledMedia[] {
+    this.markScheduledDeleted(id);
     const list = this.getScheduledMedias().filter((item) => item.id !== id);
     this.saveScheduledMedias(list);
 
-    // Sync state to Vercel Central Cloud
-    vercelCloudSync.pushCurrentState({ scheduledMedia: list }).catch(console.warn);
+    // Sync state to Vercel Central Cloud with all deleted scheduled IDs
+    vercelCloudSync.pushCurrentState({ 
+      scheduledMedia: list, 
+      deletedScheduledIds: this.getDeletedScheduledIds() 
+    }).catch(console.warn);
 
     // Also delete from Supabase if configured
     import('./supabaseService').then(({ supabaseService }) => {

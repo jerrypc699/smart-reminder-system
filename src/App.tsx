@@ -157,16 +157,19 @@ export function App() {
     // 3. Subscribe to authoritative real-time cloud updates
     const unsubCloud = vercelCloudSync.subscribe((cloudData) => {
       if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
-        setTasks(cloudData.tasks);
-        taskService.saveTasks(cloudData.tasks, true);
-        NativeAlarmService.scheduleTasks(cloudData.tasks).catch(console.warn);
+        const cleanTasks = cloudData.tasks.filter((t) => !taskService.isTaskDeleted(t.id));
+        setTasks(cleanTasks);
+        taskService.saveTasks(cleanTasks, true);
+        NativeAlarmService.scheduleTasks(cleanTasks).catch(console.warn);
       }
       if (cloudData.employees && Array.isArray(cloudData.employees)) {
-        taskService.saveEmployees(cloudData.employees, true);
+        const cleanEmployees = cloudData.employees.filter((e) => !taskService.isEmployeeDeleted(e.id));
+        taskService.saveEmployees(cleanEmployees, true);
       }
       if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia)) {
-        setScheduledAudios(cloudData.scheduledMedia);
-        audioStorageService.saveScheduledMedias(cloudData.scheduledMedia);
+        const cleanScheduled = cloudData.scheduledMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
+        setScheduledAudios(cleanScheduled);
+        audioStorageService.saveScheduledMedias(cleanScheduled);
       }
       if (cloudData.mediaLibrary && Array.isArray(cloudData.mediaLibrary)) {
         audioStorageService.syncRemoteMetaList(cloudData.mediaLibrary);
@@ -207,21 +210,24 @@ export function App() {
     // Initial pull from Supabase
     supabaseService.fetchTasks().then((spTasks) => {
       if (spTasks && spTasks.length > 0) {
-        setTasks(spTasks);
-        taskService.saveTasks(spTasks, true);
+        const cleanTasks = spTasks.filter((t) => !taskService.isTaskDeleted(t.id));
+        setTasks(cleanTasks);
+        taskService.saveTasks(cleanTasks, true);
       }
     }).catch(console.warn);
 
     supabaseService.fetchEmployees().then((spEmp) => {
       if (spEmp && spEmp.length > 0) {
-        taskService.saveEmployees(spEmp, true);
+        const cleanEmp = spEmp.filter((e) => !taskService.isEmployeeDeleted(e.id));
+        taskService.saveEmployees(cleanEmp, true);
       }
     }).catch(console.warn);
 
     supabaseService.fetchScheduledMedia().then((spMedia) => {
       if (spMedia && spMedia.length > 0) {
-        setScheduledAudios(spMedia);
-        audioStorageService.saveScheduledMedias(spMedia);
+        const cleanMedia = spMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
+        setScheduledAudios(cleanMedia);
+        audioStorageService.saveScheduledMedias(cleanMedia);
       }
     }).catch(console.warn);
 
@@ -230,22 +236,25 @@ export function App() {
       onTasksChange: async () => {
         const fresh = await supabaseService.fetchTasks();
         if (fresh && fresh.length > 0) {
-          setTasks(fresh);
-          taskService.saveTasks(fresh, true);
-          NativeAlarmService.scheduleTasks(fresh).catch(console.warn);
+          const cleanTasks = fresh.filter((t) => !taskService.isTaskDeleted(t.id));
+          setTasks(cleanTasks);
+          taskService.saveTasks(cleanTasks, true);
+          NativeAlarmService.scheduleTasks(cleanTasks).catch(console.warn);
         }
       },
       onEmployeesChange: async () => {
         const fresh = await supabaseService.fetchEmployees();
         if (fresh && fresh.length > 0) {
-          taskService.saveEmployees(fresh, true);
+          const cleanEmp = fresh.filter((e) => !taskService.isEmployeeDeleted(e.id));
+          taskService.saveEmployees(cleanEmp, true);
         }
       },
       onScheduledMediaChange: async () => {
         const fresh = await supabaseService.fetchScheduledMedia();
         if (fresh && fresh.length > 0) {
-          setScheduledAudios(fresh);
-          audioStorageService.saveScheduledMedias(fresh);
+          const cleanMedia = fresh.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
+          setScheduledAudios(cleanMedia);
+          audioStorageService.saveScheduledMedias(cleanMedia);
         }
       },
       onSystemStateChange: (key, data) => {
@@ -1302,8 +1311,8 @@ export function App() {
   const handleDeleteTask = (taskId: string) => {
     setTasks((prev) => {
       const updated = prev.filter((t) => t.id !== taskId);
-      taskService.saveTasks(updated);
-      vercelCloudSync.pushCurrentState({ tasks: updated, deletedTaskIds: [taskId] }).catch(console.warn);
+      // Permanent deletion: marks tombstone, pushes to Vercel with all tombstones, and deletes from Supabase
+      taskService.deleteTask(taskId);
       NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });
@@ -1346,7 +1355,7 @@ export function App() {
           : t
       );
       taskService.saveTasks(updated);
-      vercelCloudSync.pushCurrentState({ tasks: updated, deletedTaskIds: [taskId] }).catch(console.warn);
+      vercelCloudSync.pushCurrentState({ tasks: updated }).catch(console.warn);
       NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });

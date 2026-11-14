@@ -340,8 +340,8 @@ class WhatsAppService {
     message?: string;
     shouldOpenModal?: boolean;
   }> {
-    // 1. Android Native Capacitor via VideoAlarm plugin
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+    // 1. Native Capacitor (Android & iOS) via VideoAlarm plugin
+    if (Capacitor.isNativePlatform()) {
       try {
         const res = await VideoAlarm.pickContact();
         if (res && res.success && res.phone) {
@@ -401,7 +401,7 @@ class WhatsAppService {
     const phone = normalizeWhatsAppPhone(rawPhone);
     if (!phone) return false;
 
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+    if (Capacitor.isNativePlatform()) {
       try {
         const res = await VideoAlarm.openWhatsApp({ phone, text: message });
         return !!res?.opened;

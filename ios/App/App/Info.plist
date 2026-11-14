@@ -70,6 +70,12 @@
 	<string>يحتاج تطبيق د. عبد العزيز للوصول إلى الميكروفون لإضافة المهام صوتياً باللغة العربية وتذكيرك بها.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>يستخدم التطبيق التعرف الصوتي لتحويل كلام الدكتور عبد العزيز إلى مهام وتذكيرات مجدولة.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>يحتاج تطبيق د. عبد العزيز للوصول إلى جهات الاتصال لاختيار رقم هاتف الموظف أو جهة الاتصال لإرسال المهام عبر الواتساب.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>whatsapp</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

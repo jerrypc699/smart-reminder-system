@@ -790,6 +790,25 @@ class DailySystemService {
     }
   }
 
+  public markMultipleHabitsDeleted(ids: string[]): void {
+    if (typeof window === 'undefined' || !Array.isArray(ids) || ids.length === 0) return;
+    try {
+      const current = new Set(this.getDeletedHabitIds());
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && !current.has(id)) {
+          current.add(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(DELETED_HABITS_KEY, JSON.stringify(Array.from(current)));
+      }
+    } catch (e) {
+      console.warn('Failed to mark multiple habits as deleted:', e);
+    }
+  }
+
   public isHabitDeleted(id: string): boolean {
     if (typeof window === 'undefined' || !id) return false;
     return this.getDeletedHabitIds().includes(id);

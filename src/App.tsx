@@ -121,16 +121,18 @@ export function App() {
     if (!isCloudConnected) return;
 
     const unsubTasks = cloudSyncService.subscribeTasks((cloudTasks) => {
-      if (cloudTasks && cloudTasks.length > 0) {
-        setTasks(cloudTasks);
-        taskService.saveTasks(cloudTasks);
+      if (cloudTasks && Array.isArray(cloudTasks)) {
+        const cleanTasks = cloudTasks.filter((t) => !taskService.isTaskDeleted(t.id));
+        setTasks(cleanTasks);
+        taskService.saveTasks(cleanTasks);
       }
     });
 
     const unsubMedia = cloudSyncService.subscribeScheduledMedia((cloudMedia) => {
-      if (cloudMedia && cloudMedia.length > 0) {
-        setScheduledAudios(cloudMedia);
-        audioStorageService.saveScheduledMedias(cloudMedia);
+      if (cloudMedia && Array.isArray(cloudMedia)) {
+        const cleanMedia = cloudMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
+        setScheduledAudios(cleanMedia);
+        audioStorageService.saveScheduledMedias(cleanMedia);
       }
     });
 
@@ -156,6 +158,25 @@ export function App() {
 
     // 3. Subscribe to authoritative real-time cloud updates
     const unsubCloud = vercelCloudSync.subscribe((cloudData) => {
+      // Authoritative Tombstones Synchronization across all devices
+      if (cloudData.tombstones) {
+        if (Array.isArray(cloudData.tombstones.taskIds)) {
+          taskService.markMultipleTasksDeleted(cloudData.tombstones.taskIds);
+        }
+        if (Array.isArray(cloudData.tombstones.employeeIds)) {
+          taskService.markMultipleEmployeesDeleted(cloudData.tombstones.employeeIds);
+        }
+        if (Array.isArray(cloudData.tombstones.scheduledIds)) {
+          audioStorageService.markMultipleScheduledDeleted(cloudData.tombstones.scheduledIds);
+        }
+        if (Array.isArray(cloudData.tombstones.mediaIds)) {
+          audioStorageService.markMultipleMediaDeleted(cloudData.tombstones.mediaIds);
+        }
+        if (Array.isArray(cloudData.tombstones.habitIds)) {
+          dailySystemService.markMultipleHabitsDeleted(cloudData.tombstones.habitIds);
+        }
+      }
+
       if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
         const cleanTasks = cloudData.tasks.filter((t) => !taskService.isTaskDeleted(t.id));
         setTasks(cleanTasks);
@@ -172,7 +193,8 @@ export function App() {
         audioStorageService.saveScheduledMedias(cleanScheduled);
       }
       if (cloudData.mediaLibrary && Array.isArray(cloudData.mediaLibrary)) {
-        audioStorageService.syncRemoteMetaList(cloudData.mediaLibrary);
+        const cleanLibrary = cloudData.mediaLibrary.filter((m) => !audioStorageService.isMediaDeleted(m.id));
+        audioStorageService.syncRemoteMetaList(cleanLibrary);
       }
       if (cloudData.dailySystem) {
         dailySystemService.mergeFromCloud(cloudData.dailySystem);
@@ -224,7 +246,7 @@ export function App() {
     }).catch(console.warn);
 
     supabaseService.fetchScheduledMedia().then((spMedia) => {
-      if (spMedia && spMedia.length > 0) {
+      if (spMedia && Array.isArray(spMedia)) {
         const cleanMedia = spMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
         setScheduledAudios(cleanMedia);
         audioStorageService.saveScheduledMedias(cleanMedia);
@@ -251,7 +273,7 @@ export function App() {
       },
       onScheduledMediaChange: async () => {
         const fresh = await supabaseService.fetchScheduledMedia();
-        if (fresh && fresh.length > 0) {
+        if (fresh && Array.isArray(fresh)) {
           const cleanMedia = fresh.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
           setScheduledAudios(cleanMedia);
           audioStorageService.saveScheduledMedias(cleanMedia);

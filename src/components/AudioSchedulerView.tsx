@@ -110,14 +110,20 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
     loadLibrary();
     refreshAutoLaunchPerms();
 
+    const unsubLibrary = audioStorageService.onLibraryChange(() => {
+      loadLibrary();
+    });
+
     const handleResume = () => {
       if (document.visibilityState === 'visible') {
         refreshAutoLaunchPerms();
+        loadLibrary();
       }
     };
     window.addEventListener('focus', refreshAutoLaunchPerms);
     document.addEventListener('visibilitychange', handleResume);
     return () => {
+      unsubLibrary();
       window.removeEventListener('focus', refreshAutoLaunchPerms);
       document.removeEventListener('visibilitychange', handleResume);
     };
@@ -348,11 +354,12 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   };
 
   // Delete scheduled item
-  const handleDeleteScheduled = (id: string) => {
+  const handleDeleteScheduled = async (id: string) => {
     if (confirm('هل أنت متأكد من حذف هذا التنبيه المجدول؟')) {
       audioStorageService.deleteScheduledMedia(id);
       NativeAlarmService.scheduleMediaItems(audioStorageService.getScheduledAudios()).catch(console.warn);
       onRefreshScheduled();
+      await loadLibrary();
     }
   };
 
@@ -360,6 +367,7 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   const handleDeleteLibraryItem = async (id: string) => {
     if (confirm('هل أنت متأكد من حذف هذا الملف نهائياً من الذاكرة؟')) {
       await audioStorageService.deleteMediaFile(id);
+      onRefreshScheduled();
       await loadLibrary();
     }
   };

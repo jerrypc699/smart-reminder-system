@@ -126,6 +126,25 @@ export class TaskService {
     }
   }
 
+  public markMultipleTasksDeleted(ids: string[]): void {
+    if (typeof window === 'undefined' || !Array.isArray(ids) || ids.length === 0) return;
+    try {
+      const current = new Set(this.getDeletedTaskIds());
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && !current.has(id)) {
+          current.add(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(DELETED_TASKS_KEY, JSON.stringify(Array.from(current)));
+      }
+    } catch (e) {
+      console.warn('Failed to mark multiple tasks as deleted:', e);
+    }
+  }
+
   public isTaskDeleted(id: string): boolean {
     if (typeof window === 'undefined' || !id) return false;
     return this.getDeletedTaskIds().includes(id);
@@ -149,6 +168,25 @@ export class TaskService {
       localStorage.setItem(DELETED_EMPLOYEES_KEY, JSON.stringify(Array.from(current)));
     } catch (e) {
       console.warn('Failed to mark employee as deleted:', e);
+    }
+  }
+
+  public markMultipleEmployeesDeleted(ids: string[]): void {
+    if (typeof window === 'undefined' || !Array.isArray(ids) || ids.length === 0) return;
+    try {
+      const current = new Set(this.getDeletedEmployeeIds());
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && !current.has(id)) {
+          current.add(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(DELETED_EMPLOYEES_KEY, JSON.stringify(Array.from(current)));
+      }
+    } catch (e) {
+      console.warn('Failed to mark multiple employees as deleted:', e);
     }
   }
 

@@ -17,11 +17,13 @@ export interface CloudSyncPayload {
   deletedEmployeeIds?: string[];
   deletedScheduledIds?: string[];
   deletedHabitIds?: string[];
+  deletedMediaIds?: string[];
   tombstones?: {
     taskIds?: string[];
     employeeIds?: string[];
     scheduledIds?: string[];
     habitIds?: string[];
+    mediaIds?: string[];
   };
   forceWipe?: boolean;
 }
@@ -129,6 +131,22 @@ class VercelCloudSyncService {
       this.lastPayload = data;
       this.hasFetchedOnce = true;
 
+      // Authoritative Tombstones Synchronization across all devices
+      if (data && data.tombstones) {
+        try {
+          const { taskService } = await import('./taskService');
+          const { audioStorageService } = await import('./audioStorageService');
+          const { dailySystemService } = await import('./dailySystemService');
+          if (Array.isArray(data.tombstones.taskIds)) taskService.markMultipleTasksDeleted(data.tombstones.taskIds);
+          if (Array.isArray(data.tombstones.employeeIds)) taskService.markMultipleEmployeesDeleted(data.tombstones.employeeIds);
+          if (Array.isArray(data.tombstones.scheduledIds)) audioStorageService.markMultipleScheduledDeleted(data.tombstones.scheduledIds);
+          if (Array.isArray(data.tombstones.mediaIds)) audioStorageService.markMultipleMediaDeleted(data.tombstones.mediaIds);
+          if (Array.isArray(data.tombstones.habitIds)) dailySystemService.markMultipleHabitsDeleted(data.tombstones.habitIds);
+        } catch (tombErr) {
+          console.warn('Failed to apply cloud tombstones:', tombErr);
+        }
+      }
+
       if (data && data.updatedAt && data.updatedAt !== this.lastKnownUpdate) {
         this.lastKnownUpdate = data.updatedAt;
         this.listeners.forEach((cb) => {
@@ -223,6 +241,9 @@ class VercelCloudSyncService {
       const deletedScheduledIds = Array.from(
         new Set([...(partial?.deletedScheduledIds || []), ...audioStorageService.getDeletedScheduledIds()])
       );
+      const deletedMediaIds = Array.from(
+        new Set([...(partial?.deletedMediaIds || []), ...audioStorageService.getDeletedMediaIds()])
+      );
       const deletedHabitIds = Array.from(
         new Set([...(partial?.deletedHabitIds || []), ...dailySystemService.getDeletedHabitIds()])
       );
@@ -239,6 +260,7 @@ class VercelCloudSyncService {
         deletedTaskIds,
         deletedEmployeeIds,
         deletedScheduledIds,
+        deletedMediaIds,
         deletedHabitIds,
         forceWipe: partial?.forceWipe,
       });
@@ -383,13 +405,24 @@ class VercelCloudSyncService {
       const { whatsappService } = await import('./whatsappService');
       const { dailySystemService } = await import('./dailySystemService');
 
+      const deletedTaskIds = taskService.getDeletedTaskIds();
+      const deletedEmployeeIds = taskService.getDeletedEmployeeIds();
+      const deletedScheduledIds = audioStorageService.getDeletedScheduledIds();
+      const deletedMediaIds = audioStorageService.getDeletedMediaIds();
+      const deletedHabitIds = dailySystemService.getDeletedHabitIds();
+
       const pushed = await this.pushToCloud({
-        tasks,
-        employees,
-        scheduledMedia,
-        mediaLibrary,
+        tasks: tasks.filter((t) => !taskService.isTaskDeleted(t.id)),
+        employees: employees.filter((e) => !taskService.isEmployeeDeleted(e.id)),
+        scheduledMedia: scheduledMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id)),
+        mediaLibrary: mediaLibrary.filter((m) => !audioStorageService.isMediaDeleted(m.id)),
         whatsappSettings: whatsappService.getSettings(),
         dailySystem: dailySystemService.exportForCloud(),
+        deletedTaskIds,
+        deletedEmployeeIds,
+        deletedScheduledIds,
+        deletedMediaIds,
+        deletedHabitIds,
       });
 
       this.isPushing = false;

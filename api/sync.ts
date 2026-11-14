@@ -162,12 +162,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         employeeIds: [],
         scheduledIds: [],
         habitIds: [],
+        mediaIds: [],
       };
-      const hasTombstones = (tombstones.taskIds?.length || 0) > 0 || (tombstones.employeeIds?.length || 0) > 0;
+      const hasTombstones = (tombstones.taskIds?.length || 0) > 0 || (tombstones.employeeIds?.length || 0) > 0 || (tombstones.mediaIds?.length || 0) > 0;
 
       if ((!data && !hasTombstones) || forceSeed) {
         data = {
-          tombstones: { taskIds: [], employeeIds: [], scheduledIds: [], habitIds: [] },
+          tombstones: { taskIds: [], employeeIds: [], scheduledIds: [], habitIds: [], mediaIds: [] },
           tasks: SEED_TASKS,
           employees: SEED_EMPLOYEES,
           scheduledMedia: [],
@@ -193,6 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const empTombSet = new Set<string>(tombstones.employeeIds || []);
         const schedTombSet = new Set<string>(tombstones.scheduledIds || []);
         const habitTombSet = new Set<string>(tombstones.habitIds || []);
+        const mediaTombSet = new Set<string>(tombstones.mediaIds || []);
 
         if (Array.isArray(data.tasks)) {
           data.tasks = data.tasks.filter((t: any) => t && t.id && !taskTombSet.has(t.id));
@@ -202,6 +204,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         if (Array.isArray(data.scheduledMedia)) {
           data.scheduledMedia = data.scheduledMedia.filter((s: any) => s && s.id && !schedTombSet.has(s.id));
+        }
+        if (Array.isArray(data.mediaLibrary)) {
+          data.mediaLibrary = data.mediaLibrary.filter((m: any) => m && m.id && !mediaTombSet.has(m.id));
         }
         if (data.dailySystem?.settings) {
           if (Array.isArray(data.dailySystem.settings.customHabits)) {
@@ -237,23 +242,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         employeeIds: [],
         scheduledIds: [],
         habitIds: [],
+        mediaIds: [],
       };
 
       const incomingDeletedTasks: string[] = Array.isArray(body.deletedTaskIds) ? body.deletedTaskIds : [];
       const incomingDeletedEmployees: string[] = Array.isArray(body.deletedEmployeeIds) ? body.deletedEmployeeIds : [];
       const incomingDeletedScheduled: string[] = Array.isArray(body.deletedScheduledIds) ? body.deletedScheduledIds : [];
       const incomingDeletedHabits: string[] = Array.isArray(body.deletedHabitIds) ? body.deletedHabitIds : [];
+      const incomingDeletedMedia: string[] = Array.isArray(body.deletedMediaIds) ? body.deletedMediaIds : [];
 
       const allDeletedTasks = Array.from(new Set([...(existingTombstones.taskIds || []), ...incomingDeletedTasks]));
       const allDeletedEmployees = Array.from(new Set([...(existingTombstones.employeeIds || []), ...incomingDeletedEmployees]));
       const allDeletedScheduled = Array.from(new Set([...(existingTombstones.scheduledIds || []), ...incomingDeletedScheduled]));
       const allDeletedHabits = Array.from(new Set([...(existingTombstones.habitIds || []), ...incomingDeletedHabits]));
+      const allDeletedMedia = Array.from(new Set([...(existingTombstones.mediaIds || []), ...incomingDeletedMedia]));
 
       const updatedTombstones = {
         taskIds: allDeletedTasks,
         employeeIds: allDeletedEmployees,
         scheduledIds: allDeletedScheduled,
         habitIds: allDeletedHabits,
+        mediaIds: allDeletedMedia,
       };
 
       // Smart Merge by ID: Merges local tasks with existing cloud tasks, ALWAYS filtering against all tombstones
@@ -282,6 +291,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         mergedScheduledMedia = mergeItemsById(existingData.scheduledMedia || [], body.scheduledMedia, allDeletedScheduled);
       } else {
         mergedScheduledMedia = (existingData.scheduledMedia || []).filter((m: any) => !allDeletedScheduled.includes(m.id));
+      }
+
+      let mergedMediaLibrary: any[] = [];
+      if (body.forceWipe) {
+        mergedMediaLibrary = [];
+      } else if (Array.isArray(body.mediaLibrary)) {
+        mergedMediaLibrary = mergeItemsById(existingData.mediaLibrary || [], body.mediaLibrary, allDeletedMedia);
+      } else {
+        mergedMediaLibrary = (existingData.mediaLibrary || []).filter((m: any) => !allDeletedMedia.includes(m.id));
       }
 
       // Smart merge dailySystem so days, custom habits, and voice alert settings are preserved across devices
@@ -340,7 +358,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         tasks: mergedTasks,
         employees: mergedEmployees,
         scheduledMedia: mergedScheduledMedia,
-        mediaLibrary: body.mediaLibrary ?? existingData.mediaLibrary ?? [],
+        mediaLibrary: mergedMediaLibrary,
         dailySystem: mergedDailySystem,
         whatsappSettings: body.whatsappSettings ?? existingData.whatsappSettings ?? null,
         prayerSettings: body.prayerSettings ?? existingData.prayerSettings ?? null,

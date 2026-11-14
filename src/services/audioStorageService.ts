@@ -10,10 +10,27 @@ const SCHEDULED_STORAGE_KEY = 'smart_reminder_scheduled_media_v2';
 const LEGACY_STORAGE_KEY = 'smart_reminder_scheduled_audios_v1';
 const MEDIA_META_STORAGE_KEY = 'smart_reminder_media_meta_v2';
 const DELETED_SCHED_KEY = 'dr_abdelaziz_deleted_sched_v1';
+const DELETED_MEDIA_KEY = 'dr_abdelaziz_deleted_media_v1';
 
 class AudioStorageService {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private urlCache: Map<string, string> = new Map();
+  private libraryListeners: Set<() => void> = new Set();
+
+  public onLibraryChange(callback: () => void): () => void {
+    this.libraryListeners.add(callback);
+    return () => this.libraryListeners.delete(callback);
+  }
+
+  public notifyLibraryChange(): void {
+    this.libraryListeners.forEach((cb) => {
+      try {
+        cb();
+      } catch (e) {
+        console.warn('Library listener error:', e);
+      }
+    });
+  }
 
   private getDB(): Promise<IDBDatabase> {
     if (this.dbPromise) return this.dbPromise;
@@ -139,15 +156,19 @@ class AudioStorageService {
   public getMetaRegistry(): StoredMediaMeta[] {
     if (typeof window === 'undefined') return [];
     try {
+      const deleted = new Set(this.getDeletedMediaIds());
       const raw = localStorage.getItem(MEDIA_META_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed: StoredMediaMeta[] = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((m) => m && m.id && !deleted.has(m.id)) : [];
     } catch {
       return [];
     }
   }
 
   public saveMetaToRegistry(meta: StoredMediaMeta): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !meta || !meta.id) return;
+    if (this.isMediaDeleted(meta.id)) return;
     try {
       const list = this.getMetaRegistry();
       const idx = list.findIndex((m) => m.id === meta.id);
@@ -157,6 +178,7 @@ class AudioStorageService {
         list.unshift(meta);
       }
       localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(list));
+      this.notifyLibraryChange();
     } catch (e) {
       console.warn('Failed to update media meta registry in localStorage:', e);
     }
@@ -165,10 +187,12 @@ class AudioStorageService {
   public syncRemoteMetaList(remoteList: StoredMediaMeta[]): void {
     if (!remoteList || !Array.isArray(remoteList)) return;
     try {
-      const local = this.getMetaRegistry();
+      const deletedMedia = new Set(this.getDeletedMediaIds());
+      const local = this.getMetaRegistry().filter((item) => !deletedMedia.has(item.id));
       const map = new Map<string, StoredMediaMeta>();
       local.forEach((item) => map.set(item.id, item));
       remoteList.forEach((item) => {
+        if (!item || !item.id || deletedMedia.has(item.id)) return;
         if (!map.has(item.id)) {
           map.set(item.id, item);
         } else {
@@ -178,10 +202,11 @@ class AudioStorageService {
           }
         }
       });
-      const merged = Array.from(map.values()).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      const merged = Array.from(map.values())
+        .filter((m) => !deletedMedia.has(m.id))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(merged));
+      this.notifyLibraryChange();
     } catch (e) {
       console.warn('Failed to sync remote meta list:', e);
     }
@@ -355,10 +380,15 @@ class AudioStorageService {
    * (Combines instant localStorage registry, IndexedDB records, and cloud items)
    */
   public async getAllMediaMeta(): Promise<StoredMediaMeta[]> {
+    const deleted = new Set(this.getDeletedMediaIds());
     // 1. Instant synchronous read from localStorage registry (never fails, 0MB memory overhead)
     const map = new Map<string, StoredMediaMeta>();
     const registryItems = this.getMetaRegistry();
-    registryItems.forEach((m) => map.set(m.id, m));
+    registryItems.forEach((m) => {
+      if (!deleted.has(m.id)) {
+        map.set(m.id, m);
+      }
+    });
 
     // 2. Also try reading from local IndexedDB if available and merge
     try {
@@ -394,20 +424,22 @@ class AudioStorageService {
       });
 
       localItems.forEach((item) => {
-        if (!map.has(item.id)) {
-          map.set(item.id, item);
-          this.saveMetaToRegistry(item);
+        if (!deleted.has(item.id)) {
+          if (!map.has(item.id)) {
+            map.set(item.id, item);
+            this.saveMetaToRegistry(item);
+          }
         }
       });
     } catch {
       // Local DB unavailable
     }
 
-    // 3. Also include any media synced via cloud scheduled items if not in local list
+    // 3. Also include any media synced via cloud scheduled items if not in local list AND not deleted
     const scheduled = this.getScheduledMedias();
     scheduled.forEach((s) => {
       const mediaId = s.mediaId || s.id;
-      if (!map.has(mediaId)) {
+      if (!deleted.has(mediaId) && !map.has(mediaId)) {
         map.set(mediaId, {
           id: mediaId,
           name: s.mediaName,
@@ -423,9 +455,9 @@ class AudioStorageService {
       }
     });
 
-    return Array.from(map.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return Array.from(map.values())
+      .filter((m) => !deleted.has(m.id))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   public async getAllAudioMeta(): Promise<StoredMediaMeta[]> {
@@ -433,9 +465,10 @@ class AudioStorageService {
   }
 
   /**
-   * Delete a media file
+   * Delete a media file permanently with tombstone tracking & dual-cloud synchronization
    */
   public async deleteMediaFile(id: string): Promise<void> {
+    this.markMediaDeleted(id);
     const cachedUrl = this.urlCache.get(id);
     if (cachedUrl) {
       URL.revokeObjectURL(cachedUrl);
@@ -445,7 +478,7 @@ class AudioStorageService {
     // 1. Remove from localStorage registry
     if (typeof window !== 'undefined') {
       try {
-        const list = this.getMetaRegistry().filter((m) => m.id !== id);
+        const list = this.getMetaRegistry().filter((m) => m.id !== id && !this.isMediaDeleted(m.id));
         localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(list));
       } catch {}
     }
@@ -462,10 +495,77 @@ class AudioStorageService {
         req.onerror = () => reject(req.error);
       });
     } catch {}
+
+    // 3. Remove any scheduled media referencing this media
+    try {
+      const scheduled = this.getScheduledMedias();
+      const affected = scheduled.filter((s) => s.mediaId === id || s.id === id);
+      affected.forEach((s) => this.deleteScheduledMedia(s.id));
+    } catch {}
+
+    // 4. Synchronize deletion immediately to cloud
+    try {
+      const cleanLibrary = this.getMetaRegistry().filter((m) => m.id !== id && !this.isMediaDeleted(m.id));
+      const cleanScheduled = this.getScheduledMedias();
+      vercelCloudSync.pushCurrentState({
+        mediaLibrary: cleanLibrary,
+        deletedMediaIds: this.getDeletedMediaIds(),
+        scheduledMedia: cleanScheduled,
+        deletedScheduledIds: this.getDeletedScheduledIds(),
+      }).catch(console.warn);
+    } catch {}
+
+    this.notifyLibraryChange();
   }
 
   public async deleteAudioFile(id: string): Promise<void> {
     return this.deleteMediaFile(id);
+  }
+
+  // --- Media Library Deletion Tombstones ---
+  public getDeletedMediaIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(DELETED_MEDIA_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public markMediaDeleted(id: string): void {
+    if (typeof window === 'undefined' || !id) return;
+    try {
+      const current = new Set(this.getDeletedMediaIds());
+      current.add(id);
+      localStorage.setItem(DELETED_MEDIA_KEY, JSON.stringify(Array.from(current)));
+    } catch (e) {
+      console.warn('Failed to mark media as deleted:', e);
+    }
+  }
+
+  public markMultipleMediaDeleted(ids: string[]): void {
+    if (typeof window === 'undefined' || !Array.isArray(ids) || ids.length === 0) return;
+    try {
+      const current = new Set(this.getDeletedMediaIds());
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && !current.has(id)) {
+          current.add(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(DELETED_MEDIA_KEY, JSON.stringify(Array.from(current)));
+      }
+    } catch (e) {
+      console.warn('Failed to mark multiple media as deleted:', e);
+    }
+  }
+
+  public isMediaDeleted(id: string): boolean {
+    if (typeof window === 'undefined' || !id) return false;
+    return this.getDeletedMediaIds().includes(id);
   }
 
   // --- Scheduled Media Deletion Tombstones ---
@@ -487,6 +587,25 @@ class AudioStorageService {
       localStorage.setItem(DELETED_SCHED_KEY, JSON.stringify(Array.from(current)));
     } catch (e) {
       console.warn('Failed to mark scheduled media as deleted:', e);
+    }
+  }
+
+  public markMultipleScheduledDeleted(ids: string[]): void {
+    if (typeof window === 'undefined' || !Array.isArray(ids) || ids.length === 0) return;
+    try {
+      const current = new Set(this.getDeletedScheduledIds());
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && !current.has(id)) {
+          current.add(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(DELETED_SCHED_KEY, JSON.stringify(Array.from(current)));
+      }
+    } catch (e) {
+      console.warn('Failed to mark multiple scheduled as deleted:', e);
     }
   }
 
@@ -615,10 +734,12 @@ class AudioStorageService {
     const list = this.getScheduledMedias().filter((item) => item.id !== id);
     this.saveScheduledMedias(list);
 
-    // Sync state to Vercel Central Cloud with all deleted scheduled IDs
+    // Sync state to Vercel Central Cloud with all deleted scheduled IDs & media IDs
     vercelCloudSync.pushCurrentState({ 
       scheduledMedia: list, 
-      deletedScheduledIds: this.getDeletedScheduledIds() 
+      deletedScheduledIds: this.getDeletedScheduledIds(),
+      mediaLibrary: this.getMetaRegistry(),
+      deletedMediaIds: this.getDeletedMediaIds(),
     }).catch(console.warn);
 
     // Also delete from Supabase if configured

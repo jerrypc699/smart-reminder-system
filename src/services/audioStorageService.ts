@@ -584,6 +584,13 @@ class AudioStorageService {
     // Sync state to Vercel Central Cloud
     vercelCloudSync.pushCurrentState({ scheduledMedia: list }).catch(console.warn);
 
+    // Also delete from Supabase if configured
+    import('./supabaseService').then(({ supabaseService }) => {
+      if (supabaseService.isConfigured()) {
+        supabaseService.deleteScheduledMedia(id).catch(console.warn);
+      }
+    }).catch(console.warn);
+
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.deleteScheduledMedia(id);
     }

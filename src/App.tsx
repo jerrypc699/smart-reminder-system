@@ -14,6 +14,7 @@ import { InstallAppModal } from './components/InstallAppModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { cloudSyncService } from './services/cloudSyncService';
 import { vercelCloudSync } from './services/vercelCloudSync';
+import { supabaseService } from './services/supabaseService';
 import { mobileBackgroundService } from './services/mobileBackgroundService';
 import { NativeAlarmService, getLocalDateStr } from './services/nativeAlarmService';
 import { dailySystemService } from './services/dailySystemService';
@@ -197,6 +198,68 @@ export function App() {
       clearTimeout(initialSyncTimer);
       unsubCloud();
     };
+  }, []);
+
+  // Supabase Realtime WebSockets Synchronization (if configured)
+  useEffect(() => {
+    if (!supabaseService.isConfigured()) return;
+
+    // Initial pull from Supabase
+    supabaseService.fetchTasks().then((spTasks) => {
+      if (spTasks && spTasks.length > 0) {
+        setTasks(spTasks);
+        taskService.saveTasks(spTasks, true);
+      }
+    }).catch(console.warn);
+
+    supabaseService.fetchEmployees().then((spEmp) => {
+      if (spEmp && spEmp.length > 0) {
+        taskService.saveEmployees(spEmp, true);
+      }
+    }).catch(console.warn);
+
+    supabaseService.fetchScheduledMedia().then((spMedia) => {
+      if (spMedia && spMedia.length > 0) {
+        setScheduledAudios(spMedia);
+        audioStorageService.saveScheduledMedias(spMedia);
+      }
+    }).catch(console.warn);
+
+    // Live WebSockets listener
+    const unsubSp = supabaseService.subscribeRealtime({
+      onTasksChange: async () => {
+        const fresh = await supabaseService.fetchTasks();
+        if (fresh && fresh.length > 0) {
+          setTasks(fresh);
+          taskService.saveTasks(fresh, true);
+          NativeAlarmService.scheduleTasks(fresh).catch(console.warn);
+        }
+      },
+      onEmployeesChange: async () => {
+        const fresh = await supabaseService.fetchEmployees();
+        if (fresh && fresh.length > 0) {
+          taskService.saveEmployees(fresh, true);
+        }
+      },
+      onScheduledMediaChange: async () => {
+        const fresh = await supabaseService.fetchScheduledMedia();
+        if (fresh && fresh.length > 0) {
+          setScheduledAudios(fresh);
+          audioStorageService.saveScheduledMedias(fresh);
+        }
+      },
+      onSystemStateChange: (key, data) => {
+        if (key === 'daily_system' && data) {
+          dailySystemService.mergeFromCloud(data);
+        }
+        if (key === 'whatsapp_settings' && data) {
+          whatsappService.saveSettings(data);
+          setWhatsappSettings(data);
+        }
+      },
+    });
+
+    return unsubSp;
   }, []);
 
   const handleManualSync = async () => {

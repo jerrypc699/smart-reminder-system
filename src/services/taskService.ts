@@ -109,6 +109,11 @@ export class TaskService {
       try {
         const { vercelCloudSync } = await import('./vercelCloudSync');
         vercelCloudSync.pushCurrentState().catch(console.warn);
+
+        const { supabaseService } = await import('./supabaseService');
+        if (supabaseService.isConfigured()) {
+          supabaseService.syncAllLocalToSupabase().catch(console.warn);
+        }
       } catch (e) {
         console.warn('Auto cloud sync failed:', e);
       }
@@ -224,6 +229,11 @@ export class TaskService {
   public deleteTask(taskId: string): Task[] {
     const tasks = this.getTasks().filter((t) => t.id !== taskId);
     this.saveTasks(tasks);
+    import('./supabaseService').then(({ supabaseService }) => {
+      if (supabaseService.isConfigured()) {
+        supabaseService.deleteTask(taskId).catch(console.warn);
+      }
+    }).catch(console.warn);
     return tasks;
   }
 
@@ -337,6 +347,11 @@ export class TaskService {
   public deleteEmployee(id: string): Employee[] {
     const list = this.getEmployees().filter((emp) => emp.id !== id);
     this.saveEmployees(list);
+    import('./supabaseService').then(({ supabaseService }) => {
+      if (supabaseService.isConfigured()) {
+        supabaseService.deleteEmployee(id).catch(console.warn);
+      }
+    }).catch(console.warn);
     return list;
   }
 

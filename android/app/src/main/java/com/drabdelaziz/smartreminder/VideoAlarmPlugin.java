@@ -39,7 +39,7 @@ import com.getcapacitor.annotation.PermissionCallback;
     permissions = {
         @Permission(
             strings = { Manifest.permission.READ_CONTACTS },
-            name = "contacts"
+            alias = "contacts"
         )
     }
 )
@@ -353,7 +353,7 @@ public class VideoAlarmPlugin extends Plugin {
     }
 
     @PermissionCallback
-    private void contactsPermCallback(PluginCall call) {
+    public void contactsPermCallback(PluginCall call) {
         // Proceed to launch picker whether granted or through intent's own grant
         launchContactPicker(call);
     }
@@ -377,7 +377,7 @@ public class VideoAlarmPlugin extends Plugin {
     }
 
     @ActivityCallback
-    private void pickContactResult(PluginCall call, ActivityResult result) {
+    public void pickContactResult(PluginCall call, ActivityResult result) {
         if (call == null) return;
         if (result == null || result.getResultCode() != android.app.Activity.RESULT_OK || result.getData() == null) {
             JSObject ret = new JSObject();

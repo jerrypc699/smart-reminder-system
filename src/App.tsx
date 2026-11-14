@@ -141,48 +141,33 @@ export function App() {
 
   const [isManualSyncing, setIsManualSyncing] = useState<boolean>(false);
 
-  // Automatic Zero-Config Vercel Cloud Sync (runs out of the box on PC & Mobile)
+  // Automatic Zero-Config Central Cloud Sync (Any phone/PC instantly sees the database)
   useEffect(() => {
-    // 1. Initial background scan & upload of any un-uploaded local media
+    // 1. Subscribe to local task changes to update state
+    const unsubTaskService = taskService.subscribeTasks((updatedTasks) => {
+      setTasks(updatedTasks);
+    });
+
+    // 2. Initial background scan & upload of any un-uploaded local media
     const initialSyncTimer = setTimeout(() => {
       vercelCloudSync.syncAllLocalToCloud().catch(console.warn);
     }, 1500);
 
-    // 2. Subscribe to incoming cloud updates with smart merge
-    const unsub = vercelCloudSync.subscribe((cloudData) => {
-      if (cloudData.tasks && Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
-        setTasks((prev) => {
-          const map = new Map<string, Task>();
-          cloudData.tasks.forEach((t) => map.set(t.id, t));
-          prev.forEach((t) => {
-            if (!map.has(t.id)) map.set(t.id, t);
-          });
-          const merged = Array.from(map.values());
-          taskService.saveTasks(merged);
-          NativeAlarmService.scheduleTasks(merged).catch(console.warn);
-          return merged;
-        });
+    // 3. Subscribe to authoritative real-time cloud updates
+    const unsubCloud = vercelCloudSync.subscribe((cloudData) => {
+      if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
+        setTasks(cloudData.tasks);
+        taskService.saveTasks(cloudData.tasks, true);
+        NativeAlarmService.scheduleTasks(cloudData.tasks).catch(console.warn);
       }
-      if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia) && cloudData.scheduledMedia.length > 0) {
-        setScheduledAudios((prev) => {
-          const map = new Map<string, ScheduledMedia>();
-          cloudData.scheduledMedia.forEach((m) => map.set(m.id, m));
-          prev.forEach((m) => {
-            if (!map.has(m.id)) {
-              map.set(m.id, m);
-            } else {
-              const incoming = map.get(m.id)!;
-              if (!incoming.cloudUrl && m.cloudUrl) {
-                map.set(m.id, { ...incoming, cloudUrl: m.cloudUrl });
-              }
-            }
-          });
-          const merged = Array.from(map.values());
-          audioStorageService.saveScheduledMedias(merged);
-          return merged;
-        });
+      if (cloudData.employees && Array.isArray(cloudData.employees)) {
+        taskService.saveEmployees(cloudData.employees, true);
       }
-      if (cloudData.mediaLibrary && Array.isArray(cloudData.mediaLibrary) && cloudData.mediaLibrary.length > 0) {
+      if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia)) {
+        setScheduledAudios(cloudData.scheduledMedia);
+        audioStorageService.saveScheduledMedias(cloudData.scheduledMedia);
+      }
+      if (cloudData.mediaLibrary && Array.isArray(cloudData.mediaLibrary)) {
         audioStorageService.syncRemoteMetaList(cloudData.mediaLibrary);
       }
       if (cloudData.dailySystem) {
@@ -190,25 +175,63 @@ export function App() {
       }
       if (cloudData.whatsappSettings) {
         whatsappService.saveSettings(cloudData.whatsappSettings);
+        setWhatsappSettings(cloudData.whatsappSettings);
         whatsappService.syncNativeWhatsAppAlarms(taskService.getTasks()).catch(console.warn);
+      }
+      if (cloudData.prayerSettings) {
+        setPrayerSettings(cloudData.prayerSettings);
+        try {
+          localStorage.setItem(PRAYER_SETTINGS_KEY, JSON.stringify(cloudData.prayerSettings));
+        } catch {}
+      }
+      if (cloudData.audioSettings) {
+        setAudioSettings(cloudData.audioSettings);
+        try {
+          localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify(cloudData.audioSettings));
+        } catch {}
       }
     });
 
     return () => {
+      unsubTaskService();
       clearTimeout(initialSyncTimer);
-      unsub();
+      unsubCloud();
     };
   }, []);
 
   const handleManualSync = async () => {
     setIsManualSyncing(true);
     try {
+      // 1. Fetch latest state from central cloud first
+      const freshCloud = await vercelCloudSync.fetchFromCloud();
+      if (freshCloud) {
+        if (freshCloud.tasks && Array.isArray(freshCloud.tasks)) {
+          setTasks(freshCloud.tasks);
+          taskService.saveTasks(freshCloud.tasks, true);
+        }
+        if (freshCloud.employees && Array.isArray(freshCloud.employees)) {
+          taskService.saveEmployees(freshCloud.employees, true);
+        }
+        if (freshCloud.scheduledMedia && Array.isArray(freshCloud.scheduledMedia)) {
+          setScheduledAudios(freshCloud.scheduledMedia);
+          audioStorageService.saveScheduledMedias(freshCloud.scheduledMedia);
+        }
+        if (freshCloud.dailySystem) {
+          dailySystemService.mergeFromCloud(freshCloud.dailySystem);
+        }
+        if (freshCloud.whatsappSettings) {
+          whatsappService.saveSettings(freshCloud.whatsappSettings);
+          setWhatsappSettings(freshCloud.whatsappSettings);
+        }
+      }
+
+      // 2. Upload any local unsynced files/blobs to cloud
       const res = await vercelCloudSync.syncAllLocalToCloud();
       if (res.success) {
         setTasks(taskService.getTasks());
         setScheduledAudios(audioStorageService.getScheduledMedias());
         notificationService.showNotification('✅ تمت المزامنة السحابية بنجاح', {
-          body: `تم تحديث ${res.scheduledCount} ملف مجدول و ${res.tasksCount} مهمة وتطابقها بين الكمبيوتر والموبايل.`,
+          body: `قاعدة البيانات المركزية متزامنة بالكامل (${res.tasksCount} مهمة و ${res.scheduledCount} ملف وسائط وموظفي العيادة) بين الكمبيوتر وكل الموبايلات.`,
         });
       }
     } catch (e) {
@@ -219,17 +242,10 @@ export function App() {
   };
 
   const syncCurrentStateToCloud = (currentTasks?: Task[]) => {
-    const t = currentTasks || taskService.getTasks();
-    const m = audioStorageService.getScheduledMedias();
-    const mediaLib = audioStorageService.getMetaRegistry();
-    vercelCloudSync.pushToCloud({
-      tasks: t,
-      scheduledMedia: m,
-      mediaLibrary: mediaLib,
+    vercelCloudSync.pushCurrentState({
+      tasks: currentTasks || taskService.getTasks(),
       prayerSettings,
       audioSettings,
-      whatsappSettings: whatsappService.getSettings(),
-      dailySystem: dailySystemService.exportForCloud(),
     }).catch(console.warn);
   };
 
@@ -273,14 +289,10 @@ export function App() {
   useEffect(() => {
     const unsubWa = whatsappService.subscribeSettings((updated) => {
       setWhatsappSettings(updated);
-      vercelCloudSync.pushToCloud({
-        tasks: taskService.getTasks(),
-        scheduledMedia: audioStorageService.getScheduledMedias(),
-        mediaLibrary: audioStorageService.getMetaRegistry(),
+      vercelCloudSync.pushCurrentState({
+        whatsappSettings: updated,
         prayerSettings,
         audioSettings,
-        whatsappSettings: updated,
-        dailySystem: dailySystemService.exportForCloud(),
       }).catch(console.warn);
     });
     return unsubWa;

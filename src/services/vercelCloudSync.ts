@@ -1,9 +1,10 @@
-import { Task, ScheduledMedia, PrayerSettings, AudioSettings, StoredMediaMeta, WhatsAppGlobalSettings } from '../types';
+import { Task, Employee, ScheduledMedia, PrayerSettings, AudioSettings, StoredMediaMeta, WhatsAppGlobalSettings } from '../types';
 import { upload } from '@vercel/blob/client';
 import { getApiUrl } from '../config/api';
 
 export interface CloudSyncPayload {
   tasks: Task[];
+  employees?: Employee[];
   scheduledMedia: ScheduledMedia[];
   mediaLibrary?: StoredMediaMeta[];
   prayerSettings?: PrayerSettings;
@@ -12,12 +13,14 @@ export interface CloudSyncPayload {
   dailySystem?: any;
   updatedAt?: string;
   sourceDevice?: string;
+  forceWipe?: boolean;
 }
 
 export interface SyncResult {
   success: boolean;
   uploadedMediaCount: number;
   tasksCount: number;
+  employeesCount?: number;
   scheduledCount: number;
   error?: string;
 }
@@ -27,6 +30,7 @@ class VercelCloudSyncService {
   private lastPayload: CloudSyncPayload | null = null;
   private pollingInterval: any = null;
   private isSyncing: boolean = false;
+  private hasFetchedOnce: boolean = false;
   private listeners: Set<(payload: CloudSyncPayload) => void> = new Set();
 
   constructor() {
@@ -47,6 +51,14 @@ class VercelCloudSyncService {
 
   public getIsSyncing(): boolean {
     return this.isSyncing;
+  }
+
+  public hasSyncedFromCloud(): boolean {
+    return this.hasFetchedOnce;
+  }
+
+  public getLastKnownUpdate(): string {
+    return this.lastKnownUpdate;
   }
 
   /**
@@ -105,10 +117,17 @@ class VercelCloudSyncService {
 
       const data: CloudSyncPayload = await res.json();
       this.lastPayload = data;
+      this.hasFetchedOnce = true;
 
       if (data && data.updatedAt && data.updatedAt !== this.lastKnownUpdate) {
         this.lastKnownUpdate = data.updatedAt;
-        this.listeners.forEach((cb) => cb(data));
+        this.listeners.forEach((cb) => {
+          try {
+            cb(data);
+          } catch (e) {
+            console.warn('Error in cloud sync listener:', e);
+          }
+        });
       }
 
       return data;
@@ -121,6 +140,15 @@ class VercelCloudSyncService {
    * Push current state to Vercel Blob Cloud
    */
   public async pushToCloud(payload: Omit<CloudSyncPayload, 'updatedAt'>): Promise<boolean> {
+    // Guard against fresh install blowing away cloud data before first pull
+    if (!this.hasFetchedOnce && typeof window !== 'undefined') {
+      try {
+        await this.fetchFromCloud();
+      } catch (e) {
+        // continue
+      }
+    }
+
     this.isSyncing = true;
     try {
       const res = await fetch(getApiUrl('/api/sync'), {
@@ -130,7 +158,7 @@ class VercelCloudSyncService {
         },
         body: JSON.stringify({
           ...payload,
-          sourceDevice: navigator.userAgent.includes('Mobile') ? 'Mobile' : 'PC',
+          sourceDevice: typeof navigator !== 'undefined' && navigator.userAgent.includes('Mobile') ? 'Mobile' : 'PC',
         }),
       });
 
@@ -149,6 +177,48 @@ class VercelCloudSyncService {
     } catch (err) {
       console.warn('Vercel Cloud Push warning:', err);
       this.isSyncing = false;
+      return false;
+    }
+  }
+
+  /**
+   * Push the entire unified state (tasks, employees, scheduledMedia, dailySystem, etc.)
+   * safely gathered from local stores, preventing any partial overwrite.
+   */
+  public async pushCurrentState(partial?: Partial<CloudSyncPayload>): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+
+    // Guard: Always ensure cloud data has been loaded at least once before pushing
+    if (!this.hasFetchedOnce) {
+      await this.fetchFromCloud();
+    }
+
+    try {
+      const { taskService } = await import('./taskService');
+      const { audioStorageService } = await import('./audioStorageService');
+      const { dailySystemService } = await import('./dailySystemService');
+      const { whatsappService } = await import('./whatsappService');
+
+      const tasks = partial?.tasks || taskService.getTasks();
+      const employees = partial?.employees || taskService.getEmployees();
+      const scheduledMedia = partial?.scheduledMedia || audioStorageService.getScheduledMedias();
+      const mediaLibrary = partial?.mediaLibrary || audioStorageService.getMetaRegistry();
+      const dailySystem = partial?.dailySystem || dailySystemService.exportForCloud();
+      const whatsappSettings = partial?.whatsappSettings || whatsappService.getSettings();
+
+      return await this.pushToCloud({
+        tasks,
+        employees,
+        scheduledMedia,
+        mediaLibrary,
+        dailySystem,
+        whatsappSettings,
+        prayerSettings: partial?.prayerSettings,
+        audioSettings: partial?.audioSettings,
+        forceWipe: partial?.forceWipe,
+      });
+    } catch (err) {
+      console.warn('pushCurrentState warning:', err);
       return false;
     }
   }
@@ -209,13 +279,18 @@ class VercelCloudSyncService {
   }
 
   /**
-   * Full Synchronous Push of All Local Tasks and Media Blobs to Cloud
+   * Full Synchronous Push of All Local Tasks, Employees and Media Blobs to Cloud
    */
   public async syncAllLocalToCloud(
     onStatus?: (msg: string) => void
   ): Promise<SyncResult> {
     if (typeof window === 'undefined') {
       return { success: false, uploadedMediaCount: 0, tasksCount: 0, scheduledCount: 0 };
+    }
+
+    // Always fetch latest cloud state first before syncing local changes
+    if (!this.hasFetchedOnce) {
+      await this.fetchFromCloud();
     }
 
     this.isSyncing = true;
@@ -226,6 +301,7 @@ class VercelCloudSyncService {
       const { taskService } = await import('./taskService');
 
       const tasks = taskService.getTasks();
+      const employees = taskService.getEmployees();
       const scheduledMedia = audioStorageService.getScheduledMedias();
 
       onStatus?.(`جاري فحص ملفات الوسائط (${scheduledMedia.length} مجدول)...`);
@@ -277,16 +353,19 @@ class VercelCloudSyncService {
         taskService.saveTasks(tasks);
       }
 
-      onStatus?.('جاري تحديث السحابة...');
+      onStatus?.('جاري تحديث السحابة المركزية...');
 
       const mediaLibrary = audioStorageService.getMetaRegistry();
       const { whatsappService } = await import('./whatsappService');
+      const { dailySystemService } = await import('./dailySystemService');
 
       const pushed = await this.pushToCloud({
         tasks,
+        employees,
         scheduledMedia,
         mediaLibrary,
         whatsappSettings: whatsappService.getSettings(),
+        dailySystem: dailySystemService.exportForCloud(),
       });
 
       this.isSyncing = false;
@@ -297,6 +376,7 @@ class VercelCloudSyncService {
           success: true,
           uploadedMediaCount: uploadedCount,
           tasksCount: tasks.length,
+          employeesCount: employees.length,
           scheduledCount: scheduledMedia.length,
         };
       } else {

@@ -46,6 +46,7 @@ export const INITIAL_TASKS: Task[] = [
     description: 'تدقيق مؤشرات الأداء ومراجعة الأرقام النهائية قبل الاجتماع الدوري',
     category: 'work',
     priority: 'high',
+    employeeId: 'emp-1',
     dueDate: new Date().toISOString().split('T')[0],
     dueTime: '11:00',
     reminderMinutesBefore: 10,
@@ -60,6 +61,7 @@ export const INITIAL_TASKS: Task[] = [
     description: 'مناقشة خطة تسليم مهام المرحلة الثانية وتوزيع الأدوار',
     category: 'meeting',
     priority: 'urgent',
+    employeeId: 'emp-2',
     dueDate: new Date().toISOString().split('T')[0],
     dueTime: '14:30',
     reminderMinutesBefore: 15,
@@ -74,6 +76,7 @@ export const INITIAL_TASKS: Task[] = [
     description: 'تمارين تمدد خفيفة وإراحة العينين من شاشات الحاسوب',
     category: 'health',
     priority: 'low',
+    employeeId: 'emp-3',
     dueDate: new Date().toISOString().split('T')[0],
     dueTime: '16:00',
     reminderMinutesBefore: 0,
@@ -85,6 +88,33 @@ export const INITIAL_TASKS: Task[] = [
 ];
 
 export class TaskService {
+  private taskListeners: Set<(tasks: Task[]) => void> = new Set();
+  private employeeListeners: Set<(employees: Employee[]) => void> = new Set();
+  private cloudSyncDebounce: any = null;
+
+  public subscribeTasks(cb: (tasks: Task[]) => void): () => void {
+    this.taskListeners.add(cb);
+    return () => this.taskListeners.delete(cb);
+  }
+
+  public subscribeEmployees(cb: (employees: Employee[]) => void): () => void {
+    this.employeeListeners.add(cb);
+    return () => this.employeeListeners.delete(cb);
+  }
+
+  public triggerCloudSync(): void {
+    if (typeof window === 'undefined') return;
+    clearTimeout(this.cloudSyncDebounce);
+    this.cloudSyncDebounce = setTimeout(async () => {
+      try {
+        const { vercelCloudSync } = await import('./vercelCloudSync');
+        vercelCloudSync.pushCurrentState().catch(console.warn);
+      } catch (e) {
+        console.warn('Auto cloud sync failed:', e);
+      }
+    }, 400);
+  }
+
   /**
    * Load tasks from LocalStorage
    */
@@ -93,7 +123,6 @@ export class TaskService {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        this.saveTasks(INITIAL_TASKS);
         return INITIAL_TASKS;
       }
       return JSON.parse(data);
@@ -103,12 +132,22 @@ export class TaskService {
   }
 
   /**
-   * Save tasks to LocalStorage
+   * Save tasks to LocalStorage and optionally push to central cloud
    */
-  public saveTasks(tasks: Task[]): void {
+  public saveTasks(tasks: Task[], skipCloudSync = false): void {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      this.taskListeners.forEach((cb) => {
+        try {
+          cb(tasks);
+        } catch (e) {
+          console.warn('Task listener error:', e);
+        }
+      });
+      if (!skipCloudSync) {
+        this.triggerCloudSync();
+      }
     } catch (e) {
       console.error('Failed to save tasks', e);
     }
@@ -233,7 +272,6 @@ export class TaskService {
     try {
       const data = localStorage.getItem(EMPLOYEES_STORAGE_KEY);
       if (!data) {
-        this.saveEmployees(INITIAL_EMPLOYEES);
         return INITIAL_EMPLOYEES;
       }
       return JSON.parse(data);
@@ -243,12 +281,22 @@ export class TaskService {
   }
 
   /**
-   * Save Employees to LocalStorage
+   * Save Employees to LocalStorage and optionally push to central cloud
    */
-  public saveEmployees(employees: Employee[]): void {
+  public saveEmployees(employees: Employee[], skipCloudSync = false): void {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(employees));
+      this.employeeListeners.forEach((cb) => {
+        try {
+          cb(employees);
+        } catch (e) {
+          console.warn('Employee listener error:', e);
+        }
+      });
+      if (!skipCloudSync) {
+        this.triggerCloudSync();
+      }
     } catch (e) {
       console.error('Failed to save employees', e);
     }

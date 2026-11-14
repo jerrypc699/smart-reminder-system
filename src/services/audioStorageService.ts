@@ -529,11 +529,8 @@ class AudioStorageService {
       }
     }).catch(console.warn);
 
-    // Sync state
-    try {
-      const tasks = JSON.parse(localStorage.getItem('smart_reminder_tasks_v2') || '[]');
-      vercelCloudSync.pushToCloud({ tasks, scheduledMedia: list }).catch(console.warn);
-    } catch {}
+    // Sync state to Vercel Central Cloud
+    vercelCloudSync.pushCurrentState({ scheduledMedia: list }).catch(console.warn);
 
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.syncScheduledMedia(newItem);
@@ -563,11 +560,8 @@ class AudioStorageService {
     );
     this.saveScheduledMedias(list);
 
-    // Sync state to Vercel Cloud
-    try {
-      const tasks = JSON.parse(localStorage.getItem('smart_reminder_tasks_v2') || '[]');
-      vercelCloudSync.pushToCloud({ tasks, scheduledMedia: list }).catch(console.warn);
-    } catch {}
+    // Sync state to Vercel Central Cloud
+    vercelCloudSync.pushCurrentState({ scheduledMedia: list }).catch(console.warn);
 
     if (cloudSyncService.isAvailable()) {
       const updated = list.find((i) => i.id === id);
@@ -587,11 +581,8 @@ class AudioStorageService {
     const list = this.getScheduledMedias().filter((item) => item.id !== id);
     this.saveScheduledMedias(list);
 
-    // Sync state to Vercel Cloud
-    try {
-      const tasks = JSON.parse(localStorage.getItem('smart_reminder_tasks_v2') || '[]');
-      vercelCloudSync.pushToCloud({ tasks, scheduledMedia: list }).catch(console.warn);
-    } catch {}
+    // Sync state to Vercel Central Cloud
+    vercelCloudSync.pushCurrentState({ scheduledMedia: list }).catch(console.warn);
 
     if (cloudSyncService.isAvailable()) {
       cloudSyncService.deleteScheduledMedia(id);

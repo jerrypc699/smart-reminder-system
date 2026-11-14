@@ -596,11 +596,7 @@ class DailySystemService {
     this.cloudSyncTimer = setTimeout(async () => {
       try {
         const { vercelCloudSync } = await import('./vercelCloudSync');
-        const { taskService } = await import('./taskService');
-        const { audioStorageService } = await import('./audioStorageService');
-        vercelCloudSync.pushToCloud({
-          tasks: taskService.getTasks(),
-          scheduledMedia: audioStorageService.getScheduledMedias(),
+        vercelCloudSync.pushCurrentState({
           dailySystem: this.exportForCloud(),
         });
       } catch (err) {

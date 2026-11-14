@@ -139,6 +139,17 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [pdfInitialEmpId, setPdfInitialEmpId] = useState<string | undefined>(undefined);
 
+  useEffect(() => {
+    const unsub = taskService.subscribeEmployees((updated) => {
+      setEmployees(updated);
+      if (selectedEmployeeDossier) {
+        const fresh = updated.find((x) => x.id === selectedEmployeeDossier.id);
+        if (fresh) setSelectedEmployeeDossier(fresh);
+      }
+    });
+    return unsub;
+  }, [selectedEmployeeDossier]);
+
   // Employee Form State
   const [empFormName, setEmpFormName] = useState('');
   const [empFormRole, setEmpFormRole] = useState('');

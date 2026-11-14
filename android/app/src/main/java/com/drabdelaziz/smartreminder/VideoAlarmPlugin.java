@@ -1,5 +1,6 @@
 package com.drabdelaziz.smartreminder;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
@@ -24,13 +25,24 @@ import java.io.OutputStream;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
-@CapacitorPlugin(name = "VideoAlarm")
+@CapacitorPlugin(
+    name = "VideoAlarm",
+    permissions = {
+        @Permission(
+            strings = { Manifest.permission.READ_CONTACTS },
+            name = "contacts"
+        )
+    }
+)
 public class VideoAlarmPlugin extends Plugin {
 
     private static JSObject pendingLaunchPayload = null;
@@ -333,11 +345,34 @@ public class VideoAlarmPlugin extends Plugin {
 
     @PluginMethod
     public void pickContact(PluginCall call) {
+        if (getPermissionState("contacts") != PermissionState.GRANTED) {
+            requestPermissionForAlias("contacts", call, "contactsPermCallback");
+            return;
+        }
+        launchContactPicker(call);
+    }
+
+    @PermissionCallback
+    private void contactsPermCallback(PluginCall call) {
+        // Proceed to launch picker whether granted or through intent's own grant
+        launchContactPicker(call);
+    }
+
+    private void launchContactPicker(PluginCall call) {
         try {
-            Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+            Intent intent = new Intent(Intent.ACTION_PICK);
+            intent.setDataAndType(ContactsContract.Contacts.CONTENT_URI, ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
+
+            if (intent.resolveActivity(getContext().getPackageManager()) == null) {
+                intent = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+            }
+            if (intent.resolveActivity(getContext().getPackageManager()) == null) {
+                intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+            }
+
             startActivityForResult(call, intent, "pickContactResult");
         } catch (Exception e) {
-            call.reject("Failed to open phone contacts: " + e.getMessage());
+            call.reject("تعذر فتح دفتر جهات الاتصال: " + e.getMessage());
         }
     }
 
@@ -362,29 +397,77 @@ public class VideoAlarmPlugin extends Plugin {
             return;
         }
 
-        String[] projection = new String[]{
-            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            ContactsContract.CommonDataKinds.Phone.NUMBER
-        };
-
         String name = "";
         String rawPhone = "";
 
-        try (Cursor cursor = getContext().getContentResolver().query(contactUri, projection, null, null, null)) {
+        // 1. First Attempt: Try querying directly as CommonDataKinds.Phone
+        try (Cursor cursor = getContext().getContentResolver().query(
+                contactUri,
+                new String[]{
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    ContactsContract.CommonDataKinds.Phone.NUMBER
+                },
+                null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 int nameIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
                 int phoneIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
                 if (nameIdx >= 0) name = cursor.getString(nameIdx);
                 if (phoneIdx >= 0) rawPhone = cursor.getString(phoneIdx);
             }
-        } catch (Exception e) {
-            // query exception handled
+        } catch (Exception ignored) {
+            // Selected URI might be a Contacts.CONTENT_URI instead of a Phone URI
         }
 
-        JSObject ret = new JSObject();
-        ret.put("success", true);
-        ret.put("name", name != null ? name.trim() : "");
-        ret.put("phone", rawPhone != null ? rawPhone.trim() : "");
-        call.resolve(ret);
+        // 2. Second Attempt: If phone is still empty, query contact by ID to retrieve phone number
+        if (rawPhone == null || rawPhone.trim().isEmpty()) {
+            try {
+                String contactId = null;
+                try (Cursor c = getContext().getContentResolver().query(
+                        contactUri,
+                        new String[]{
+                            ContactsContract.Contacts._ID,
+                            ContactsContract.Contacts.DISPLAY_NAME
+                        },
+                        null, null, null)) {
+                    if (c != null && c.moveToFirst()) {
+                        int idIdx = c.getColumnIndex(ContactsContract.Contacts._ID);
+                        int nameIdx = c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);
+                        if (idIdx >= 0) contactId = c.getString(idIdx);
+                        if (nameIdx >= 0 && (name == null || name.trim().isEmpty())) {
+                            name = c.getString(nameIdx);
+                        }
+                    }
+                }
+
+                if (contactId != null) {
+                    try (Cursor phoneCursor = getContext().getContentResolver().query(
+                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            new String[]{ ContactsContract.CommonDataKinds.Phone.NUMBER },
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                            new String[]{ contactId },
+                            null)) {
+                        if (phoneCursor != null && phoneCursor.moveToFirst()) {
+                            int pIdx = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                            if (pIdx >= 0) rawPhone = phoneCursor.getString(pIdx);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        if (rawPhone != null && !rawPhone.trim().isEmpty()) {
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("name", name != null ? name.trim() : "");
+            ret.put("phone", rawPhone.trim());
+            call.resolve(ret);
+        } else {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("name", name != null ? name.trim() : "");
+            ret.put("phone", "");
+            ret.put("message", "جهة الاتصال المحددة لا تحتوي على رقم هاتف مسجل");
+            call.resolve(ret);
+        }
     }
 }

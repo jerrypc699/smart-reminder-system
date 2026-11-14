@@ -338,6 +338,7 @@ class WhatsAppService {
     phone?: string;
     cancelled?: boolean;
     message?: string;
+    shouldOpenModal?: boolean;
   }> {
     // 1. Android Native Capacitor via VideoAlarm plugin
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
@@ -353,12 +354,20 @@ class WhatsAppService {
         if (res?.cancelled) {
           return { success: false, cancelled: true, message: 'تم إلغاء الاختيار' };
         }
+        if (res?.message) {
+          return { success: false, message: res.message, shouldOpenModal: true };
+        }
       } catch (err: any) {
         console.warn('[WhatsAppService] Native pickContact error:', err);
+        return {
+          success: false,
+          message: err?.message || 'تعذر فتح دفتر جهات الاتصال',
+          shouldOpenModal: true,
+        };
       }
     }
 
-    // 2. Web Contact Picker API (Chrome Android / PWA)
+    // 2. Web Contact Picker API (Chrome Android / PWA on HTTPS)
     if (typeof navigator !== 'undefined' && 'contacts' in navigator && 'ContactsManager' in window) {
       try {
         const contacts = await (navigator as any).contacts.select(['name', 'tel'], { multiple: false });
@@ -380,9 +389,11 @@ class WhatsAppService {
       }
     }
 
+    // 3. Fallback for Web/PC/unsupported: signal that the interactive phonebook modal should open
     return {
       success: false,
-      message: 'خاصية سحب جهات الاتصال المباشرة مدعومة على تطبيق الأندرويد ومتصفحات الهواتف الذكية.',
+      shouldOpenModal: true,
+      message: 'يمكنك اختيار الرقم من فريق العمل أو دفتر الأرقام المحفوظة.',
     };
   }
 

@@ -72,8 +72,15 @@ public class MainActivity extends BridgeActivity {
 
     private void requestAudioPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            java.util.List<String> perms = new java.util.ArrayList<>();
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 101);
+                perms.add(Manifest.permission.RECORD_AUDIO);
+            }
+            if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                perms.add(Manifest.permission.READ_CONTACTS);
+            }
+            if (!perms.isEmpty()) {
+                requestPermissions(perms.toArray(new String[0]), 101);
             }
         }
     }

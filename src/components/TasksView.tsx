@@ -139,6 +139,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [pdfInitialEmpId, setPdfInitialEmpId] = useState<string | undefined>(undefined);
 
+  // Contact Picker Modal State
+  const [isContactPickerOpen, setIsContactPickerOpen] = useState(false);
+  const [contactPickerTarget, setContactPickerTarget] = useState<'task' | 'employee'>('task');
+  const [contactSearchTerm, setContactSearchTerm] = useState('');
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [isAddingContact, setIsAddingContact] = useState(false);
+
   useEffect(() => {
     const unsub = taskService.subscribeEmployees((updated) => {
       setEmployees(updated);
@@ -237,14 +245,24 @@ export const TasksView: React.FC<TasksViewProps> = ({
         if (res.name && !waRecipientName) {
           setWaRecipientName(res.name);
         }
+        const updated = whatsappService.addSavedContact(res.name || '', res.phone);
+        setWaSavedContacts(updated);
         showWaBanner(`✓ تم اختيار ${res.name || res.phone} من جهات اتصال الهاتف`);
       } else if (res.cancelled) {
-        // cancelled
+        // cancelled by user
+      } else if (res.shouldOpenModal) {
+        setContactPickerTarget('task');
+        setIsContactPickerOpen(true);
+        if (res.message) showWaBanner(res.message);
       } else if (res.message) {
+        setContactPickerTarget('task');
+        setIsContactPickerOpen(true);
         showWaBanner(res.message);
       }
     } catch (err: any) {
-      showWaBanner('تعذر فتح جهات الاتصال: ' + (err?.message || 'خطأ'));
+      setContactPickerTarget('task');
+      setIsContactPickerOpen(true);
+      showWaBanner('تم فتح دفتر الأرقام المحفوظة');
     }
   };
 
@@ -257,13 +275,70 @@ export const TasksView: React.FC<TasksViewProps> = ({
         if (res.name && !empFormName) {
           setEmpFormName(res.name);
         }
+        const updated = whatsappService.addSavedContact(res.name || '', res.phone);
+        setWaSavedContacts(updated);
         showWaBanner(`✓ تم سحب ${res.name || res.phone} للموظف`);
+      } else if (res.cancelled) {
+        // cancelled
+      } else if (res.shouldOpenModal) {
+        setContactPickerTarget('employee');
+        setIsContactPickerOpen(true);
+        if (res.message) showWaBanner(res.message);
       } else if (res.message) {
+        setContactPickerTarget('employee');
+        setIsContactPickerOpen(true);
         showWaBanner(res.message);
       }
     } catch (err: any) {
-      showWaBanner('تعذر فتح جهات الاتصال: ' + (err?.message || 'خطأ'));
+      setContactPickerTarget('employee');
+      setIsContactPickerOpen(true);
+      showWaBanner('تم فتح دفتر الأرقام المحفوظة');
     }
+  };
+
+  const handleSelectContactFromModal = (contact: { name?: string; phone: string; employeeId?: string }) => {
+    if (contactPickerTarget === 'task') {
+      setWaPhone(contact.phone);
+      if (contact.name) {
+        setWaRecipientName(contact.name);
+      }
+      if (contact.employeeId) {
+        setSelectedEmployeeId(contact.employeeId);
+        setSelectedEmployeeName(contact.name || '');
+      }
+    } else {
+      setEmpFormPhone(contact.phone);
+      setEmpFormWaPhone(contact.phone);
+      if (contact.name && !empFormName) {
+        setEmpFormName(contact.name);
+      }
+    }
+    setIsContactPickerOpen(false);
+    showWaBanner(`✓ تم اختيار: ${contact.name || contact.phone}`);
+  };
+
+  const handleSaveAndSelectNewContact = () => {
+    if (!newContactPhone.trim()) {
+      showWaBanner('يرجى كتابة رقم الهاتف');
+      return;
+    }
+    const cleanPhone = newContactPhone.trim();
+    const cleanName = newContactName.trim() || `+${cleanPhone}`;
+    const updated = whatsappService.addSavedContact(cleanName, cleanPhone);
+    setWaSavedContacts(updated);
+    handleSelectContactFromModal({ name: cleanName, phone: cleanPhone });
+    setNewContactName('');
+    setNewContactPhone('');
+    setIsAddingContact(false);
+  };
+
+  const handleDeleteSavedContact = (contactId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const current = whatsappService.getSettings();
+    const next = (current.savedContacts || []).filter((c) => c.id !== contactId);
+    whatsappService.saveSettings({ savedContacts: next });
+    setWaSavedContacts(next);
+    showWaBanner('تم حذف الرقم من القائمة المحفوظة');
   };
 
   const showWaBanner = (msg: string) => {
@@ -277,6 +352,24 @@ export const TasksView: React.FC<TasksViewProps> = ({
       setWaSavedContacts(s.savedContacts || []);
     });
   }, []);
+
+  const filteredEmployees = employees.filter((e) => {
+    if (!contactSearchTerm.trim()) return true;
+    const term = contactSearchTerm.trim().toLowerCase();
+    return (
+      (e.name || '').toLowerCase().includes(term) ||
+      (e.role || '').toLowerCase().includes(term) ||
+      (e.department || '').toLowerCase().includes(term) ||
+      (e.phone || '').includes(term) ||
+      (e.whatsappPhone || '').includes(term)
+    );
+  });
+
+  const filteredSavedContacts = waSavedContacts.filter((c) => {
+    if (!contactSearchTerm.trim()) return true;
+    const term = contactSearchTerm.trim().toLowerCase();
+    return (c.name || '').toLowerCase().includes(term) || (c.phone || '').includes(term);
+  });
 
   const taskMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const taskAudioChunksRef = useRef<Blob[]>([]);
@@ -1798,15 +1891,29 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           دفتر الهاتف والأرقام المحفوظة:
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handlePickPhoneContact}
-                        className="btn-lux-primary h-8 px-3.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
-                        title="فتح دفتر جهات اتصال الموبايل واختيار الرقم مباشرة دون الحاجة لكتابته"
-                      >
-                        <Smartphone className="w-3.5 h-3.5" />
-                        <span>📱 اختيار من جهات اتصال الهاتف</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handlePickPhoneContact}
+                          className="btn-lux-primary h-8 px-3 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
+                          title="فتح دفتر جهات اتصال الموبايل واختيار الرقم مباشرة دون الحاجة لكتابته"
+                        >
+                          <Smartphone className="w-3.5 h-3.5" />
+                          <span>📱 أسماء الهاتف</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setContactPickerTarget('task');
+                            setIsContactPickerOpen(true);
+                          }}
+                          className="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          title="عرض دفتر الأرقام وفريق العمل والبحث السريع"
+                        >
+                          <Users className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>📋 دفتر الأرقام ({employees.length + waSavedContacts.length})</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Quick Pick Chips (Employees + Saved Contacts) */}
@@ -2183,14 +2290,29 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   <label className="text-xs font-bold text-slate-300">
                     رقم الهاتف المحمول
                   </label>
-                  <button
-                    type="button"
-                    onClick={handlePickPhoneContactForEmployee}
-                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Smartphone className="w-3 h-3" />
-                    <span>📱 سحب من الهاتف</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handlePickPhoneContactForEmployee}
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer"
+                      title="فتح دفتر أسماء الموبايل"
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      <span>📱 سحب من الهاتف</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setContactPickerTarget('employee');
+                        setIsContactPickerOpen(true);
+                      }}
+                      className="text-[11px] text-blue-400 hover:text-blue-300 font-bold inline-flex items-center gap-1 cursor-pointer"
+                      title="عرض دفتر الأرقام المحفوظة"
+                    >
+                      <Users className="w-3 h-3" />
+                      <span>📋 دفتر الأرقام</span>
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="tel"
@@ -2570,6 +2692,221 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Contact Picker & Phonebook Modal */}
+      {isContactPickerOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-right">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">
+                    دفتر جهات الاتصال والأرقام السريعة
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    اختر رقم هاتف بنقرة واحدة من الأسماء المحفوظة أو فريق العمل أو افتح سجل الهاتف
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsContactPickerOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Actions Bar */}
+            <div className="p-3 bg-slate-900/80 border-b border-slate-800 space-y-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const res = await whatsappService.pickContactFromDevice();
+                    if (res.success && res.phone) {
+                      handleSelectContactFromModal({ name: res.name, phone: res.phone });
+                    } else if (res.message) {
+                      showWaBanner(res.message);
+                    }
+                  }}
+                  className="btn-lux-primary h-8 px-3.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>📱 فتح دفتر أسماء الموبايل (سجل الهاتف)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingContact((prev) => !prev)}
+                  className="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isAddingContact ? 'إخفاء نموذج الإضافة' : '➕ إضافة وحفظ رقم جديد'}</span>
+                </button>
+              </div>
+
+              {/* Quick Add Form */}
+              {isAddingContact && (
+                <div className="p-2.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 space-y-2 animate-in fade-in">
+                  <span className="text-[11px] font-bold text-emerald-400 block">
+                    إضافة جهة اتصال جديدة وحفظها في الدفتر السحابي:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="اسم جهة الاتصال (مثال: أ. محمد العوضي)"
+                      value={newContactName}
+                      onChange={(e) => setNewContactName(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                    <input
+                      type="tel"
+                      dir="ltr"
+                      placeholder="رقم الهاتف (مثال: 01012345678)"
+                      value={newContactPhone}
+                      onChange={(e) => setNewContactPhone(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 text-left font-mono"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingContact(false)}
+                      className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveAndSelectNewContact}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                    >
+                      حفظ واختيار الرقم الآن
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="ابحث بالاسم أو رقم الهاتف أو التخصص..."
+                  value={contactSearchTerm}
+                  onChange={(e) => setContactSearchTerm(e.target.value)}
+                  className="w-full pr-9 pl-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Contacts & Employees List */}
+            <div className="p-3 overflow-y-auto flex-1 space-y-3.5 max-h-[50vh]">
+              {/* 1. Staff & Employees Section */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-blue-400">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>فريق العمل والعيادة:</span>
+                </div>
+                {filteredEmployees.length === 0 ? (
+                  <div className="text-[11px] text-slate-500 p-2 text-center">لا توجد نتائج مطابقة في فريق العمل</div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredEmployees.map((emp) => {
+                      const phone = emp.whatsappPhone || emp.phone || '';
+                      return (
+                        <div
+                          key={`picker-emp-${emp.id}`}
+                          onClick={() => handleSelectContactFromModal({ name: emp.name, phone, employeeId: emp.id })}
+                          className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/80 cursor-pointer transition-all flex items-center justify-between gap-2 group"
+                        >
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-white block truncate group-hover:text-blue-300">
+                              {emp.name}
+                            </span>
+                            <span className="text-[10px] text-slate-400 block truncate">
+                              {emp.role || emp.department || 'عضو فريق العمل'}
+                            </span>
+                            <span className="text-[10px] text-emerald-400 font-mono block text-left" dir="ltr">
+                              {phone || 'بدون رقم'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-blue-400 px-2 py-1 rounded-lg bg-blue-500/10 shrink-0">
+                            اختيار
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Saved Contacts Section */}
+              <div className="pt-2 border-t border-slate-800">
+                <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-emerald-400">
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>جهات الاتصال والأرقام المحفوظة:</span>
+                </div>
+                {filteredSavedContacts.length === 0 ? (
+                  <div className="text-[11px] text-slate-500 p-3 text-center rounded-xl bg-slate-950/40 border border-slate-800/60">
+                    لا توجد أرقام محفوظة تطابق البحث. يمكنك إضافة رقم جديد أعلاه أو فتح سجل الهاتف.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredSavedContacts.map((c) => (
+                      <div
+                        key={`picker-sc-${c.id}`}
+                        onClick={() => handleSelectContactFromModal({ name: c.name, phone: c.phone })}
+                        className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/80 cursor-pointer transition-all flex items-center justify-between gap-2 group"
+                      >
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-white block truncate group-hover:text-emerald-300">
+                            {c.name}
+                          </span>
+                          <span className="text-[10px] text-emerald-400 font-mono block text-left" dir="ltr">
+                            +{c.phone}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteSavedContact(c.id, e)}
+                            className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400"
+                            title="حذف الرقم"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                          <span className="text-[10px] font-bold text-emerald-400 px-2 py-1 rounded-lg bg-emerald-500/10">
+                            اختيار
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">
+                إجمالي الأرقام المسجلة: {employees.length + waSavedContacts.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsContactPickerOpen(false)}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}

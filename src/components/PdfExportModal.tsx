@@ -13,8 +13,9 @@ import {
   Award,
   Briefcase,
   AlertCircle,
+  Users
 } from 'lucide-react';
-import type { Task } from '../types';
+import type { Task, Employee } from '../types';
 import { getLocalDateStr, NativeAlarmService } from '../services/nativeAlarmService';
 import { generateExecutivePdfReport } from '../services/pdfReportService';
 
@@ -25,6 +26,8 @@ interface PdfExportModalProps {
   currentDateKey?: string;
   currentMonthKey?: string;
   defaultScope?: 'comprehensive' | 'daily_and_tasks' | 'tasks_only';
+  employees?: Employee[];
+  initialEmployeeId?: string;
 }
 
 type TaskSelectionMode = 'all' | 'pending' | 'completed' | 'urgent' | 'custom';
@@ -36,10 +39,13 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   currentDateKey = getLocalDateStr(),
   currentMonthKey = getLocalDateStr().slice(0, 7),
   defaultScope = 'comprehensive',
+  employees = [],
+  initialEmployeeId,
 }) => {
   const [scope, setScope] = useState<'comprehensive' | 'daily_and_tasks' | 'tasks_only'>(defaultScope);
   const [reportTitle, setReportTitle] = useState('التقرير الشامل — نظامي اليومي ومهام العمل');
   const [selectionMode, setSelectionMode] = useState<TaskSelectionMode>('all');
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState<string>(initialEmployeeId || '');
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() => new Set(tasks.map((t) => t.id)));
   const [searchQuery, setSearchQuery] = useState('');
   const [includeDailySystemStats, setIncludeDailySystemStats] = useState(true);
@@ -53,19 +59,44 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   // Sync defaults when modal opens
   useEffect(() => {
     if (!isOpen) return;
-    setScope(defaultScope);
-    setSelectionMode('all');
-    setSelectedTaskIds(new Set(tasks.map((t) => t.id)));
+    const targetEmpId = initialEmployeeId || '';
+    setSelectedEmployeeFilter(targetEmpId);
     setStatusMessage(null);
     setSearchQuery('');
-    if (defaultScope === 'tasks_only') {
-      setReportTitle('تقرير سجل مهام العمل والمرفقات');
-    } else if (defaultScope === 'daily_and_tasks') {
-      setReportTitle(`تقرير نظامي اليومي ومهام العمل (${currentDateKey})`);
+
+    if (targetEmpId) {
+      setScope('tasks_only');
+      const emp = employees.find((e) => e.id === targetEmpId);
+      const empTasks = tasks.filter((t) => t.employeeId === targetEmpId);
+      setSelectedTaskIds(new Set(empTasks.map((t) => t.id)));
+      setReportTitle(emp ? `تقرير ملف الموظف: ${emp.name} — سجل المهام والمرفقات` : 'تقرير مهام الموظف');
     } else {
-      setReportTitle('التقرير الشامل — نظامي اليومي ومهام العمل');
+      setScope(defaultScope);
+      setSelectionMode('all');
+      setSelectedTaskIds(new Set(tasks.map((t) => t.id)));
+      if (defaultScope === 'tasks_only') {
+        setReportTitle('تقرير سجل مهام العمل والمرفقات');
+      } else if (defaultScope === 'daily_and_tasks') {
+        setReportTitle(`تقرير نظامي اليومي ومهام العمل (${currentDateKey})`);
+      } else {
+        setReportTitle('التقرير الشامل — نظامي اليومي ومهام العمل');
+      }
     }
-  }, [isOpen, defaultScope, tasks, currentDateKey]);
+  }, [isOpen, defaultScope, tasks, currentDateKey, initialEmployeeId, employees]);
+
+  const handleEmployeeFilterChange = (empId: string) => {
+    setSelectedEmployeeFilter(empId);
+    if (empId) {
+      setScope('tasks_only');
+      const emp = employees.find((e) => e.id === empId);
+      const empTasks = tasks.filter((t) => t.employeeId === empId);
+      setSelectedTaskIds(new Set(empTasks.map((t) => t.id)));
+      setReportTitle(emp ? `تقرير ملف الموظف: ${emp.name} — سجل المهام والمرفقات` : 'تقرير مهام الموظف');
+    } else {
+      setSelectedTaskIds(new Set(tasks.map((t) => t.id)));
+      setReportTitle('تقرير سجل مهام العمل والمرفقات');
+    }
+  };
 
   const handleModeChange = (mode: TaskSelectionMode) => {
     setSelectionMode(mode);
@@ -94,15 +125,20 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   };
 
   const visibleTasksList = useMemo(() => {
+    let list = tasks;
+    if (selectedEmployeeFilter) {
+      list = list.filter((t) => t.employeeId === selectedEmployeeFilter);
+    }
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return tasks;
-    return tasks.filter(
+    if (!q) return list;
+    return list.filter(
       (t) =>
         t.title.toLowerCase().includes(q) ||
         (t.description && t.description.toLowerCase().includes(q)) ||
+        (t.employeeName && t.employeeName.toLowerCase().includes(q)) ||
         (t.dueDate && t.dueDate.includes(q))
     );
-  }, [tasks, searchQuery]);
+  }, [tasks, selectedEmployeeFilter, searchQuery]);
 
   const selectedTasksToExport = useMemo(
     () => tasks.filter((t) => selectedTaskIds.has(t.id)),
@@ -280,6 +316,37 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                 المختار: {selectedTasksToExport.length} من {tasks.length}
               </span>
             </div>
+
+            {/* Employee Dossier Filter (Optional) */}
+            {employees.length > 0 && (
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+                <Users className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-300 shrink-0">
+                  تصفية حسب ملف الموظف:
+                </span>
+                <select
+                  value={selectedEmployeeFilter}
+                  onChange={(e) => handleEmployeeFilterChange(e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">-- جميع الموظفين وكافة المهام --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.role || 'عضو فريق'}) — {tasks.filter((t) => t.employeeId === emp.id).length} مهام
+                    </option>
+                  ))}
+                </select>
+                {selectedEmployeeFilter && (
+                  <button
+                    type="button"
+                    onClick={() => handleEmployeeFilterChange('')}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold px-1.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 cursor-pointer"
+                  >
+                    إلغاء التصفية ✕
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Quick Mode Filter Buttons */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">

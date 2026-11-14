@@ -67,6 +67,13 @@ export interface VideoAlarmPluginInterface {
     mimeType?: string;
     share?: boolean;
   }): Promise<{ success: boolean; savedToDownloads: boolean; fileName: string }>;
+  pickContact(): Promise<{
+    success: boolean;
+    name?: string;
+    phone?: string;
+    cancelled?: boolean;
+    message?: string;
+  }>;
   addListener(
     eventName: 'scheduledMediaLaunch',
     listenerFunc: (data: ScheduledMediaLaunchEvent) => void

@@ -31,12 +31,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const prayerTimes = new PrayerTimes(coordinates, date, params);
 
     const now = date.getTime();
+
+    const tomorrow = new Date(date);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowPrayerTimes = new PrayerTimes(coordinates, tomorrow, params);
+    const nightDuration = tomorrowPrayerTimes.fajr.getTime() - prayerTimes.maghrib.getTime();
+    const qiyamTime = prayerTimes.maghrib.getTime() + Math.round(nightDuration * (2 / 3));
+    const duhaTime = prayerTimes.sunrise.getTime() + 20 * 60 * 1000;
+
     const prayers = [
       { id: 'fajr', name: 'الفجر', time: prayerTimes.fajr.getTime() },
+      { id: 'duha', name: 'صلاة الضحى', time: duhaTime },
       { id: 'dhuhr', name: 'الظهر', time: prayerTimes.dhuhr.getTime() },
       { id: 'asr', name: 'العصر', time: prayerTimes.asr.getTime() },
       { id: 'maghrib', name: 'المغرب', time: prayerTimes.maghrib.getTime() },
       { id: 'isha', name: 'العشاء', time: prayerTimes.isha.getTime() },
+      { id: 'qiyam', name: 'صلاة قيام الليل والتهجد', time: qiyamTime },
     ];
 
     // Find any prayer within +/- 6 minutes of now

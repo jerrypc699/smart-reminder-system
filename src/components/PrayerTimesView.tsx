@@ -17,7 +17,8 @@ import {
   Send,
   CheckCircle2,
   RefreshCw,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 import { PrayerInfo, PrayerSettings, PrayerId } from '../types';
 import { mobileBackgroundService } from '../services/mobileBackgroundService';
@@ -100,6 +101,8 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
         return <Moon className="w-5 h-5 text-indigo-300" strokeWidth={1.75} />;
       case 'sunrise':
         return <Sunrise className="w-5 h-5 text-[#E7C66C]" strokeWidth={1.75} />;
+      case 'duha':
+        return <Sun className="w-5 h-5 text-amber-400" strokeWidth={1.75} />;
       case 'dhuhr':
         return <Sun className="w-5 h-5 text-[#E7C66C]" strokeWidth={1.75} />;
       case 'asr':
@@ -108,6 +111,8 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
         return <Sunset className="w-5 h-5 text-rose-300" strokeWidth={1.75} />;
       case 'isha':
         return <Moon className="w-5 h-5 text-emerald-300" strokeWidth={1.75} />;
+      case 'qiyam':
+        return <Sparkles className="w-5 h-5 text-purple-300" strokeWidth={1.75} />;
     }
   };
 
@@ -116,7 +121,9 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
       case 'fajr':
         return 'صلاة الصبح — ركعتان فرض وسنة الفجر خير من الدنيا وما فيها';
       case 'sunrise':
-        return 'شروق الشمس — انتهاء وقت الفجر وبداية وقت الضحى';
+        return 'شروق الشمس — انتهاء وقت الفجر وبداية وقت صلاة الضحى';
+      case 'duha':
+        return 'صلاة الضحى (صلاة الأوابين) — ركعتان إلى ثمانِ ركعات تجزئان عن صدقة كل مفصل من الجسد';
       case 'dhuhr':
         return 'صلاة الظهر — أربع ركعات فرض في زوال الشمس';
       case 'asr':
@@ -125,6 +132,8 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
         return 'صلاة المغرب — ثلاث ركعات فرض عند غروب الشمس';
       case 'isha':
         return 'صلاة العشاء — أربع ركعات فرض يعقبها الشفع والوتر';
+      case 'qiyam':
+        return 'صلاة قيام الليل والتهجد — الثلث الأخير من الليل، وقت النزول الإلهي واستجابة الدعاء';
     }
   };
 

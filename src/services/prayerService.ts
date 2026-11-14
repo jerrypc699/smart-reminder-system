@@ -103,7 +103,7 @@ export class PrayerService {
   }
 
   /**
-   * Calculate prayer times for today
+   * Calculate prayer times for today (Including Duha & Qiyam Al-Layl)
    */
   public getPrayerTimes(date: Date = new Date(), settings: PrayerSettings = DEFAULT_PRAYER_SETTINGS) {
     const coordinates = new Coordinates(settings.latitude, settings.longitude);
@@ -112,36 +112,55 @@ export class PrayerService {
 
     const now = new Date();
 
+    // 1. Calculate Duha time (~20 minutes after Sunrise)
+    const duhaTime = new Date(prayerTimes.sunrise.getTime() + 20 * 60 * 1000);
+
+    // 2. Calculate Tomorrow's Fajr for tonight's Qiyam Al-Layl (last third of the night)
+    const tomorrow = new Date(date);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowPrayerTimes = new PrayerTimes(coordinates, tomorrow, params);
+    const tomorrowFajr = tomorrowPrayerTimes.fajr;
+
+    const tonightDuration = tomorrowFajr.getTime() - prayerTimes.maghrib.getTime();
+    const tonightQiyam = new Date(prayerTimes.maghrib.getTime() + Math.round(tonightDuration * (2 / 3)));
+
+    // 3. Calculate Yesterday's Maghrib for early-morning Qiyam Al-Layl check
+    const yesterday = new Date(date);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayPrayerTimes = new PrayerTimes(coordinates, yesterday, params);
+    const lastNightDuration = prayerTimes.fajr.getTime() - yesterdayPrayerTimes.maghrib.getTime();
+    const todayEarlyQiyam = new Date(yesterdayPrayerTimes.maghrib.getTime() + Math.round(lastNightDuration * (2 / 3)));
+
     const prayers: { id: PrayerId; arabicName: string; time: Date }[] = [
       { id: 'fajr', arabicName: 'الفجر', time: prayerTimes.fajr },
       { id: 'sunrise', arabicName: 'الشروق', time: prayerTimes.sunrise },
+      { id: 'duha', arabicName: 'صلاة الضحى', time: duhaTime },
       { id: 'dhuhr', arabicName: 'الظهر', time: prayerTimes.dhuhr },
       { id: 'asr', arabicName: 'العصر', time: prayerTimes.asr },
       { id: 'maghrib', arabicName: 'المغرب', time: prayerTimes.maghrib },
       { id: 'isha', arabicName: 'العشاء', time: prayerTimes.isha },
+      { id: 'qiyam', arabicName: 'قيام الليل', time: tonightQiyam },
     ];
 
     // Find next prayer
     let nextPrayerIndex = -1;
-    for (let i = 0; i < prayers.length; i++) {
-      if (prayers[i].time > now) {
-        nextPrayerIndex = i;
-        break;
-      }
-    }
+    let isEarlyMorningQiyam = false;
 
-    // If all passed today, tomorrow Fajr is next
-    let tomorrowFajr: Date | null = null;
-    if (nextPrayerIndex === -1) {
-      const tomorrow = new Date(date);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowPrayerTimes = new PrayerTimes(coordinates, tomorrow, params);
-      tomorrowFajr = tomorrowPrayerTimes.fajr;
+    // Special case: early morning before Fajr when Qiyam has not yet arrived
+    if (now < todayEarlyQiyam) {
+      isEarlyMorningQiyam = true;
+    } else {
+      for (let i = 0; i < prayers.length; i++) {
+        if (prayers[i].time > now) {
+          nextPrayerIndex = i;
+          break;
+        }
+      }
     }
 
     const prayerInfos: PrayerInfo[] = prayers.map((p, index) => {
       const isPassed = p.time <= now;
-      const isNext = index === nextPrayerIndex;
+      const isNext = !isEarlyMorningQiyam && index === nextPrayerIndex;
       return {
         id: p.id,
         arabicName: p.arabicName,
@@ -153,18 +172,31 @@ export class PrayerService {
       };
     });
 
-    const nextPrayer =
-      nextPrayerIndex !== -1
-        ? prayerInfos[nextPrayerIndex]
-        : {
-            id: 'fajr' as PrayerId,
-            arabicName: 'الفجر (غداً)',
-            time: tomorrowFajr || new Date(),
-            timeString: this.formatTime24h(tomorrowFajr || new Date()),
-            formatted12h: this.formatTime12h(tomorrowFajr || new Date()),
-            isNext: true,
-            isPassed: false,
-          };
+    let nextPrayer: PrayerInfo;
+    if (isEarlyMorningQiyam) {
+      nextPrayer = {
+        id: 'qiyam',
+        arabicName: 'قيام الليل',
+        time: todayEarlyQiyam,
+        timeString: this.formatTime24h(todayEarlyQiyam),
+        formatted12h: this.formatTime12h(todayEarlyQiyam),
+        isNext: true,
+        isPassed: false,
+      };
+    } else if (nextPrayerIndex !== -1) {
+      nextPrayer = prayerInfos[nextPrayerIndex];
+    } else {
+      // If all passed tonight (after tonightQiyam), next is tomorrow Fajr
+      nextPrayer = {
+        id: 'fajr' as PrayerId,
+        arabicName: 'الفجر (غداً)',
+        time: tomorrowFajr || new Date(),
+        timeString: this.formatTime24h(tomorrowFajr || new Date()),
+        formatted12h: this.formatTime12h(tomorrowFajr || new Date()),
+        isNext: true,
+        isPassed: false,
+      };
+    }
 
     // Calculate time remaining to next prayer
     const diffMs = Math.max(0, nextPrayer.time.getTime() - now.getTime());

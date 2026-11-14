@@ -6,13 +6,16 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Base64;
+import androidx.activity.result.ActivityResult;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
@@ -24,6 +27,7 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "VideoAlarm")
@@ -325,5 +329,62 @@ public class VideoAlarmPlugin extends Plugin {
         } catch (Exception e) {
             call.reject("Failed to save/open file: " + e.getMessage());
         }
+    }
+
+    @PluginMethod
+    public void pickContact(PluginCall call) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+            startActivityForResult(call, intent, "pickContactResult");
+        } catch (Exception e) {
+            call.reject("Failed to open phone contacts: " + e.getMessage());
+        }
+    }
+
+    @ActivityCallback
+    private void pickContactResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (result == null || result.getResultCode() != android.app.Activity.RESULT_OK || result.getData() == null) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("cancelled", true);
+            ret.put("message", "تم إلغاء اختيار جهة الاتصال");
+            call.resolve(ret);
+            return;
+        }
+
+        Uri contactUri = result.getData().getData();
+        if (contactUri == null) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("message", "تعذر قراءة بيانات جهة الاتصال");
+            call.resolve(ret);
+            return;
+        }
+
+        String[] projection = new String[]{
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            ContactsContract.CommonDataKinds.Phone.NUMBER
+        };
+
+        String name = "";
+        String rawPhone = "";
+
+        try (Cursor cursor = getContext().getContentResolver().query(contactUri, projection, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int nameIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                int phoneIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                if (nameIdx >= 0) name = cursor.getString(nameIdx);
+                if (phoneIdx >= 0) rawPhone = cursor.getString(phoneIdx);
+            }
+        } catch (Exception e) {
+            // query exception handled
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("name", name != null ? name.trim() : "");
+        ret.put("phone", rawPhone != null ? rawPhone.trim() : "");
+        call.resolve(ret);
     }
 }

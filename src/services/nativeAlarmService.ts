@@ -219,48 +219,71 @@ export class NativeAlarmService {
 
         const prayerTimes = new PrayerTimes(coordinates, targetDate, params);
 
+        const tomorrow = new Date(targetDate);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowPrayerTimes = new PrayerTimes(coordinates, tomorrow, params);
+        const nightDuration = tomorrowPrayerTimes.fajr.getTime() - prayerTimes.maghrib.getTime();
+        const qiyamDate = new Date(prayerTimes.maghrib.getTime() + Math.round(nightDuration * (2 / 3)));
+        const duhaDate = new Date(prayerTimes.sunrise.getTime() + 20 * 60 * 1000);
+
         const prayers = [
-          { name: 'الفجر', date: prayerTimes.fajr },
-          { name: 'الظهر', date: prayerTimes.dhuhr },
-          { name: 'العصر', date: prayerTimes.asr },
-          { name: 'المغرب', date: prayerTimes.maghrib },
-          { name: 'العشاء', date: prayerTimes.isha }
+          { id: 'fajr', name: 'الفجر', date: prayerTimes.fajr, isAzan: true },
+          { id: 'duha', name: 'صلاة الضحى', date: duhaDate, isAzan: false },
+          { id: 'dhuhr', name: 'الظهر', date: prayerTimes.dhuhr, isAzan: true },
+          { id: 'asr', name: 'العصر', date: prayerTimes.asr, isAzan: true },
+          { id: 'maghrib', name: 'المغرب', date: prayerTimes.maghrib, isAzan: true },
+          { id: 'isha', name: 'العشاء', date: prayerTimes.isha, isAzan: true },
+          { id: 'qiyam', name: 'صلاة قيام الليل والتهجد', date: qiyamDate, isAzan: false }
         ];
 
         for (const p of prayers) {
-          // 1. Pre-Azan Voice Alert (5 minutes before Azan)
-          const preDate = new Date(p.date.getTime() - 5 * 60 * 1000);
-          if (preDate.getTime() > now.getTime()) {
-            notificationsToSchedule.push({
-              id: preNotifId++,
-              title: `اقترب موعد صلاة ${p.name} ⏳`,
-              body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${p.name} حسب توقيت القاهرة.`,
-              schedule: {
-                at: preDate,
-                allowWhileIdle: true
-              },
-              sound: 'dr_abdelaziz_pre_azan.mp3',
-              channelId: 'dr_abdelaziz_pre_azan_v9',
-              actionTypeId: 'PRE_AZAN_ACTION',
-              foreground: true,
-              extra: {
-                prayer: p.name,
-                type: 'pre_azan'
-              }
-            });
+          // 1. Pre-Azan Voice Alert (5 minutes before main prayers)
+          if (p.isAzan) {
+            const preDate = new Date(p.date.getTime() - 5 * 60 * 1000);
+            if (preDate.getTime() > now.getTime()) {
+              notificationsToSchedule.push({
+                id: preNotifId++,
+                title: `اقترب موعد صلاة ${p.name} ⏳`,
+                body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${p.name} حسب توقيت القاهرة.`,
+                schedule: {
+                  at: preDate,
+                  allowWhileIdle: true
+                },
+                sound: 'dr_abdelaziz_pre_azan.mp3',
+                channelId: 'dr_abdelaziz_pre_azan_v9',
+                actionTypeId: 'PRE_AZAN_ACTION',
+                foreground: true,
+                extra: {
+                  prayer: p.name,
+                  type: 'pre_azan'
+                }
+              });
+            }
           }
 
-          // 2. Full Main Azan Alarm (Exact prayer time)
+          // 2. Full Main Azan / Sunnah Prayer Alarm (Exact prayer time)
           if (p.date.getTime() > now.getTime()) {
+            const notifTitle = p.isAzan
+              ? `حان الآن موعد أذان ${p.name} 🕌`
+              : p.id === 'duha'
+              ? `حان الآن موعد صلاة الضحى ☀️`
+              : `حان موعد صلاة قيام الليل والتهجد 🌌`;
+
+            const notifBody = p.isAzan
+              ? `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${p.name} حسب توقيت القاهرة. تقبل الله منا ومنكم.`
+              : p.id === 'duha'
+              ? `يا دكتور عبد العزيز، حان موعد صلاة الضحى (صلاة الأوابين). ركعتان تجزئان عن صدقة يومك.`
+              : `يا دكتور عبد العزيز، الثلث الأخير من الليل وموعد قيام الليل واستجابة الدعاء. تقبل الله طاعتكم.`;
+
             notificationsToSchedule.push({
               id: notifId++,
-              title: `حان الآن موعد أذان ${p.name} 🕌`,
-              body: `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${p.name} حسب توقيت القاهرة. تقبل الله منا ومنكم.`,
+              title: notifTitle,
+              body: notifBody,
               schedule: {
                 at: p.date,
                 allowWhileIdle: true
               },
-              sound: 'mishary.mp3',
+              sound: p.isAzan ? 'mishary.mp3' : 'takbeerat.mp3',
               channelId: 'dr_abdelaziz_azan_v9',
               actionTypeId: 'AZAN_ACTION',
               foreground: true,

@@ -739,9 +739,24 @@ export function App() {
           ) {
             remindedPrayersRef.current.add(prayerKey);
 
+            const isDuha = prayer.id === 'duha';
+            const isQiyam = prayer.id === 'qiyam';
+
+            const alertTitle = isDuha
+              ? '☀️ حان الآن موعد صلاة الضحى'
+              : isQiyam
+              ? '🌌 حان الآن موعد قيام الليل والتهجد'
+              : `🕌 حان الآن موعد أذان ${prayer.arabicName}`;
+
+            const alertMsg = isDuha
+              ? `يا دكتور عبد العزيز، حان الآن موعد صلاة الضحى (صلاة الأوابين). ركعتان تجزئان عن صدقة يومك بتوقيت ${prayerSettings.cityName}. تقبل الله طاعتكم.`
+              : isQiyam
+              ? `يا دكتور عبد العزيز، الثلث الأخير من الليل وموعد قيام الليل والتهجد. وقت النزول الإلهي واستجابة الدعاء. تقبل الله طاعتكم.`
+              : `الله أكبر، الله أكبر. حان الآن وقت صلاة ${prayer.arabicName} بتوقيت ${prayerSettings.cityName}. تقبل الله منا ومنكم صالح الأعمال.`;
+
             // Trigger Notification
-            notificationService.showNotification(`🕌 حان الآن موعد أذان ${prayer.arabicName}`, {
-              body: `الله أكبر، الله أكبر. حان الآن وقت صلاة ${prayer.arabicName} بتوقيت ${prayerSettings.cityName}. تقبل الله منا ومنكم صالح الأعمال.`,
+            notificationService.showNotification(alertTitle, {
+              body: alertMsg,
               tag: `azan-${prayer.id}`,
             });
 
@@ -749,22 +764,48 @@ export function App() {
             setActiveAlert({
               id: `alert-azan-${Date.now()}`,
               type: 'azan',
-              title: `حان الآن موعد أذان ${prayer.arabicName}`,
-              message: `الله أكبر، الله أكبر. نداء الحق لصلاة ${prayer.arabicName} يرتفع الآن. أوقف عملك واستعد للصلاة.`,
+              title: alertTitle,
+              message: alertMsg,
               timestamp: now.toISOString(),
               prayerId: prayer.id,
               canSnooze: false,
             });
 
-            // Trigger Audio Azan (auto plays loudly without pressing anything)
+            // Trigger Audio Alert
             audioService.initAudioContext();
-            const chosenFile = `/audio/${prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter}.mp3`;
-            mobileBackgroundService.playAzanDirectly(chosenFile, audioSettings.masterVolume);
+            if (isDuha || isQiyam) {
+              const voiceMsg = isDuha
+                ? 'يا دكتور عبد العزيز، حان الآن موعد صلاة الضحى. ركعتان تجزئان عن صدقة يومك، صلاة الأوابين.'
+                : 'يا دكتور عبد العزيز، حان الثلث الأخير من الليل، موعد قيام الليل والتهجد واستجابة الدعاء.';
+              audioService.speakAlert(voiceMsg, {
+                volume: audioSettings.masterVolume,
+                onEnd: () => {
+                  audioService.playAzan('takbeerat', audioSettings.masterVolume);
+                },
+              });
+            } else {
+              const chosenFile = `/audio/${prayerSettings.azanReciter === 'custom' ? 'mishary' : prayerSettings.azanReciter}.mp3`;
+              mobileBackgroundService.playAzanDirectly(chosenFile, audioSettings.masterVolume);
 
-            if (prayerSettings.azanReciter === 'custom' && prayerSettings.customAzanAudioId) {
-              audioStorageService.getAudioObjectUrl(prayerSettings.customAzanAudioId).then((customUrl) => {
+              if (prayerSettings.azanReciter === 'custom' && prayerSettings.customAzanAudioId) {
+                audioStorageService.getAudioObjectUrl(prayerSettings.customAzanAudioId).then((customUrl) => {
+                  audioService.playAzan(
+                    'custom',
+                    audioSettings.masterVolume,
+                    () => {
+                      if (prayerSettings.enableDuaaAfterAzan) {
+                        audioService.speak(
+                          'اللهم رب هذه الدعوة التامة والصلاة القائمة، آت محمداً الوسيلة والفضيلة، وابعثه مقاماً محموداً الذي وعدته.',
+                          { volume: audioSettings.masterVolume * 0.9 }
+                        );
+                      }
+                    },
+                    customUrl
+                  );
+                });
+              } else {
                 audioService.playAzan(
-                  'custom',
+                  prayerSettings.azanReciter,
                   audioSettings.masterVolume,
                   () => {
                     if (prayerSettings.enableDuaaAfterAzan) {
@@ -773,23 +814,9 @@ export function App() {
                         { volume: audioSettings.masterVolume * 0.9 }
                       );
                     }
-                  },
-                  customUrl
-                );
-              });
-            } else {
-              audioService.playAzan(
-                prayerSettings.azanReciter,
-                audioSettings.masterVolume,
-                () => {
-                  if (prayerSettings.enableDuaaAfterAzan) {
-                    audioService.speak(
-                      'اللهم رب هذه الدعوة التامة والصلاة القائمة، آت محمداً الوسيلة والفضيلة، وابعثه مقاماً محموداً الذي وعدته.',
-                      { volume: audioSettings.masterVolume * 0.9 }
-                    );
                   }
-                }
-              );
+                );
+              }
             }
           }
         });

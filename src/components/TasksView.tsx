@@ -26,7 +26,15 @@ import {
   Cloud,
   MessageCircle,
   Send,
-  UserPlus
+  UserPlus,
+  Users,
+  User,
+  Folder,
+  Phone,
+  Mail,
+  Smartphone,
+  Share2,
+  FileCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -37,8 +45,10 @@ import {
   PrayerInfo,
   TaskAudioMode,
   StoredAudioMeta,
-  WhatsAppSavedContact
+  WhatsAppSavedContact,
+  Employee
 } from '../types';
+import { taskService } from '../services/taskService';
 import { audioStorageService } from '../services/audioStorageService';
 import { vercelCloudSync } from '../services/vercelCloudSync';
 import { getLocalDateStr } from '../services/nativeAlarmService';
@@ -118,6 +128,132 @@ export const TasksView: React.FC<TasksViewProps> = ({
   );
   const [waStatusBanner, setWaStatusBanner] = useState<string | null>(null);
   const [waSendingId, setWaSendingId] = useState<string | null>(null);
+
+  // Employee Dossiers & Staff State
+  const [viewMode, setViewMode] = useState<'tasks' | 'employees'>('tasks');
+  const [employees, setEmployees] = useState<Employee[]>(() => taskService.getEmployees());
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
+  const [selectedEmployeeDossier, setSelectedEmployeeDossier] = useState<Employee | null>(null);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [pdfInitialEmpId, setPdfInitialEmpId] = useState<string | undefined>(undefined);
+
+  // Employee Form State
+  const [empFormName, setEmpFormName] = useState('');
+  const [empFormRole, setEmpFormRole] = useState('');
+  const [empFormDept, setEmpFormDept] = useState('');
+  const [empFormPhone, setEmpFormPhone] = useState('');
+  const [empFormWaPhone, setEmpFormWaPhone] = useState('');
+  const [empFormEmail, setEmpFormEmail] = useState('');
+  const [empFormNotes, setEmpFormNotes] = useState('');
+
+  const resetEmployeeForm = () => {
+    setEmpFormName('');
+    setEmpFormRole('');
+    setEmpFormDept('');
+    setEmpFormPhone('');
+    setEmpFormWaPhone('');
+    setEmpFormEmail('');
+    setEmpFormNotes('');
+    setEditingEmployee(null);
+  };
+
+  const handleOpenEditEmployee = (emp: Employee) => {
+    setEditingEmployee(emp);
+    setEmpFormName(emp.name || '');
+    setEmpFormRole(emp.role || '');
+    setEmpFormDept(emp.department || '');
+    setEmpFormPhone(emp.phone || '');
+    setEmpFormWaPhone(emp.whatsappPhone || emp.phone || '');
+    setEmpFormEmail(emp.email || '');
+    setEmpFormNotes(emp.notes || '');
+    setIsEmployeeModalOpen(true);
+  };
+
+  const handleSaveEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empFormName.trim()) return;
+
+    if (editingEmployee) {
+      const updated = taskService.updateEmployee(editingEmployee.id, {
+        name: empFormName.trim(),
+        role: empFormRole.trim(),
+        department: empFormDept.trim(),
+        phone: empFormPhone.trim(),
+        whatsappPhone: empFormWaPhone.trim() || empFormPhone.trim(),
+        email: empFormEmail.trim(),
+        notes: empFormNotes.trim(),
+      });
+      setEmployees(updated);
+      if (selectedEmployeeDossier?.id === editingEmployee.id) {
+        setSelectedEmployeeDossier(updated.find((x) => x.id === editingEmployee.id) || null);
+      }
+      showWaBanner('✓ تم تحديث بيانات الموظف بنجاح');
+    } else {
+      taskService.addEmployee({
+        name: empFormName.trim(),
+        role: empFormRole.trim(),
+        department: empFormDept.trim(),
+        phone: empFormPhone.trim(),
+        whatsappPhone: empFormWaPhone.trim() || empFormPhone.trim(),
+        email: empFormEmail.trim(),
+        notes: empFormNotes.trim(),
+      });
+      setEmployees(taskService.getEmployees());
+      showWaBanner('✓ تم إنشاء ملف الموظف الجديد بنجاح');
+    }
+
+    setIsEmployeeModalOpen(false);
+    resetEmployeeForm();
+  };
+
+  const handleDeleteEmployee = (empId: string) => {
+    if (!window.confirm('هل تريد بالتأكيد حذف ملف هذا الموظف؟ لن تُحذف المهام المسندة إليه.')) return;
+    const remaining = taskService.deleteEmployee(empId);
+    setEmployees(remaining);
+    if (selectedEmployeeDossier?.id === empId) {
+      setSelectedEmployeeDossier(null);
+    }
+    showWaBanner('✓ تم حذف ملف الموظف');
+  };
+
+  const handlePickPhoneContact = async () => {
+    try {
+      const res = await whatsappService.pickContactFromDevice();
+      if (res.success && res.phone) {
+        setWaPhone(res.phone);
+        if (res.name && !waRecipientName) {
+          setWaRecipientName(res.name);
+        }
+        showWaBanner(`✓ تم اختيار ${res.name || res.phone} من جهات اتصال الهاتف`);
+      } else if (res.cancelled) {
+        // cancelled
+      } else if (res.message) {
+        showWaBanner(res.message);
+      }
+    } catch (err: any) {
+      showWaBanner('تعذر فتح جهات الاتصال: ' + (err?.message || 'خطأ'));
+    }
+  };
+
+  const handlePickPhoneContactForEmployee = async () => {
+    try {
+      const res = await whatsappService.pickContactFromDevice();
+      if (res.success && res.phone) {
+        setEmpFormPhone(res.phone);
+        setEmpFormWaPhone(res.phone);
+        if (res.name && !empFormName) {
+          setEmpFormName(res.name);
+        }
+        showWaBanner(`✓ تم سحب ${res.name || res.phone} للموظف`);
+      } else if (res.message) {
+        showWaBanner(res.message);
+      }
+    } catch (err: any) {
+      showWaBanner('تعذر فتح جهات الاتصال: ' + (err?.message || 'خطأ'));
+    }
+  };
 
   const showWaBanner = (msg: string) => {
     setWaStatusBanner(msg);
@@ -264,6 +400,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setWaCustomMessage('');
     setWaAutoTrigger(true);
     setWaIncludeAttachments(true);
+    setSelectedEmployeeId('');
+    setSelectedEmployeeName('');
     setEditingTask(null);
   };
 
@@ -283,6 +421,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTaskCloudUrl(task.cloudUrl || '');
     setAttachments(task.attachments ? [...task.attachments] : []);
     setAttachmentStatusMsg(null);
+    setSelectedEmployeeId(task.employeeId || '');
+    setSelectedEmployeeName(task.employeeName || '');
     setWaEnabled(forceExpandWhatsApp ? true : !!task.whatsapp?.enabled);
     setWaPhone(task.whatsapp?.phoneNumber || '');
     setWaRecipientName(task.whatsapp?.recipientName || '');
@@ -404,6 +544,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         cloudUrl: audioMode === 'custom' ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
         attachments,
         whatsapp: whatsappPayload,
+        employeeId: selectedEmployeeId || undefined,
+        employeeName: selectedEmployeeName || undefined,
       });
     } else {
       onAddTask({
@@ -422,6 +564,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         cloudUrl: audioMode === 'custom' ? taskCloudUrl : undefined,
         attachments: attachments.length > 0 ? attachments : undefined,
         whatsapp: whatsappPayload,
+        employeeId: selectedEmployeeId || undefined,
+        employeeName: selectedEmployeeName || undefined,
       });
     }
 
@@ -601,8 +745,55 @@ export const TasksView: React.FC<TasksViewProps> = ({
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="lux-card p-4 sm:p-5 rounded-3xl space-y-4">
+      {/* View Mode Switcher: Tasks Board vs Employee Dossiers */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-[var(--lux-card-bg)] border border-[var(--lux-card-border)] shadow-sm">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setViewMode('tasks')}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              viewMode === 'tasks'
+                ? 'btn-lux-primary shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <CheckSquare className="w-4 h-4" />
+            <span>كافة مهام العمل ({tasks.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode('employees')}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              viewMode === 'employees'
+                ? 'btn-lux-primary shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>ملفات الموظفين وفريق العمل ({employees.length})</span>
+          </button>
+        </div>
+
+        {viewMode === 'employees' && (
+          <button
+            type="button"
+            onClick={() => {
+              resetEmployeeForm();
+              setIsEmployeeModalOpen(true);
+            }}
+            className="btn-lux-gold h-9 px-3.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>إضافة ملف موظف جديد</span>
+          </button>
+        )}
+      </div>
+
+      {viewMode === 'tasks' ? (
+        <>
+          {/* Filter and Search Bar */}
+          <div className="lux-card p-4 sm:p-5 rounded-3xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
           {/* Search Box */}
           <div className="relative flex-1">
@@ -761,6 +952,22 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
                             مؤجل
                           </span>
+                        )}
+
+                        {/* Employee Dossier Badge */}
+                        {task.employeeName && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const emp = employees.find((e) => e.id === task.employeeId);
+                              if (emp) setSelectedEmployeeDossier(emp);
+                            }}
+                            className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold inline-flex items-center gap-1 hover:bg-blue-500/25 cursor-pointer"
+                            title="عرض ملف هذا الموظف"
+                          >
+                            <User className="w-3 h-3 text-blue-400" />
+                            <span>{task.employeeName}</span>
+                          </button>
                         )}
                       </div>
 
@@ -954,6 +1161,217 @@ export const TasksView: React.FC<TasksViewProps> = ({
           })}
         </div>
       )}
+        </>
+      ) : (
+        /* Employee Dossiers View */
+        <div className="space-y-6">
+          {/* Executive Team Overview KPI Banner */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="lux-card p-4 rounded-2xl flex items-center gap-3">
+              <div className="icon-squircle-gold w-10 h-10 shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-white">{employees.length}</div>
+                <div className="text-[11px] font-semibold text-slate-400">إجمالي فريق العمل</div>
+              </div>
+            </div>
+            <div className="lux-card p-4 rounded-2xl flex items-center gap-3">
+              <div className="icon-squircle-emerald w-10 h-10 shrink-0">
+                <CheckSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-white">
+                  {tasks.filter((t) => t.employeeId).length}
+                </div>
+                <div className="text-[11px] font-semibold text-slate-400">مهام موزعة على الموظفين</div>
+              </div>
+            </div>
+            <div className="lux-card p-4 rounded-2xl flex items-center gap-3">
+              <div className="icon-squircle-emerald w-10 h-10 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-emerald-400">
+                  {tasks.filter((t) => t.employeeId && t.status === 'completed').length}
+                </div>
+                <div className="text-[11px] font-semibold text-slate-400">مهام أنجزها الموظفون</div>
+              </div>
+            </div>
+            <div className="lux-card p-4 rounded-2xl flex items-center gap-3">
+              <div className="icon-squircle-gold w-10 h-10 shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-amber-400">
+                  {tasks.filter((t) => t.employeeId && t.status !== 'completed').length}
+                </div>
+                <div className="text-[11px] font-semibold text-slate-400">مهام قيد التنفيذ والمتابعة</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Employees Grid */}
+          {employees.length === 0 ? (
+            <div className="lux-card p-12 rounded-3xl text-center space-y-3">
+              <Users className="w-12 h-12 text-slate-500 mx-auto" />
+              <h3 className="text-lg font-bold text-white">لا توجد ملفات موظفين مسجلة بعد</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                أنشئ ملفاً لكل موظف في عيادتك وفريق عملك لتنظيم ومتابعة كافة مهامه وتقاريره وملفاته المرفقة.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  resetEmployeeForm();
+                  setIsEmployeeModalOpen(true);
+                }}
+                className="btn-lux-primary px-5 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-2 cursor-pointer mt-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>إنشاء أول ملف موظف</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {employees.map((emp) => {
+                const stats = taskService.getEmployeeStats(emp.id, tasks);
+                return (
+                  <div
+                    key={emp.id}
+                    className="lux-card p-5 rounded-3xl flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition-all shadow-md group"
+                  >
+                    <div className="space-y-3">
+                      {/* Employee Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-blue-500/30 border border-emerald-500/30 flex items-center justify-center text-lg font-black text-white shrink-0 shadow-inner">
+                            {emp.name.slice(0, 2)}
+                          </div>
+                          <div>
+                            <h3 className="text-base font-black text-white group-hover:text-emerald-300 transition-colors">
+                              {emp.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                                {emp.role || 'عضو فريق'}
+                              </span>
+                              {emp.department && (
+                                <span className="text-[10px] text-slate-400">
+                                  • {emp.department}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditEmployee(emp)}
+                            className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                            title="تعديل بيانات الموظف"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEmployee(emp.id)}
+                            className="p-1.5 rounded-xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer"
+                            title="حذف ملف الموظف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Contact Shortcuts */}
+                      <div className="flex items-center gap-2 pt-1">
+                        {emp.phone && (
+                          <a
+                            href={`tel:${emp.phone}`}
+                            className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Phone className="w-3 h-3 text-emerald-400" />
+                            <span dir="ltr">{emp.phone}</span>
+                          </a>
+                        )}
+                        {(emp.whatsappPhone || emp.phone) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const target = emp.whatsappPhone || emp.phone || '';
+                              whatsappService.openWhatsAppChat(target, `مرحباً ${emp.name}، تواصل ومتابعة من نظام د. عبد العزيز.`);
+                            }}
+                            className="px-2.5 py-1 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/60 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
+                            title="محادثة واتساب مباشرة"
+                          >
+                            <MessageCircle className="w-3 h-3 text-emerald-400" />
+                            <span>واتساب</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Performance Progress */}
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400 font-semibold">نسبة إنجاز المهام:</span>
+                          <span className="font-mono font-black text-emerald-400">{stats.rate}%</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-700"
+                            style={{ width: `${stats.rate}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                          <span>إجمالي: <strong className="text-white">{stats.total}</strong></span>
+                          <span>منجز: <strong className="text-emerald-400">{stats.completed}</strong></span>
+                          <span>قيد الانتظار: <strong className="text-amber-400">{stats.pending}</strong></span>
+                          {stats.urgent > 0 && (
+                            <span>عاجل: <strong className="text-rose-400">{stats.urgent}</strong></span>
+                          )}
+                        </div>
+                      </div>
+
+                      {emp.notes && (
+                        <p className="text-[11px] text-slate-400 line-clamp-2 italic">
+                          «{emp.notes}»
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dossier Card Actions */}
+                    <div className="pt-2 border-t border-white/[0.06] grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEmployeeDossier(emp)}
+                        className="btn-lux-primary h-9 px-2 rounded-xl text-[11px] font-black flex items-center justify-center gap-1.5 cursor-pointer col-span-2 shadow-sm"
+                        title="فتح ملف الموظف الكامل والمهام والتقارير"
+                      >
+                        <Folder className="w-3.5 h-3.5" />
+                        <span>فتح الملف الشامل ({stats.total})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPdfInitialEmpId(emp.id);
+                          setIsPdfModalOpen(true);
+                        }}
+                        className="btn-lux-secondary h-9 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                        title="تصدير تقرير مهام هذا الموظف بصيغة PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-400" />
+                        <span>تقرير PDF</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add / Edit Task Modal */}
       {isAddModalOpen && (
@@ -1088,6 +1506,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
                   >
                     <option value="work">عمل عام</option>
+                    <option value="clinic">عيادة ومرضى 🩺</option>
                     <option value="meeting">اجتماع ومقابلة</option>
                     <option value="dev">برمجة وتطوير</option>
                     <option value="admin">إداري ومراسلات</option>
@@ -1095,6 +1514,59 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     <option value="personal">شخصي</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Employee Dossier Assignment */}
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-blue-400" />
+                    <span>تعيين المهمة لملف موظف (اختياري)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetEmployeeForm();
+                      setIsEmployeeModalOpen(true);
+                    }}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    <span>إضافة موظف جديد</span>
+                  </button>
+                </div>
+
+                <select
+                  value={selectedEmployeeId}
+                  onChange={(e) => {
+                    const empId = e.target.value;
+                    setSelectedEmployeeId(empId);
+                    const emp = employees.find((x) => x.id === empId);
+                    if (emp) {
+                      setSelectedEmployeeName(emp.name);
+                      if (emp.whatsappPhone || emp.phone) {
+                        setWaPhone(emp.whatsappPhone || emp.phone || '');
+                        setWaRecipientName(emp.name);
+                        setWaEnabled(true);
+                      }
+                    } else {
+                      setSelectedEmployeeName('');
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">-- بدون تعيين لموظف (مهمة عامة) --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.role || 'عضو فريق'}) {emp.phone ? `— ${emp.phone}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedEmployeeName && (
+                  <span className="text-[10.5px] text-blue-300 block font-semibold">
+                    ✓ ستُدرج هذه المهمة ومرفقاتها تلقائياً داخل ملف «{selectedEmployeeName}»
+                  </span>
+                )}
               </div>
 
               {/* Audio Reminder Mode Selector */}
@@ -1307,13 +1779,59 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
                 {waEnabled && (
                   <div className="space-y-3 pt-2 border-t border-emerald-500/20">
-                    {/* Quick Saved Contacts */}
-                    {waSavedContacts.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-[11px] font-semibold text-slate-400 block">
-                          اختيار سريع من جهات الاتصال المحفوظة:
+                    {/* Native Phonebook Picker Action */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-white">
+                          دفتر الهاتف والأرقام المحفوظة:
                         </span>
-                        <div className="flex flex-wrap gap-1.5">
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handlePickPhoneContact}
+                        className="btn-lux-primary h-8 px-3.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
+                        title="فتح دفتر جهات اتصال الموبايل واختيار الرقم مباشرة دون الحاجة لكتابته"
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>📱 اختيار من جهات اتصال الهاتف</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Pick Chips (Employees + Saved Contacts) */}
+                    {(employees.length > 0 || waSavedContacts.length > 0) && (
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-semibold text-slate-300 block">
+                          ⚡ أو اختر بنقرة واحدة من فريق العمل وجهات الاتصال:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+                          {employees
+                            .filter((e) => e.phone || e.whatsappPhone)
+                            .map((emp) => {
+                              const empPhone = emp.whatsappPhone || emp.phone || '';
+                              const isSelected =
+                                normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(empPhone);
+                              return (
+                                <button
+                                  key={`emp-chip-${emp.id}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setWaPhone(empPhone);
+                                    setWaRecipientName(emp.name);
+                                    setSelectedEmployeeId(emp.id);
+                                    setSelectedEmployeeName(emp.name);
+                                  }}
+                                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                    isSelected
+                                      ? 'bg-blue-500/30 border-blue-400 text-white shadow-sm'
+                                      : 'bg-slate-900 border-slate-700 text-blue-300 hover:border-blue-500/50'
+                                  }`}
+                                >
+                                  <User className="w-3 h-3 text-blue-400" />
+                                  <span>{emp.name}</span>
+                                </button>
+                              );
+                            })}
                           {waSavedContacts.map((contact) => (
                             <button
                               key={contact.id}
@@ -1324,11 +1842,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
                               }}
                               className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
                                 normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(contact.phone)
-                                  ? 'bg-emerald-500/30 border-emerald-400 text-white'
+                                  ? 'bg-emerald-500/30 border-emerald-400 text-white shadow-sm'
                                   : 'bg-slate-900/80 border-slate-700 text-emerald-300 hover:border-emerald-500/40'
                               }`}
                             >
-                              {contact.name} ({contact.phone})
+                              {contact.name}
                             </button>
                           ))}
                         </div>
@@ -1558,14 +2076,487 @@ export const TasksView: React.FC<TasksViewProps> = ({
       {/* PDF Report Export Studio Modal */}
       <PdfExportModal
         isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
+        onClose={() => {
+          setIsPdfModalOpen(false);
+          setPdfInitialEmpId(undefined);
+        }}
         tasks={tasks}
+        employees={employees}
+        initialEmployeeId={pdfInitialEmpId}
         currentDateKey={todayStr}
         defaultScope="tasks_only"
       />
 
       {/* Lightbox Preview for Image Attachments */}
       <ImageLightboxModal image={previewImage} onClose={() => setPreviewImage(null)} />
+
+      {/* Employee Profile Create / Edit Modal */}
+      {isEmployeeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-lg p-6 sm:p-7 rounded-3xl lux-modal max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <div className="icon-squircle-gold w-10 h-10">
+                  <UserPlus className="w-5 h-5" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    {editingEmployee ? 'تعديل ملف الموظف' : 'إنشاء ملف موظف جديد'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    إدارة بيانات فريق العمل لمتابعة المهام والتقارير المرفقة
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEmployeeModalOpen(false);
+                  resetEmployeeForm();
+                }}
+                className="btn-lux-icon text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmployee} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  اسم الموظف / عضو الفريق *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: م. أحمد الشافعي"
+                  value={empFormName}
+                  onChange={(e) => setEmpFormName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    المسمى الوظيفي
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: مساعد تنفيذي / منسق عيادة"
+                    value={empFormRole}
+                    onChange={(e) => setEmpFormRole(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    القسم / التخصص
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: العيادة الطبية / الإدارة"
+                    value={empFormDept}
+                    onChange={(e) => setEmpFormDept(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-300">
+                    رقم الهاتف المحمول
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePickPhoneContactForEmployee}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Smartphone className="w-3 h-3" />
+                    <span>📱 سحب من الهاتف</span>
+                  </button>
+                </div>
+                <input
+                  type="tel"
+                  dir="ltr"
+                  placeholder="01012345678 أو +2010..."
+                  value={empFormPhone}
+                  onChange={(e) => setEmpFormPhone(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    رقم الواتساب
+                  </label>
+                  <input
+                    type="tel"
+                    dir="ltr"
+                    placeholder="2010xxxx أو اتركه كما هو"
+                    value={empFormWaPhone}
+                    onChange={(e) => setEmpFormWaPhone(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    البريد الإلكتروني
+                  </label>
+                  <input
+                    type="email"
+                    dir="ltr"
+                    placeholder="employee@clinic.com"
+                    value={empFormEmail}
+                    onChange={(e) => setEmpFormEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  ملاحظات واختصاصات
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="المهام المنوط بها، الملاحظات الخاصة بالمتابعة والتقارير..."
+                  value={empFormNotes}
+                  onChange={(e) => setEmpFormNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEmployeeModalOpen(false);
+                    resetEmployeeForm();
+                  }}
+                  className="btn-lux-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="btn-lux-primary px-6 py-2.5 rounded-xl text-xs font-black cursor-pointer shadow-md"
+                >
+                  {editingEmployee ? 'حفظ التعديلات' : 'إنشاء الملف'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Full Employee Dossier Modal */}
+      {selectedEmployeeDossier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-3xl p-5 sm:p-7 rounded-3xl lux-modal max-h-[92vh] flex flex-col shadow-2xl">
+            {/* Dossier Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08] shrink-0">
+              <div className="flex items-center gap-3.5">
+                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-xl font-black text-white shadow-lg shrink-0">
+                  {selectedEmployeeDossier.name.slice(0, 2)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg sm:text-xl font-black text-white">
+                      ملف الموظف: {selectedEmployeeDossier.name}
+                    </h2>
+                    <span className="text-[10.5px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 font-bold">
+                      {selectedEmployeeDossier.role || 'عضو فريق'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {selectedEmployeeDossier.department || 'العيادة والمكتب التنفيذي'} • كافة المهام والتقارير والملفات
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPdfInitialEmpId(selectedEmployeeDossier.id);
+                    setIsPdfModalOpen(true);
+                  }}
+                  className="btn-lux-secondary h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  title="تصدير تقرير مهام الموظف PDF"
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                  <span>تصدير PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const emp = selectedEmployeeDossier;
+                    resetForm();
+                    setSelectedEmployeeId(emp.id);
+                    setSelectedEmployeeName(emp.name);
+                    if (emp.whatsappPhone || emp.phone) {
+                      setWaPhone(emp.whatsappPhone || emp.phone || '');
+                      setWaRecipientName(emp.name);
+                      setWaEnabled(true);
+                    }
+                    setIsAddModalOpen(true);
+                  }}
+                  className="btn-lux-primary h-9 px-3.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>مهمة جديدة له</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedEmployeeDossier(null)}
+                  className="btn-lux-icon text-slate-400 hover:text-white cursor-pointer ml-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Dossier Stats & Quick Contacts */}
+            {(() => {
+              const dossierStats = taskService.getEmployeeStats(selectedEmployeeDossier.id, tasks);
+              const empTasks = dossierStats.tasks;
+
+              return (
+                <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+                  {/* KPI Bar */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-center">
+                      <div className="text-xl font-mono font-black text-white">{dossierStats.total}</div>
+                      <div className="text-[10px] text-slate-400 font-bold mt-0.5">إجمالي المهام المسندة</div>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/25 text-center">
+                      <div className="text-xl font-mono font-black text-emerald-400">{dossierStats.completed}</div>
+                      <div className="text-[10px] text-emerald-300 font-bold mt-0.5">مهام مكتملة</div>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/25 text-center">
+                      <div className="text-xl font-mono font-black text-amber-400">{dossierStats.pending}</div>
+                      <div className="text-[10px] text-amber-300 font-bold mt-0.5">قيد الانتظار</div>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-blue-950/40 border border-blue-500/25 text-center">
+                      <div className="text-xl font-mono font-black text-blue-400">{dossierStats.attachmentsCount}</div>
+                      <div className="text-[10px] text-blue-300 font-bold mt-0.5">ملفات ومرفقات مسجلة</div>
+                    </div>
+                  </div>
+
+                  {/* Contact & Notes Card */}
+                  <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-3">
+                      {selectedEmployeeDossier.phone && (
+                        <a
+                          href={`tel:${selectedEmployeeDossier.phone}`}
+                          className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 font-mono"
+                        >
+                          <Phone className="w-3 h-3 text-emerald-400" />
+                          <span dir="ltr">{selectedEmployeeDossier.phone}</span>
+                        </a>
+                      )}
+                      {(selectedEmployeeDossier.whatsappPhone || selectedEmployeeDossier.phone) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const p = selectedEmployeeDossier.whatsappPhone || selectedEmployeeDossier.phone || '';
+                            whatsappService.openWhatsAppChat(p, `مرحباً ${selectedEmployeeDossier.name}، تقرير ومتابعة من نظام د. عبد العزيز.`);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-emerald-950 border border-emerald-500/35 text-emerald-300 hover:bg-emerald-900 flex items-center gap-1.5 font-bold cursor-pointer"
+                        >
+                          <MessageCircle className="w-3 h-3 text-emerald-400" />
+                          <span>فتح محادثة واتساب</span>
+                        </button>
+                      )}
+                      {selectedEmployeeDossier.email && (
+                        <a
+                          href={`mailto:${selectedEmployeeDossier.email}`}
+                          className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5"
+                        >
+                          <Mail className="w-3 h-3 text-blue-400" />
+                          <span dir="ltr">{selectedEmployeeDossier.email}</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditEmployee(selectedEmployeeDossier)}
+                      className="text-slate-400 hover:text-white flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>تعديل الملف</span>
+                    </button>
+                  </div>
+
+                  {/* Tasks List for this Employee */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-white flex items-center gap-2">
+                        <CheckSquare className="w-4 h-4 text-emerald-400" />
+                        <span>سجل مهام ومرفقات الموظف ({empTasks.length}):</span>
+                      </h4>
+                      <span className="text-[11px] text-slate-400 font-bold">
+                        نسبة الإنجاز: {dossierStats.rate}%
+                      </span>
+                    </div>
+
+                    {empTasks.length === 0 ? (
+                      <div className="p-8 rounded-2xl bg-slate-950/40 border border-slate-800 text-center space-y-2">
+                        <CheckSquare className="w-8 h-8 text-slate-600 mx-auto" />
+                        <p className="text-xs text-slate-400">
+                          لا توجد مهام مسندة لهذا الموظف حتى الآن.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const emp = selectedEmployeeDossier;
+                            resetForm();
+                            setSelectedEmployeeId(emp.id);
+                            setSelectedEmployeeName(emp.name);
+                            if (emp.whatsappPhone || emp.phone) {
+                              setWaPhone(emp.whatsappPhone || emp.phone || '');
+                              setWaRecipientName(emp.name);
+                              setWaEnabled(true);
+                            }
+                            setIsAddModalOpen(true);
+                          }}
+                          className="btn-lux-primary px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer mt-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>إضافة أول مهمة لهذا الموظف</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {empTasks.map((t) => {
+                          const isDone = t.status === 'completed';
+                          return (
+                            <div
+                              key={t.id}
+                              className={`p-3.5 rounded-2xl border transition-all ${
+                                isDone
+                                  ? 'bg-slate-950/40 border-slate-800/60 opacity-80'
+                                  : 'bg-slate-900/80 border-slate-800 hover:border-emerald-500/30'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggle(t.id)}
+                                    className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
+                                      isDone
+                                        ? 'bg-emerald-500 border-emerald-400 text-white'
+                                        : 'bg-slate-800 border-slate-600 hover:border-emerald-500 text-transparent'
+                                    }`}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
+                                  </button>
+                                  <div className="space-y-1 flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span
+                                        className={`text-xs font-black ${
+                                          isDone ? 'line-through text-slate-500' : 'text-white'
+                                        }`}
+                                      >
+                                        {t.title}
+                                      </span>
+                                      <span
+                                        className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold border ${
+                                          t.priority === 'urgent'
+                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                            : t.priority === 'high'
+                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                            : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                        }`}
+                                      >
+                                        {t.priority === 'urgent'
+                                          ? 'عاجل'
+                                          : t.priority === 'high'
+                                          ? 'مرتفع'
+                                          : 'عادي'}
+                                      </span>
+                                    </div>
+                                    {t.description && (
+                                      <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                                        {t.description}
+                                      </p>
+                                    )}
+
+                                    {/* Attachments for this task */}
+                                    {t.attachments && t.attachments.length > 0 && (
+                                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                        {t.attachments.map((att) => (
+                                          <button
+                                            key={att.id}
+                                            type="button"
+                                            onClick={() =>
+                                              taskAttachmentService.openAttachment(att, (url, title) =>
+                                                setPreviewImage({ url, title })
+                                              )
+                                            }
+                                            className="px-2 py-0.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-500/25 cursor-pointer"
+                                          >
+                                            <Paperclip className="w-3 h-3" />
+                                            <span className="truncate max-w-[120px]">{att.name}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                  <div className="text-[10px] text-slate-400 font-mono text-left" dir="ltr">
+                                    <span>{t.dueDate || '—'}</span> {t.dueTime && <strong>{t.dueTime}</strong>}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {t.whatsapp?.enabled && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSendTaskWhatsAppNow(t)}
+                                        className="p-1 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-900 cursor-pointer"
+                                        title="إرسال المهمة على الواتساب الآن"
+                                      >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEdit(t)}
+                                      className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                                      title="تعديل المهمة"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => onDeleteTask(t.id)}
+                                      className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer"
+                                      title="حذف المهمة"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

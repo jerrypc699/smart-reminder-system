@@ -122,12 +122,21 @@ function checkPrayers() {
   const todayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
   const prayerTimes = new PrayerTimes(CAIRO_COORDS, now, PARAMS);
 
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowPrayerTimes = new PrayerTimes(CAIRO_COORDS, tomorrow, PARAMS);
+  const nightDuration = tomorrowPrayerTimes.fajr.getTime() - prayerTimes.maghrib.getTime();
+  const qiyamDate = new Date(prayerTimes.maghrib.getTime() + Math.round(nightDuration * (2 / 3)));
+  const duhaDate = new Date(prayerTimes.sunrise.getTime() + 20 * 60 * 1000);
+
   const prayers = [
-    { id: 'fajr', name: 'الفجر', date: prayerTimes.fajr },
-    { id: 'dhuhr', name: 'الظهر', date: prayerTimes.dhuhr },
-    { id: 'asr', name: 'العصر', date: prayerTimes.asr },
-    { id: 'maghrib', name: 'المغرب', date: prayerTimes.maghrib },
-    { id: 'isha', name: 'العشاء', date: prayerTimes.isha },
+    { id: 'fajr', name: 'الفجر', date: prayerTimes.fajr, isAzan: true },
+    { id: 'duha', name: 'صلاة الضحى', date: duhaDate, isAzan: false },
+    { id: 'dhuhr', name: 'الظهر', date: prayerTimes.dhuhr, isAzan: true },
+    { id: 'asr', name: 'العصر', date: prayerTimes.asr, isAzan: true },
+    { id: 'maghrib', name: 'المغرب', date: prayerTimes.maghrib, isAzan: true },
+    { id: 'isha', name: 'العشاء', date: prayerTimes.isha, isAzan: true },
+    { id: 'qiyam', name: 'صلاة قيام الليل', date: qiyamDate, isAzan: false },
   ];
 
   const nowMs = now.getTime();
@@ -136,19 +145,34 @@ function checkPrayers() {
     const prayerMs = prayer.date.getTime();
     const diffSeconds = (nowMs - prayerMs) / 1000;
 
-    // 1. Azan Exact Time (within 0 to 60 seconds after prayer starts)
+    // 1. Azan Exact Time (within 0 to 70 seconds after prayer starts)
     const azanKey = `${todayKey}-${prayer.id}-azan`;
     if (diffSeconds >= 0 && diffSeconds <= 70 && !triggeredPrayers.has(azanKey)) {
       triggeredPrayers.add(azanKey);
 
-      log(`حان موعد أذان ${prayer.name} الآن`);
+      log(`حان موعد ${prayer.name} الآن`);
 
-      const azanAudio = path.join(AUDIO_DIR, 'mishary.mp3');
+      const audioFile = prayer.isAzan
+        ? path.join(AUDIO_DIR, 'mishary.mp3')
+        : path.join(AUDIO_DIR, 'takbeerat.mp3');
+
+      const notifTitle = prayer.isAzan
+        ? `حان الآن موعد أذان ${prayer.name} 🕌`
+        : prayer.id === 'duha'
+        ? `حان الآن موعد صلاة الضحى ☀️`
+        : `حان موعد صلاة قيام الليل والتهجد 🌌`;
+
+      const notifMsg = prayer.isAzan
+        ? `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${prayer.name} حسب توقيت القاهرة.`
+        : prayer.id === 'duha'
+        ? `يا دكتور عبد العزيز، حان موعد صلاة الضحى (صلاة الأوابين). ركعتان تجزئان عن صدقة يومك.`
+        : `يا دكتور عبد العزيز، الثلث الأخير من الليل وموعد قيام الليل واستجابة الدعاء.`;
+
       playAudioAndNotify(
-        azanAudio,
-        `حان الآن موعد أذان ${prayer.name} 🕌`,
-        `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${prayer.name} حسب توقيت القاهرة.`,
-        0 // play full azan
+        audioFile,
+        notifTitle,
+        notifMsg,
+        0
       );
 
       // Broadcast Web Push to mobile devices via cloud API
@@ -157,8 +181,8 @@ function checkPrayers() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: `حان الآن موعد أذان ${prayer.name} 🕌`,
-            body: `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${prayer.name} حسب توقيت القاهرة.`,
+            title: notifTitle,
+            body: notifMsg,
             type: 'azan',
             prayerId: prayer.id,
           }),
@@ -166,35 +190,37 @@ function checkPrayers() {
       } catch (err) { }
     }
 
-    // 2. Pre-Azan Alert (5 minutes before prayer, diff is between -310s and -270s)
-    const preAzanKey = `${todayKey}-${prayer.id}-pre`;
-    const secondsUntil = (prayerMs - nowMs) / 1000;
-    if (secondsUntil >= 270 && secondsUntil <= 310 && !triggeredPrayers.has(preAzanKey)) {
-      triggeredPrayers.add(preAzanKey);
+    // 2. Pre-Azan Alert (5 minutes before main prayers)
+    if (prayer.isAzan) {
+      const preAzanKey = `${todayKey}-${prayer.id}-pre`;
+      const secondsUntil = (prayerMs - nowMs) / 1000;
+      if (secondsUntil >= 270 && secondsUntil <= 310 && !triggeredPrayers.has(preAzanKey)) {
+        triggeredPrayers.add(preAzanKey);
 
-      const preAudio = path.join(AUDIO_DIR, 'dr_abdelaziz_pre_azan.mp3');
-      playAudioAndNotify(
-        preAudio,
-        `اقترب موعد صلاة ${prayer.name} ⏳`,
-        `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayer.name}.`,
-        15
-      );
+        const preAudio = path.join(AUDIO_DIR, 'dr_abdelaziz_pre_azan.mp3');
+        playAudioAndNotify(
+          preAudio,
+          `اقترب موعد صلاة ${prayer.name} ⏳`,
+          `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayer.name}.`,
+          15
+        );
 
-      // Broadcast pre-azan notification to mobile
-      try {
-        fetch('https://smart-reminder-system-nu.vercel.app/api/push-broadcast', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: `اقترب موعد صلاة ${prayer.name} ⏳`,
-            body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayer.name}.`,
-            type: 'pre_azan',
-            sound: '/audio/dr_abdelaziz_pre_azan.mp3',
-            prayerId: prayer.id,
-            url: `/?play_pre_azan=true&prayer=${prayer.id}`,
-          }),
-        }).catch(() => { });
-      } catch (err) { }
+        // Broadcast pre-azan notification to mobile
+        try {
+          fetch('https://smart-reminder-system-nu.vercel.app/api/push-broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: `اقترب موعد صلاة ${prayer.name} ⏳`,
+              body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${prayer.name}.`,
+              type: 'pre_azan',
+              sound: '/audio/dr_abdelaziz_pre_azan.mp3',
+              prayerId: prayer.id,
+              url: `/?play_pre_azan=true&prayer=${prayer.id}`,
+            }),
+          }).catch(() => { });
+        } catch (err) { }
+      }
     }
   }
 

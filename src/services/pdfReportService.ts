@@ -125,7 +125,10 @@ function buildTaskRowsHtml(
         <tr style="background: ${rowBg};">
           <td style="padding: 8px 6px; border: 1px solid #e2e8f0; text-align: center; font-weight: 700; color: #475569; font-size: 11px; width: 32px;">${rowNum}</td>
           <td style="padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: top;">
-            <div style="font-weight: 800; color: #0f172a; font-size: 11.5px; margin-bottom: 2px;">${escapeHtml(task.title)}</div>
+            <div style="font-weight: 800; color: #0f172a; font-size: 11.5px; margin-bottom: 2px;">
+              ${escapeHtml(task.title)}
+              ${task.employeeName ? `<span style="display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 6px; background: #dbeafe; color: #1e40af; font-size: 9px; font-weight: 700;">👤 ${escapeHtml(task.employeeName)}</span>` : ''}
+            </div>
             ${task.description ? `<div style="font-size: 10px; color: #475569; line-height: 1.45;">${escapeHtml(task.description)}</div>` : ''}
           </td>
           <td style="padding: 8px 6px; border: 1px solid #e2e8f0; text-align: center; vertical-align: middle; width: 95px;">

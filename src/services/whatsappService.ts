@@ -172,6 +172,63 @@ class WhatsAppService {
     return `https://api.whatsapp.com/send?phone=${phone}&text=${encoded}`;
   }
 
+  /**
+   * Pick contact directly from device phonebook (Native Android Contacts Intent, Web Contact Picker API, or saved contacts)
+   */
+  public async pickContactFromDevice(): Promise<{
+    success: boolean;
+    name?: string;
+    phone?: string;
+    cancelled?: boolean;
+    message?: string;
+  }> {
+    // 1. Android Native Capacitor via VideoAlarm plugin
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      try {
+        const res = await VideoAlarm.pickContact();
+        if (res && res.success && res.phone) {
+          return {
+            success: true,
+            name: res.name || '',
+            phone: res.phone,
+          };
+        }
+        if (res?.cancelled) {
+          return { success: false, cancelled: true, message: 'تم إلغاء الاختيار' };
+        }
+      } catch (err: any) {
+        console.warn('[WhatsAppService] Native pickContact error:', err);
+      }
+    }
+
+    // 2. Web Contact Picker API (Chrome Android / PWA)
+    if (typeof navigator !== 'undefined' && 'contacts' in navigator && 'ContactsManager' in window) {
+      try {
+        const contacts = await (navigator as any).contacts.select(['name', 'tel'], { multiple: false });
+        if (Array.isArray(contacts) && contacts.length > 0) {
+          const c = contacts[0];
+          const name = Array.isArray(c.name) ? c.name[0] : c.name || '';
+          const phone = Array.isArray(c.tel) ? c.tel[0] : c.tel || '';
+          if (phone) {
+            return {
+              success: true,
+              name,
+              phone,
+            };
+          }
+        }
+        return { success: false, cancelled: true, message: 'تم إلغاء الاختيار' };
+      } catch (err: any) {
+        console.warn('[WhatsAppService] Web contacts.select error:', err);
+      }
+    }
+
+    return {
+      success: false,
+      message: 'خاصية سحب جهات الاتصال المباشرة مدعومة على تطبيق الأندرويد ومتصفحات الهواتف الذكية.',
+    };
+  }
+
   public async openWhatsAppChat(rawPhone: string, message: string): Promise<boolean> {
     const phone = normalizeWhatsAppPhone(rawPhone);
     if (!phone) return false;

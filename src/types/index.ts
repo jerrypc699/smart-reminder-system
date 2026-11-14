@@ -17,10 +17,24 @@ export interface TaskAttachment {
 
 export type WhatsAppGatewayProvider = 'none' | 'greenapi' | 'ultramsg' | 'callmebot' | 'meta_cloud' | 'webhook';
 
+export interface Employee {
+  id: string;
+  name: string;
+  role?: string;
+  department?: string;
+  phone?: string;
+  whatsappPhone?: string;
+  email?: string;
+  avatar?: string;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface WhatsAppSavedContact {
   id: string;
   name: string;
   phone: string;
+  employeeId?: string;
 }
 
 export interface WhatsAppGlobalSettings {
@@ -74,6 +88,9 @@ export interface Task {
   snoozeUntil?: string; // ISO string
   lastRemindedAt?: string;
   cloudUrl?: string;
+  // Employee dossier link
+  employeeId?: string;
+  employeeName?: string;
 }
 
 export interface StoredMediaMeta {
@@ -118,7 +135,7 @@ export interface ScheduledMedia {
 // Backward compatibility alias
 export type ScheduledAudio = ScheduledMedia;
 
-export type PrayerId = 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+export type PrayerId = 'fajr' | 'sunrise' | 'duha' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'qiyam';
 
 export interface PrayerInfo {
   id: PrayerId;

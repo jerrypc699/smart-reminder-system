@@ -185,6 +185,7 @@ export class NativeAlarmService {
       if (mediaList && mediaList.length > 0) {
         await this.scheduleMediaItems(mediaList);
       }
+      await this.scheduleDailyHabits();
       return true;
     } catch (err) {
       console.error('[NativeAlarmService] syncAll error:', err);
@@ -663,6 +664,79 @@ export class NativeAlarmService {
   public static async requestExactAlarmPermission(): Promise<void> {
     if (!this.isAndroidNative()) return;
     await VideoAlarm.requestExactAlarmPermission().catch(console.warn);
+  }
+
+  /**
+   * Schedule all Daily System scheduled habits, worship items, and routines (IDs 7000+)
+   */
+  public static async scheduleDailyHabits(): Promise<void> {
+    if (!this.isNative()) return;
+    try {
+      const { dailySystemService } = await import('./dailySystemService');
+      const pending = await LocalNotifications.getPending();
+      const habitNotifs = pending.notifications.filter(n => n.id >= 7000 && n.id < 9000);
+      if (habitNotifs.length > 0) {
+        await LocalNotifications.cancel({
+          notifications: habitNotifs.map(n => ({ id: n.id }))
+        });
+      }
+
+      const now = new Date();
+      const notificationsToSchedule: any[] = [];
+      let notifId = 7000;
+
+      for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + dayOffset);
+        const y = targetDate.getFullYear();
+        const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const d = String(targetDate.getDate()).padStart(2, '0');
+        const dateKey = `${y}-${m}-${d}`;
+
+        const scheduledItems = dailySystemService.getScheduledDailyItems(dateKey);
+        for (const item of scheduledItems) {
+          if (!item.scheduledTime || item.enableVoiceAlert === false) continue;
+          if (dayOffset === 0 && item.isCompleted) continue;
+
+          const [hour, min] = item.scheduledTime.split(':').map(Number);
+          if (isNaN(hour) || isNaN(min)) continue;
+
+          const scheduleDate = new Date(targetDate);
+          scheduleDate.setHours(hour, min, 0, 0);
+
+          if (scheduleDate.getTime() > now.getTime()) {
+            notificationsToSchedule.push({
+              id: notifId++,
+              title: `🌟 نظامي اليومي: ${item.title}`,
+              body: item.voiceMessage || `يا دكتور عبد العزيز: حان موعد ${item.title} الآن.`,
+              schedule: {
+                at: scheduleDate,
+                allowWhileIdle: true
+              },
+              channelId: 'dr_abdelaziz_tasks_v9',
+              sound: 'dr_abdelaziz_task_alert.mp3',
+              actionTypeId: 'HABIT_ACTION',
+              foreground: true,
+              extra: {
+                type: 'habit',
+                habitId: item.id,
+                title: item.title,
+                voiceMessage: item.voiceMessage
+              }
+            });
+          }
+        }
+      }
+
+      if (notificationsToSchedule.length > 0) {
+        await LocalNotifications.schedule({
+          notifications: notificationsToSchedule
+        });
+        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} daily habits alarms`);
+      }
+    } catch (err) {
+      console.warn('[NativeAlarmService] scheduleDailyHabits error:', err);
+    }
   }
 
   /**

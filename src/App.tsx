@@ -385,6 +385,16 @@ export function App() {
   // Track prayers already reminded today to prevent repeated alerts
   const remindedPrayersRef = useRef<Set<string>>(new Set());
   const remindedPrePrayersRef = useRef<Set<string>>(new Set());
+  const remindedDailyHabitsRef = useRef<Map<string, number>>(new Map());
+
+  // Keep native alarms synced when daily system habits/schedules are edited
+  useEffect(() => {
+    NativeAlarmService.scheduleDailyHabits().catch(console.warn);
+    const unsub = dailySystemService.subscribe(() => {
+      NativeAlarmService.scheduleDailyHabits().catch(console.warn);
+    });
+    return unsub;
+  }, []);
 
   // Save settings on change
   useEffect(() => {
@@ -1124,6 +1134,53 @@ export function App() {
               isVideo: item.mediaType === 'video',
               volume: item.volume,
             });
+          }
+        }
+      });
+
+      // 5. Check Scheduled Daily System Habits, Worship Items, and Routines
+      const scheduledHabits = dailySystemService.getScheduledDailyItems(todayDateStr);
+      scheduledHabits.forEach((item) => {
+        if (item.isCompleted) return; // already accomplished today
+
+        if (item.scheduledTime === `${currentHours}:${currentMinutes}`) {
+          const habitDedupeKey = `${todayDateStr}_${item.id}_${item.scheduledTime}`;
+          const lastFired = remindedDailyHabitsRef.current.get(habitDedupeKey) || 0;
+
+          if (now.getTime() - lastFired > 65000) {
+            remindedDailyHabitsRef.current.set(habitDedupeKey, now.getTime());
+
+            // Notification
+            notificationService.showNotification(`🌟 نظامي اليومي: ${item.title}`, {
+              body: item.voiceMessage,
+              tag: `habit-${item.id}`,
+            });
+
+            // Active Alert Modal
+            setActiveAlert({
+              id: `alert-habit-${item.id}-${Date.now()}`,
+              type: 'task',
+              title: `يا دكتور عبد العزيز: ${item.title}`,
+              message: item.voiceMessage,
+              priority: 'high',
+              timestamp: now.toISOString(),
+              audioName: 'تنبيه نظامي مجدول',
+              canSnooze: false,
+            });
+
+            // Audio Alert
+            if (!audioSettings.soundMuted) {
+              audioService.initAudioContext();
+              audioService.playChime('pre_azan', audioSettings.masterVolume);
+              setTimeout(() => {
+                audioService.speakAlert(item.voiceMessage, {
+                  volume: audioSettings.masterVolume,
+                  rate: audioSettings.ttsRate,
+                  pitch: audioSettings.ttsPitch,
+                  voiceURI: audioSettings.ttsVoiceURI,
+                });
+              }, 700);
+            }
           }
         }
       });

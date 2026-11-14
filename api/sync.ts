@@ -220,6 +220,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         mergedScheduledMedia = (existingData.scheduledMedia || []).filter((m: any) => !deletedScheduledIds.includes(m.id));
       }
 
+      // Smart merge dailySystem so days, custom habits, and voice alert settings are preserved across devices
+      let mergedDailySystem = existingData.dailySystem || null;
+      if (body.dailySystem) {
+        if (!mergedDailySystem) {
+          mergedDailySystem = body.dailySystem;
+        } else {
+          mergedDailySystem = {
+            ...mergedDailySystem,
+            ...body.dailySystem,
+            days: {
+              ...(mergedDailySystem.days || {}),
+              ...(body.dailySystem.days || {}),
+            },
+            months: {
+              ...(mergedDailySystem.months || {}),
+              ...(body.dailySystem.months || {}),
+            },
+            settings: {
+              ...(mergedDailySystem.settings || {}),
+              ...(body.dailySystem.settings || {}),
+              customHabits: body.dailySystem.settings?.customHabits ?? mergedDailySystem.settings?.customHabits ?? [],
+              customPrayers: body.dailySystem.settings?.customPrayers ?? mergedDailySystem.settings?.customPrayers ?? [],
+              customAdhkar: body.dailySystem.settings?.customAdhkar ?? mergedDailySystem.settings?.customAdhkar ?? [],
+              builtInSchedules: {
+                ...(mergedDailySystem.settings?.builtInSchedules || {}),
+                ...(body.dailySystem.settings?.builtInSchedules || {}),
+              },
+            },
+          };
+        }
+      }
+
       const payload = {
         ...existingData,
         ...body,
@@ -227,7 +259,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         employees: mergedEmployees.length > 0 ? mergedEmployees : (existingData.employees || SEED_EMPLOYEES),
         scheduledMedia: mergedScheduledMedia,
         mediaLibrary: body.mediaLibrary ?? existingData.mediaLibrary ?? [],
-        dailySystem: body.dailySystem ?? existingData.dailySystem ?? null,
+        dailySystem: mergedDailySystem,
         whatsappSettings: body.whatsappSettings ?? existingData.whatsappSettings ?? null,
         prayerSettings: body.prayerSettings ?? existingData.prayerSettings ?? null,
         audioSettings: body.audioSettings ?? existingData.audioSettings ?? null,

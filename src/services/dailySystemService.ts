@@ -22,6 +22,9 @@ export interface DailyHabitTask {
   t: string; // task title
   d: boolean; // is completed
   sourceTaskId?: string; // linked Work Task ID if auto-imported
+  scheduledTime?: string; // HH:mm format, e.g. "14:30"
+  enableVoiceAlert?: boolean;
+  voiceMessage?: string;
 }
 
 export interface DailyNotes {
@@ -34,6 +37,9 @@ export interface CustomWorshipItem {
   id: string;
   label: string;
   points: number;
+  scheduledTime?: string; // HH:mm format
+  enableVoiceAlert?: boolean;
+  voiceMessage?: string;
 }
 
 export interface CustomHabitDef {
@@ -44,6 +50,28 @@ export interface CustomHabitDef {
   step: number;
   unit: string;
   points: number;
+  scheduledTime?: string; // HH:mm format
+  enableVoiceAlert?: boolean;
+  voiceMessage?: string;
+  reminderMinutesBefore?: number;
+}
+
+export interface BuiltInItemSchedule {
+  scheduledTime?: string; // HH:mm format
+  enableVoiceAlert?: boolean;
+  voiceMessage?: string;
+}
+
+export interface ScheduledDailyItem {
+  id: string;
+  type: 'habit' | 'prayer' | 'adhkar' | 'task' | 'builtin';
+  title: string;
+  scheduledTime: string; // "HH:mm" (24h)
+  enableVoiceAlert: boolean;
+  voiceMessage: string;
+  isCompleted: boolean;
+  sourceId?: string;
+  points?: number;
 }
 
 export interface CustomNotePrompt {
@@ -83,6 +111,7 @@ export interface DailySettings {
   customAdhkar?: CustomWorshipItem[];
   customHabits?: CustomHabitDef[];
   customNotePrompts?: CustomNotePrompt[];
+  builtInSchedules?: Record<string, BuiltInItemSchedule>;
 }
 
 export interface MonthlyReview {
@@ -136,6 +165,7 @@ export const DEFAULT_DAILY_SETTINGS: DailySettings = {
   customAdhkar: [],
   customHabits: [],
   customNotePrompts: [],
+  builtInSchedules: {},
 };
 
 export const STORAGE_KEY = 'dr_abdelaziz_daily_system_v1';
@@ -189,6 +219,9 @@ export function normalizeDayRecord(raw: any, date: string): DailyRecord {
         t: typeof item?.t === 'string' ? item.t : '',
         d: Boolean(item?.d),
         sourceTaskId: item?.sourceTaskId,
+        scheduledTime: typeof item?.scheduledTime === 'string' ? item.scheduledTime : undefined,
+        enableVoiceAlert: item?.enableVoiceAlert !== undefined ? Boolean(item.enableVoiceAlert) : undefined,
+        voiceMessage: typeof item?.voiceMessage === 'string' ? item.voiceMessage : undefined,
       }))
     : [];
 
@@ -684,6 +717,7 @@ class DailySystemService {
       customAdhkar: [...(this.settings.customAdhkar || [])],
       customHabits: [...(this.settings.customHabits || [])],
       customNotePrompts: [...(this.settings.customNotePrompts || [])],
+      builtInSchedules: { ...(this.settings.builtInSchedules || {}) },
     };
   }
 
@@ -709,14 +743,27 @@ class DailySystemService {
     this.updateSettings({ hiddenBuiltIns: [] });
   }
 
-  public addCustomPrayer(label: string, points = 3) {
+  public addCustomPrayer(
+    label: string,
+    points = 3,
+    options?: { scheduledTime?: string; enableVoiceAlert?: boolean; voiceMessage?: string }
+  ) {
     const item: CustomWorshipItem = {
       id: `cp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       label: label.trim(),
       points,
+      scheduledTime: options?.scheduledTime,
+      enableVoiceAlert: options?.enableVoiceAlert,
+      voiceMessage: options?.voiceMessage,
     };
     this.updateSettings({
       customPrayers: [...(this.settings.customPrayers || []), item],
+    });
+  }
+
+  public updateCustomPrayer(id: string, updates: Partial<CustomWorshipItem>) {
+    this.updateSettings({
+      customPrayers: (this.settings.customPrayers || []).map((cp) => (cp.id === id ? { ...cp, ...updates } : cp)),
     });
   }
 
@@ -726,14 +773,27 @@ class DailySystemService {
     });
   }
 
-  public addCustomAdhkar(label: string, points = 2) {
+  public addCustomAdhkar(
+    label: string,
+    points = 2,
+    options?: { scheduledTime?: string; enableVoiceAlert?: boolean; voiceMessage?: string }
+  ) {
     const item: CustomWorshipItem = {
       id: `ca_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       label: label.trim(),
       points,
+      scheduledTime: options?.scheduledTime,
+      enableVoiceAlert: options?.enableVoiceAlert,
+      voiceMessage: options?.voiceMessage,
     };
     this.updateSettings({
       customAdhkar: [...(this.settings.customAdhkar || []), item],
+    });
+  }
+
+  public updateCustomAdhkar(id: string, updates: Partial<CustomWorshipItem>) {
+    this.updateSettings({
+      customAdhkar: (this.settings.customAdhkar || []).map((ca) => (ca.id === id ? { ...ca, ...updates } : ca)),
     });
   }
 
@@ -753,10 +813,162 @@ class DailySystemService {
     });
   }
 
+  public updateCustomHabit(id: string, updates: Partial<CustomHabitDef>) {
+    this.updateSettings({
+      customHabits: (this.settings.customHabits || []).map((h) => (h.id === id ? { ...h, ...updates } : h)),
+    });
+  }
+
   public removeCustomHabit(id: string) {
     this.updateSettings({
       customHabits: (this.settings.customHabits || []).filter((h) => h.id !== id),
     });
+  }
+
+  public setBuiltInSchedule(itemKey: string, schedule: BuiltInItemSchedule | null) {
+    const current = { ...(this.settings.builtInSchedules || {}) };
+    if (!schedule || (!schedule.scheduledTime && !schedule.voiceMessage)) {
+      delete current[itemKey];
+    } else {
+      current[itemKey] = schedule;
+    }
+    this.updateSettings({ builtInSchedules: current });
+  }
+
+  public getBuiltInSchedule(itemKey: string): BuiltInItemSchedule | undefined {
+    return (this.settings.builtInSchedules || {})[itemKey];
+  }
+
+  public getScheduledDailyItems(dateKey?: string): ScheduledDailyItem[] {
+    const targetDateKey = dateKey || formatDateKey(new Date());
+    const day = this.getDay(targetDateKey);
+    const items: ScheduledDailyItem[] = [];
+
+    // 1. Custom Habits
+    (this.settings.customHabits || []).forEach((h) => {
+      if (h.scheduledTime && h.enableVoiceAlert !== false) {
+        const val = (day.customValues || {})[h.id] || 0;
+        const isCompleted = h.kind === 'toggle' ? val > 0 : val >= (h.target || 1);
+        const voiceMessage =
+          h.voiceMessage?.trim() || `يا دكتور عبد العزيز، حان الآن وقت ممارسة عادة ${h.label}.`;
+        items.push({
+          id: h.id,
+          type: 'habit',
+          title: h.label,
+          scheduledTime: h.scheduledTime,
+          enableVoiceAlert: true,
+          voiceMessage,
+          isCompleted,
+          sourceId: h.id,
+          points: h.points,
+        });
+      }
+    });
+
+    // 2. Custom Prayers
+    (this.settings.customPrayers || []).forEach((cp) => {
+      if (cp.scheduledTime && cp.enableVoiceAlert !== false) {
+        const isCompleted = (day.prayers?.[cp.id] || 0) > 0;
+        const voiceMessage =
+          cp.voiceMessage?.trim() || `يا دكتور عبد العزيز، حان الآن موعد ${cp.label}. تقبل الله طاعتكم.`;
+        items.push({
+          id: cp.id,
+          type: 'prayer',
+          title: cp.label,
+          scheduledTime: cp.scheduledTime,
+          enableVoiceAlert: true,
+          voiceMessage,
+          isCompleted,
+          sourceId: cp.id,
+          points: cp.points,
+        });
+      }
+    });
+
+    // 3. Custom Adhkar
+    (this.settings.customAdhkar || []).forEach((ca) => {
+      if (ca.scheduledTime && ca.enableVoiceAlert !== false) {
+        const isCompleted = Boolean(day.adhkar?.[ca.id]);
+        const voiceMessage =
+          ca.voiceMessage?.trim() || `يا دكتور عبد العزيز، حان الآن وقت ذكر ${ca.label}.`;
+        items.push({
+          id: ca.id,
+          type: 'adhkar',
+          title: ca.label,
+          scheduledTime: ca.scheduledTime,
+          enableVoiceAlert: true,
+          voiceMessage,
+          isCompleted,
+          sourceId: ca.id,
+          points: ca.points,
+        });
+      }
+    });
+
+    // 4. Built-in Items with Schedules
+    const builtInLabels: Record<string, string> = {
+      item_quran: 'ورد القرآن الكريم',
+      item_sport: 'الرياضة والحركة',
+      item_study: 'التعلّم والمذاكرة',
+      item_sleep: 'موعد النوم والراحة',
+      item_water: 'شرب الماء والترطيب',
+      item_food: 'تناول الغذاء الصحي',
+      adhkar_sabah: 'أذكار الصباح',
+      adhkar_masaa: 'أذكار المساء',
+      adhkar_nawm: 'أذكار النوم',
+      adhkar_dua: 'ورد الدعاء',
+    };
+
+    const schedules = this.settings.builtInSchedules || {};
+    Object.entries(schedules).forEach(([itemKey, sched]) => {
+      if (sched && sched.scheduledTime && sched.enableVoiceAlert !== false) {
+        let isCompleted = false;
+        if (itemKey === 'item_quran') isCompleted = day.quran >= (this.settings.quran || 1);
+        else if (itemKey === 'item_sport') isCompleted = day.sport >= (this.settings.sport || 1);
+        else if (itemKey === 'item_study') isCompleted = day.study >= (this.settings.study || 1);
+        else if (itemKey === 'item_sleep') isCompleted = day.sleep > 0;
+        else if (itemKey === 'item_water') isCompleted = day.water >= (this.settings.water || 1);
+        else if (itemKey === 'item_food') isCompleted = Boolean(day.food);
+        else if (itemKey === 'adhkar_sabah') isCompleted = Boolean(day.adhkar?.sabah);
+        else if (itemKey === 'adhkar_masaa') isCompleted = Boolean(day.adhkar?.masaa);
+        else if (itemKey === 'adhkar_nawm') isCompleted = Boolean(day.adhkar?.nawm);
+        else if (itemKey === 'adhkar_dua') isCompleted = Boolean(day.adhkar?.dua);
+
+        const title = builtInLabels[itemKey] || itemKey;
+        const voiceMessage = sched.voiceMessage?.trim() || `يا دكتور عبد العزيز، حان الآن موعد ${title}.`;
+        items.push({
+          id: `builtin_${itemKey}`,
+          type: 'builtin',
+          title,
+          scheduledTime: sched.scheduledTime,
+          enableVoiceAlert: true,
+          voiceMessage,
+          isCompleted,
+          sourceId: itemKey,
+        });
+      }
+    });
+
+    // 5. Daily Tasks
+    (day.tasks || []).forEach((t, idx) => {
+      if (t.scheduledTime && t.enableVoiceAlert !== false) {
+        const isCompleted = Boolean(t.d);
+        const voiceMessage =
+          t.voiceMessage?.trim() || `يا دكتور عبد العزيز، حان الآن موعد تنفيذ مهمة ${t.t}.`;
+        items.push({
+          id: t.id || `task_${targetDateKey}_${idx}`,
+          type: 'task',
+          title: t.t,
+          scheduledTime: t.scheduledTime,
+          enableVoiceAlert: true,
+          voiceMessage,
+          isCompleted,
+          sourceId: t.id,
+        });
+      }
+    });
+
+    return items;
   }
 
   public addCustomNotePrompt(label: string, placeholder?: string) {
@@ -892,7 +1104,15 @@ class DailySystemService {
       changed = true;
     }
     if (cloudData.settings) {
-      this.settings = { ...DEFAULT_DAILY_SETTINGS, ...this.settings, ...cloudData.settings };
+      this.settings = {
+        ...DEFAULT_DAILY_SETTINGS,
+        ...this.settings,
+        ...cloudData.settings,
+        builtInSchedules: {
+          ...(this.settings.builtInSchedules || {}),
+          ...(cloudData.settings.builtInSchedules || {}),
+        },
+      };
       changed = true;
     }
 

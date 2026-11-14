@@ -31,7 +31,11 @@ import {
   Trash2,
   Edit3,
   Zap,
-  X
+  X,
+  Clock,
+  Volume2,
+  Bell,
+  Settings2,
 } from 'lucide-react';
 import { Task } from '../types';
 import {
@@ -119,6 +123,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [quickDailyTaskTitle, setQuickDailyTaskTitle] = useState<string>('');
   const [addModalKind, setAddModalKind] = useState<null | 'habit' | 'prayer' | 'adhkar' | 'note' | 'task'>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [newScheduledTime, setNewScheduledTime] = useState<string>('');
+  const [newEnableVoiceAlert, setNewEnableVoiceAlert] = useState<boolean>(true);
+  const [newVoiceMessage, setNewVoiceMessage] = useState<string>('');
+  const [builtInScheduleModal, setBuiltInScheduleModal] = useState<{ key: string; label: string } | null>(null);
   const [newItemLabel, setNewItemLabel] = useState('');
   const [newItemPoints, setNewItemPoints] = useState(5);
   const [newHabitKind, setNewHabitKind] = useState<'toggle' | 'counter'>('toggle');
@@ -174,13 +183,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   const scoreResult = calculateScore(dayRecord, settings);
   const minDayAchieved = isMinDay(dayRecord, settings);
 
-  const handleAddDailyTask = (titleText: string) => {
+  const handleAddDailyTask = (
+    titleText: string,
+    scheduledTime?: string,
+    enableVoiceAlert?: boolean,
+    voiceMessage?: string
+  ) => {
     const trimmed = titleText.trim();
     if (!trimmed) return;
     const newTask = {
       id: `dt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       t: trimmed,
       d: false,
+      scheduledTime: scheduledTime?.trim() || undefined,
+      enableVoiceAlert: Boolean(scheduledTime?.trim()) ? enableVoiceAlert !== false : false,
+      voiceMessage: voiceMessage?.trim() || undefined,
     };
     updateCurrentDay({ tasks: [...dayRecord.tasks, newTask] });
     setQuickDailyTaskTitle('');
@@ -198,6 +215,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   };
 
   const handleOpenAddModal = (kind: 'habit' | 'prayer' | 'adhkar' | 'note' | 'task') => {
+    setEditingItemId(null);
     setAddModalKind(kind);
     setNewItemLabel('');
     setNewItemPoints(kind === 'adhkar' ? 2 : kind === 'prayer' ? 3 : 5);
@@ -205,6 +223,78 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     setNewHabitTarget(1);
     setNewHabitStep(1);
     setNewHabitUnit('مرة');
+    setNewScheduledTime('');
+    setNewEnableVoiceAlert(true);
+    setNewVoiceMessage('');
+  };
+
+  const handleOpenEditHabit = (h: any) => {
+    setEditingItemId(h.id);
+    setAddModalKind('habit');
+    setNewItemLabel(h.label);
+    setNewItemPoints(h.points || 5);
+    setNewHabitKind(h.kind || 'toggle');
+    setNewHabitTarget(h.target || 1);
+    setNewHabitStep(h.step || 1);
+    setNewHabitUnit(h.unit || 'مرة');
+    setNewScheduledTime(h.scheduledTime || '');
+    setNewEnableVoiceAlert(h.enableVoiceAlert !== false);
+    setNewVoiceMessage(h.voiceMessage || '');
+  };
+
+  const handleOpenEditPrayer = (cp: any) => {
+    setEditingItemId(cp.id);
+    setAddModalKind('prayer');
+    setNewItemLabel(cp.label);
+    setNewItemPoints(cp.points || 3);
+    setNewScheduledTime(cp.scheduledTime || '');
+    setNewEnableVoiceAlert(cp.enableVoiceAlert !== false);
+    setNewVoiceMessage(cp.voiceMessage || '');
+  };
+
+  const handleOpenEditAdhkar = (ca: any) => {
+    setEditingItemId(ca.id);
+    setAddModalKind('adhkar');
+    setNewItemLabel(ca.label);
+    setNewItemPoints(ca.points || 2);
+    setNewScheduledTime(ca.scheduledTime || '');
+    setNewEnableVoiceAlert(ca.enableVoiceAlert !== false);
+    setNewVoiceMessage(ca.voiceMessage || '');
+  };
+
+  const handleOpenBuiltInSchedule = (key: string, label: string) => {
+    const sched = dailySystemService.getBuiltInSchedule(key);
+    setBuiltInScheduleModal({ key, label });
+    setNewScheduledTime(sched?.scheduledTime || '');
+    setNewEnableVoiceAlert(sched?.enableVoiceAlert !== false);
+    setNewVoiceMessage(sched?.voiceMessage || `يا دكتور عبد العزيز، حان الآن موعد ${label}.`);
+  };
+
+  const handleSaveBuiltInSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!builtInScheduleModal) return;
+    const timeVal = newScheduledTime.trim();
+    if (!timeVal) {
+      dailySystemService.setBuiltInSchedule(builtInScheduleModal.key, null);
+      showToast(`تم إلغاء التنبيه الصوتي لـ ${builtInScheduleModal.label}`);
+    } else {
+      dailySystemService.setBuiltInSchedule(builtInScheduleModal.key, {
+        scheduledTime: timeVal,
+        enableVoiceAlert: newEnableVoiceAlert,
+        voiceMessage: newVoiceMessage.trim() || `يا دكتور عبد العزيز، حان الآن موعد ${builtInScheduleModal.label}.`,
+      });
+      showToast(`✓ تم ضبط توقيت وتنبيه صوتي لـ ${builtInScheduleModal.label} عند ${timeVal}`);
+    }
+    setBuiltInScheduleModal(null);
+  };
+
+  const handlePreviewVoice = (messageText: string) => {
+    const text = messageText.trim() || `يا دكتور عبد العزيز، حان الآن موعد ${newItemLabel || 'البند'}.`;
+    audioService.initAudioContext();
+    audioService.playChime('pre_azan', 0.4);
+    setTimeout(() => {
+      audioService.speakAlert(text, { volume: 1.0 });
+    }, 600);
   };
 
   const handleSaveCustomItem = (e: React.FormEvent) => {
@@ -212,30 +302,80 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     const label = newItemLabel.trim();
     if (!label || !addModalKind) return;
 
-    if (addModalKind === 'task') {
-      handleAddDailyTask(label);
-    } else if (addModalKind === 'prayer') {
-      dailySystemService.addCustomPrayer(label, Math.max(1, newItemPoints));
-      showToast(`تمت إضافة "${label}" إلى قسم الصلاة ✓`);
-    } else if (addModalKind === 'adhkar') {
-      dailySystemService.addCustomAdhkar(label, Math.max(1, newItemPoints));
-      showToast(`تمت إضافة "${label}" إلى الأذكار ✓`);
-    } else if (addModalKind === 'note') {
-      dailySystemService.addCustomNotePrompt(label, 'اكتب ملاحظاتك هنا...');
-      showToast(`تمت إضافة سؤال المراجعة "${label}" ✓`);
-    } else if (addModalKind === 'habit') {
-      dailySystemService.addCustomHabit({
-        label,
-        kind: newHabitKind,
-        target: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitTarget),
-        step: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitStep),
-        unit: newHabitKind === 'toggle' ? '' : newHabitUnit.trim() || 'مرة',
-        points: Math.max(1, newItemPoints),
-      });
-      showToast(`تمت إضافة العادة "${label}" بنجاح ✓`);
+    const timeValue = newScheduledTime.trim() || undefined;
+    const voiceMsgValue = newVoiceMessage.trim() || undefined;
+
+    if (editingItemId) {
+      if (addModalKind === 'habit') {
+        dailySystemService.updateCustomHabit(editingItemId, {
+          label,
+          points: Math.max(1, newItemPoints),
+          kind: newHabitKind,
+          target: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitTarget),
+          step: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitStep),
+          unit: newHabitKind === 'toggle' ? '' : newHabitUnit.trim() || 'مرة',
+          scheduledTime: timeValue,
+          enableVoiceAlert: Boolean(timeValue) ? newEnableVoiceAlert : false,
+          voiceMessage: voiceMsgValue,
+        });
+        showToast(`✓ تم تحديث عادة "${label}"`);
+      } else if (addModalKind === 'prayer') {
+        dailySystemService.updateCustomPrayer(editingItemId, {
+          label,
+          points: Math.max(1, newItemPoints),
+          scheduledTime: timeValue,
+          enableVoiceAlert: Boolean(timeValue) ? newEnableVoiceAlert : false,
+          voiceMessage: voiceMsgValue,
+        });
+        showToast(`✓ تم تحديث عبادة "${label}"`);
+      } else if (addModalKind === 'adhkar') {
+        dailySystemService.updateCustomAdhkar(editingItemId, {
+          label,
+          points: Math.max(1, newItemPoints),
+          scheduledTime: timeValue,
+          enableVoiceAlert: Boolean(timeValue) ? newEnableVoiceAlert : false,
+          voiceMessage: voiceMsgValue,
+        });
+        showToast(`✓ تم تحديث ذكر "${label}"`);
+      }
+    } else {
+      if (addModalKind === 'task') {
+        handleAddDailyTask(label, timeValue, newEnableVoiceAlert, voiceMsgValue);
+      } else if (addModalKind === 'prayer') {
+        dailySystemService.addCustomPrayer(label, Math.max(1, newItemPoints), {
+          scheduledTime: timeValue,
+          enableVoiceAlert: Boolean(timeValue) ? newEnableVoiceAlert : false,
+          voiceMessage: voiceMsgValue,
+        });
+        showToast(`تمت إضافة "${label}" مع التنبيه الصوتي ✓`);
+      } else if (addModalKind === 'adhkar') {
+        dailySystemService.addCustomAdhkar(label, Math.max(1, newItemPoints), {
+          scheduledTime: timeValue,
+          enableVoiceAlert: Boolean(timeValue) ? newEnableVoiceAlert : false,
+          voiceMessage: voiceMsgValue,
+        });
+        showToast(`تمت إضافة "${label}" مع التنبيه الصوتي ✓`);
+      } else if (addModalKind === 'note') {
+        dailySystemService.addCustomNotePrompt(label, 'اكتب ملاحظاتك هنا...');
+        showToast(`تمت إضافة سؤال المراجعة "${label}" ✓`);
+      } else if (addModalKind === 'habit') {
+        dailySystemService.addCustomHabit({
+          label,
+          kind: newHabitKind,
+          target: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitTarget),
+          step: newHabitKind === 'toggle' ? 1 : Math.max(1, newHabitStep),
+          unit: newHabitKind === 'toggle' ? '' : newHabitUnit.trim() || 'مرة',
+          points: Math.max(1, newItemPoints),
+          scheduledTime: timeValue,
+          enableVoiceAlert: Boolean(timeValue) ? newEnableVoiceAlert : false,
+          voiceMessage: voiceMsgValue,
+        });
+        showToast(`تمت إضافة العادة "${label}" مع التنبيه الصوتي ✓`);
+      }
     }
 
     setAddModalKind(null);
+    setEditingItemId(null);
     setNewItemLabel('');
   };
 
@@ -787,7 +927,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     const status = dayRecord.prayers[cp.id] || 0;
                     const isDone = status === 2;
                     return (
-                      <div key={cp.id} className="relative">
+                      <div key={cp.id} className="relative group">
                         <button
                           type="button"
                           onClick={() => {
@@ -801,20 +941,49 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             }`}
                         >
                           <span className="font-bold text-xs sm:text-sm truncate max-w-full">{cp.label}</span>
-                          <small className="text-[10px] mt-1 font-semibold opacity-90">
+                          <small className="text-[10px] mt-0.5 font-semibold opacity-90">
                             {isDone ? `تم (${cp.points}ن) ✓` : `مضاف (${cp.points}ن)`}
                           </small>
+                          {cp.scheduledTime && (
+                            <span className="mt-1 text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-200 border border-teal-500/40 font-mono font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{cp.scheduledTime}</span>
+                              {cp.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.removeCustomPrayer(cp.id)}
-                          className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer ${
-                            isEditMode ? 'opacity-100' : 'opacity-75 hover:opacity-100'
-                          }`}
-                          title="حذف هذه العبادة"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        <div className="absolute -top-1.5 -left-1.5 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditPrayer(cp)}
+                            className="w-5 h-5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center shadow cursor-pointer"
+                            title="تعديل العبادة والموعد"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" />
+                          </button>
+                          {cp.scheduledTime && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePreviewVoice(
+                                  cp.voiceMessage || `يا دكتور عبد العزيز، حان الآن موعد ${cp.label}. تقبل الله طاعتكم.`
+                                )
+                              }
+                              className="w-5 h-5 rounded-full bg-purple-700 hover:bg-purple-600 text-white flex items-center justify-center shadow cursor-pointer text-[10px]"
+                              title="تجربة الصوت"
+                            >
+                              🔊
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.removeCustomPrayer(cp.id)}
+                            className="w-5 h-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow cursor-pointer"
+                            title="حذف هذه العبادة"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -870,8 +1039,9 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {ADHKAR_LIST.filter(([k]) => !hiddenSet.has(`adhkar_${k}`)).map(([k, label, pts]) => {
                     const active = !!dayRecord.adhkar[k];
+                    const sched = (settings.builtInSchedules || {})[`adhkar_${k}`];
                     return (
-                      <div key={k} className="relative">
+                      <div key={k} className="relative group">
                         <button
                           type="button"
                           onClick={() => {
@@ -879,25 +1049,58 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             updateCurrentDay({ adhkar: updated });
                             if (!active) audioService.playChime('click', 0.3);
                           }}
-                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${active
+                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer border ${active
                               ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
                               : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
                             }`}
                         >
-                          <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
-                          <span className="truncate">{label}</span>
-                          <span className="text-[10px] opacity-75 font-mono">({pts}ن)</span>
+                          <div className="flex items-center gap-1.5 w-full">
+                            <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                            <span className="truncate flex-1 text-right">{label}</span>
+                            <span className="text-[10px] opacity-75 font-mono">({pts}ن)</span>
+                          </div>
+                          {sched?.scheduledTime && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-200 border border-teal-500/40 font-mono font-bold flex items-center gap-1 self-start">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{sched.scheduledTime}</span>
+                              {sched.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
                         </button>
-                        {isEditMode && (
+                        <div className="absolute -top-1.5 -left-1.5 flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => dailySystemService.hideBuiltInItem(`adhkar_${k}`)}
-                            className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
-                            title={`حذف ${label}`}
+                            onClick={() => handleOpenBuiltInSchedule(`adhkar_${k}`, label)}
+                            className="w-5 h-5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center shadow cursor-pointer"
+                            title="ضبط موعد وتنبيه صوتي"
                           >
-                            <X className="w-3 h-3" />
+                            <Clock className="w-2.5 h-2.5" />
                           </button>
-                        )}
+                          {sched?.scheduledTime && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePreviewVoice(
+                                  sched.voiceMessage || `يا دكتور عبد العزيز، حان الآن موعد ${label}.`
+                                )
+                              }
+                              className="w-5 h-5 rounded-full bg-purple-700 hover:bg-purple-600 text-white flex items-center justify-center shadow cursor-pointer text-[10px]"
+                              title="تجربة الصوت"
+                            >
+                              🔊
+                            </button>
+                          )}
+                          {isEditMode && (
+                            <button
+                              type="button"
+                              onClick={() => dailySystemService.hideBuiltInItem(`adhkar_${k}`)}
+                              className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
+                              title={`حذف ${label}`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -905,7 +1108,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   {(settings.customAdhkar || []).map((ca) => {
                     const active = !!dayRecord.adhkar[ca.id];
                     return (
-                      <div key={ca.id} className="relative">
+                      <div key={ca.id} className="relative group">
                         <button
                           type="button"
                           onClick={() => {
@@ -913,23 +1116,56 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             updateCurrentDay({ adhkar: updated });
                             if (!active) audioService.playChime('click', 0.3);
                           }}
-                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${active
+                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer border ${active
                               ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
                               : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
                             }`}
                         >
-                          <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
-                          <span className="truncate">{ca.label}</span>
-                          <span className="text-[10px] opacity-75 font-mono">({ca.points}ن)</span>
+                          <div className="flex items-center gap-1.5 w-full">
+                            <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                            <span className="truncate flex-1 text-right">{ca.label}</span>
+                            <span className="text-[10px] opacity-75 font-mono">({ca.points}ن)</span>
+                          </div>
+                          {ca.scheduledTime && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-200 border border-teal-500/40 font-mono font-bold flex items-center gap-1 self-start">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{ca.scheduledTime}</span>
+                              {ca.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.removeCustomAdhkar(ca.id)}
-                          className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow cursor-pointer"
-                          title="حذف هذا الذكر"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        <div className="absolute -top-1.5 -left-1.5 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditAdhkar(ca)}
+                            className="w-5 h-5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center shadow cursor-pointer"
+                            title="تعديل الذكر والموعد"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" />
+                          </button>
+                          {ca.scheduledTime && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePreviewVoice(
+                                  ca.voiceMessage || `يا دكتور عبد العزيز، حان الآن وقت ذكر ${ca.label}.`
+                                )
+                              }
+                              className="w-5 h-5 rounded-full bg-purple-700 hover:bg-purple-600 text-white flex items-center justify-center shadow cursor-pointer text-[10px]"
+                              title="تجربة الصوت"
+                            >
+                              🔊
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.removeCustomAdhkar(ca.id)}
+                            className="w-5 h-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow cursor-pointer"
+                            title="حذف هذا الذكر"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -969,12 +1205,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <BookOpen className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">ورد القرآن</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white block">ورد القرآن</span>
+                          {settings.builtInSchedules?.item_quran?.scheduledTime && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{settings.builtInSchedules.item_quran.scheduledTime}</span>
+                              {settings.builtInSchedules.item_quran.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400">الهدف: {settings.quran} صفحات (10ن)</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => handleStep('quran', -1, 1)}
@@ -982,7 +1227,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         -
                       </button>
-                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
                         {dayRecord.quran} ص
                       </span>
                       <button
@@ -992,6 +1237,33 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         +
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBuiltInSchedule('item_quran', 'ورد القرآن')}
+                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                          settings.builtInSchedules?.item_quran?.scheduledTime
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                        }`}
+                        title="ضبط موعد وتنبيه صوتي"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      {settings.builtInSchedules?.item_quran?.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              settings.builtInSchedules?.item_quran?.voiceMessage ||
+                                'يا دكتور عبد العزيز، حان الآن موعد ورد القرآن الكريم.'
+                            )
+                          }
+                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                          title="تجربة الصوت التنبيهي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isEditMode && (
                         <button
                           type="button"
@@ -1012,12 +1284,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <Activity className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">رياضة وحركة</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white block">رياضة وحركة</span>
+                          {settings.builtInSchedules?.item_sport?.scheduledTime && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{settings.builtInSchedules.item_sport.scheduledTime}</span>
+                              {settings.builtInSchedules.item_sport.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400">الهدف: {settings.sport} دقيقة (10ن)</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => handleStep('sport', -1, 5)}
@@ -1025,7 +1306,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         -
                       </button>
-                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
                         {dayRecord.sport} د
                       </span>
                       <button
@@ -1035,6 +1316,33 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         +
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBuiltInSchedule('item_sport', 'الرياضة والحركة')}
+                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                          settings.builtInSchedules?.item_sport?.scheduledTime
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                        }`}
+                        title="ضبط موعد وتنبيه صوتي"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      {settings.builtInSchedules?.item_sport?.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              settings.builtInSchedules?.item_sport?.voiceMessage ||
+                                'يا دكتور عبد العزيز، حان الآن موعد ممارسة الرياضة والنشاط البدني.'
+                            )
+                          }
+                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                          title="تجربة الصوت التنبيهي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isEditMode && (
                         <button
                           type="button"
@@ -1055,12 +1363,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <GraduationCap className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
+                          {settings.builtInSchedules?.item_study?.scheduledTime && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{settings.builtInSchedules.item_study.scheduledTime}</span>
+                              {settings.builtInSchedules.item_study.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400">الهدف: {settings.study} دقيقة (15ن)</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => handleStep('study', -1, 15)}
@@ -1068,7 +1385,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         -
                       </button>
-                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
                         {dayRecord.study} د
                       </span>
                       <button
@@ -1078,6 +1395,33 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         +
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBuiltInSchedule('item_study', 'التعلّم والمذاكرة')}
+                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                          settings.builtInSchedules?.item_study?.scheduledTime
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                        }`}
+                        title="ضبط موعد وتنبيه صوتي"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      {settings.builtInSchedules?.item_study?.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              settings.builtInSchedules?.item_study?.voiceMessage ||
+                                'يا دكتور عبد العزيز، حان الآن موعد وقت التعلّم والمذاكرة.'
+                            )
+                          }
+                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                          title="تجربة الصوت التنبيهي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isEditMode && (
                         <button
                           type="button"
@@ -1125,12 +1469,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <Moon className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">النوم</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white block">النوم والراحة</span>
+                          {settings.builtInSchedules?.item_sleep?.scheduledTime && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{settings.builtInSchedules.item_sleep.scheduledTime}</span>
+                              {settings.builtInSchedules.item_sleep.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400">الهدف: {settings.sleep} ساعات (4ن)</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => handleStep('sleep', -1, 0.5)}
@@ -1138,7 +1491,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         -
                       </button>
-                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
                         {dayRecord.sleep} س
                       </span>
                       <button
@@ -1148,6 +1501,33 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         +
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBuiltInSchedule('item_sleep', 'موعد النوم والراحة')}
+                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                          settings.builtInSchedules?.item_sleep?.scheduledTime
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                        }`}
+                        title="ضبط موعد وتنبيه صوتي للنوم"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      {settings.builtInSchedules?.item_sleep?.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              settings.builtInSchedules?.item_sleep?.voiceMessage ||
+                                'يا دكتور عبد العزيز، حان الآن موعد النوم والراحة للحفاظ على صحتك ونشاطك.'
+                            )
+                          }
+                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                          title="تجربة الصوت التنبيهي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isEditMode && (
                         <button
                           type="button"
@@ -1168,12 +1548,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <Droplets className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">شرب الماء</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white block">شرب الماء</span>
+                          {settings.builtInSchedules?.item_water?.scheduledTime && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{settings.builtInSchedules.item_water.scheduledTime}</span>
+                              {settings.builtInSchedules.item_water.enableVoiceAlert !== false && <span>🔊</span>}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400">الهدف: {settings.water} أكواب (3ن)</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => handleStep('water', -1, 1)}
@@ -1181,7 +1570,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         -
                       </button>
-                      <span className="min-w-[50px] text-center font-mono font-black text-white text-sm">
+                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
                         {dayRecord.water} كوب
                       </span>
                       <button
@@ -1191,6 +1580,33 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       >
                         +
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBuiltInSchedule('item_water', 'شرب الماء والترطيب')}
+                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                          settings.builtInSchedules?.item_water?.scheduledTime
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                        }`}
+                        title="ضبط موعد وتنبيه صوتي لشرب الماء"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      {settings.builtInSchedules?.item_water?.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              settings.builtInSchedules?.item_water?.voiceMessage ||
+                                'يا دكتور عبد العزيز، تذكير لشرب كوب من الماء للحفاظ على ترطيب ونشاط جسمك.'
+                            )
+                          }
+                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                          title="تجربة الصوت التنبيهي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isEditMode && (
                         <button
                           type="button"
@@ -1313,12 +1729,43 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                                   : 'bg-slate-950/60 text-slate-300 border-slate-800 hover:border-slate-700'
                               }`}
                             >
-                              <span className="text-xs font-bold">{h.label} ({h.points}ن)</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold">{h.label} ({h.points}ن)</span>
+                                {h.scheduledTime && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold flex items-center gap-1">
+                                    <Clock className="w-2.5 h-2.5" />
+                                    <span>{h.scheduledTime}</span>
+                                    {h.enableVoiceAlert !== false && <span>🔊</span>}
+                                  </span>
+                                )}
+                              </div>
                               <div className={`w-6 h-6 rounded-lg border flex items-center justify-center ${
                                 doneToggle ? 'bg-purple-500 border-purple-400 text-white' : 'border-slate-700'
                               }`}>
                                 {doneToggle && <Check className="w-4 h-4" />}
                               </div>
+                            </button>
+                            {h.scheduledTime && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handlePreviewVoice(
+                                    h.voiceMessage || `يا دكتور عبد العزيز، حان الآن وقت ممارسة عادة ${h.label}.`
+                                  )
+                                }
+                                className="p-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 cursor-pointer"
+                                title="تجربة الصوت التنبيهي"
+                              >
+                                <Volume2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditHabit(h)}
+                              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+                              title="تعديل العادة وموعد التنبيه"
+                            >
+                              <Edit3 className="w-4 h-4" />
                             </button>
                             <button
                               type="button"
@@ -1335,12 +1782,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       return (
                         <div key={h.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800 gap-2">
                           <div>
-                            <span className="text-xs font-bold text-white block">{h.label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white block">{h.label}</span>
+                              {h.scheduledTime && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold flex items-center gap-1">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  <span>{h.scheduledTime}</span>
+                                  {h.enableVoiceAlert !== false && <span>🔊</span>}
+                                </span>
+                              )}
+                            </div>
                             <span className="text-[10px] text-slate-400">
                               الهدف: {h.target} {h.unit} ({h.points}ن)
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => {
@@ -1363,6 +1819,28 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                               className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
                             >
                               +
+                            </button>
+                            {h.scheduledTime && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handlePreviewVoice(
+                                    h.voiceMessage || `يا دكتور عبد العزيز، حان الآن وقت ممارسة عادة ${h.label}.`
+                                  )
+                                }
+                                className="p-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 cursor-pointer"
+                                title="تجربة الصوت التنبيهي"
+                              >
+                                <Volume2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditHabit(h)}
+                              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+                              title="تعديل العادة وموعد التنبيه"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
@@ -1516,6 +1994,29 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                           <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold shrink-0">
                             تلقائي
                           </span>
+                        )}
+
+                        {task.scheduledTime && (
+                          <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold shrink-0 flex items-center gap-1 font-mono">
+                            <Clock className="w-2.5 h-2.5" />
+                            <span>{task.scheduledTime}</span>
+                            {task.enableVoiceAlert !== false && <span>🔊</span>}
+                          </span>
+                        )}
+
+                        {task.scheduledTime && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreviewVoice(
+                                task.voiceMessage || `يا دكتور عبد العزيز، حان الآن موعد تنفيذ مهمة ${task.t}.`
+                              )
+                            }
+                            className="p-1 rounded-lg text-amber-400 hover:text-white cursor-pointer"
+                            title="تجربة الصوت التنبيهي"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
 
                         <button
@@ -2246,6 +2747,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <span className="text-[10px] text-slate-400">عدد الصفحات المستهدفة يومياً (ختمة كل شهر = 20 صفحة)</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBuiltInSchedule('item_quran', 'ورد القرآن')}
+                      className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                        settings.builtInSchedules?.item_quran?.scheduledTime
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                      }`}
+                      title="ضبط موعد وتنبيه صوتي"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                    </button>
                     <input
                       type="number"
                       min={1}
@@ -2264,6 +2777,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <span className="text-[10px] text-slate-400">عدد دقائق الرياضة أو المشي اليومية</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBuiltInSchedule('item_sport', 'الرياضة والحركة')}
+                      className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                        settings.builtInSchedules?.item_sport?.scheduledTime
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                      }`}
+                      title="ضبط موعد وتنبيه صوتي"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                    </button>
                     <input
                       type="number"
                       min={5}
@@ -2282,6 +2807,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <span className="text-[10px] text-slate-400">وقت القراءة وتطوير المهارات بالدقائق</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBuiltInSchedule('item_study', 'التعلّم والمذاكرة')}
+                      className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                        settings.builtInSchedules?.item_study?.scheduledTime
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                      }`}
+                      title="ضبط موعد وتنبيه صوتي"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                    </button>
                     <input
                       type="number"
                       min={10}
@@ -2300,6 +2837,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <span className="text-[10px] text-slate-400">الهدف المثالي لساعات النوم ليلاً</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBuiltInSchedule('item_sleep', 'موعد النوم والراحة')}
+                      className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                        settings.builtInSchedules?.item_sleep?.scheduledTime
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                      }`}
+                      title="ضبط موعد وتنبيه صوتي"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                    </button>
                     <input
                       type="number"
                       min={4}
@@ -2319,6 +2868,18 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <span className="text-[10px] text-slate-400">الهدف اليومي لأكواب الماء</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBuiltInSchedule('item_water', 'شرب الماء والترطيب')}
+                      className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                        settings.builtInSchedules?.item_water?.scheduledTime
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                      }`}
+                      title="ضبط موعد وتنبيه صوتي"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                    </button>
                     <input
                       type="number"
                       min={1}
@@ -2546,16 +3107,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Plus className="w-5 h-5" />
+                  {editingItemId ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white">إضافة بند جديد إلى نظامي</h3>
-                  <p className="text-[11px] text-slate-400">خصّص عباداتك، أذكارك، عاداتك، مهامك، وأسئلة المراجعة بحرية</p>
+                  <h3 className="text-sm font-black text-white">
+                    {editingItemId ? 'تعديل وتخصيص البند في نظامي' : 'إضافة بند جديد إلى نظامي'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">خصّص عباداتك، أذكارك، عاداتك، وتوقيتات التنبيه الصوتي بحرية</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setAddModalKind(null)}
+                onClick={() => {
+                  setAddModalKind(null);
+                  setEditingItemId(null);
+                }}
                 className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all"
               >
                 <X className="w-4 h-4" />
@@ -2563,39 +3129,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveCustomItem} className="p-5 space-y-4">
-              {/* Kind Switcher */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-2">نوع البند</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(
-                    [
-                      { k: 'habit', label: 'عادة / هدف مخصص' },
-                      { k: 'prayer', label: 'عبادة / نافلة' },
-                      { k: 'adhkar', label: 'ذكر / دعاء' },
-                      { k: 'task', label: 'مهمة يومية' },
-                      { k: 'note', label: 'سؤال مراجعة' },
-                    ] as const
-                  ).map((opt) => (
-                    <button
-                      key={opt.k}
-                      type="button"
-                      onClick={() => {
-                        setAddModalKind(opt.k);
-                        if (!newItemLabel.trim()) {
-                          setNewItemPoints(opt.k === 'adhkar' ? 2 : opt.k === 'prayer' ? 3 : 5);
-                        }
-                      }}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                        addModalKind === opt.k
-                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm'
-                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+              {/* Kind Switcher (only when adding new) */}
+              {!editingItemId && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-2">نوع البند</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {(
+                      [
+                        { k: 'habit', label: 'عادة / هدف مخصص' },
+                        { k: 'prayer', label: 'عبادة / نافلة' },
+                        { k: 'adhkar', label: 'ذكر / دعاء' },
+                        { k: 'task', label: 'مهمة يومية' },
+                        { k: 'note', label: 'سؤال مراجعة' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.k}
+                        type="button"
+                        onClick={() => {
+                          setAddModalKind(opt.k);
+                          if (!newItemLabel.trim()) {
+                            setNewItemPoints(opt.k === 'adhkar' ? 2 : opt.k === 'prayer' ? 3 : 5);
+                          }
+                        }}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          addModalKind === opt.k
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm'
+                            : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Name Input */}
               <div>
@@ -2716,10 +3284,83 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 </div>
               )}
 
+              {/* Scheduled Time & Voice Alert Section */}
+              {(addModalKind === 'habit' || addModalKind === 'prayer' || addModalKind === 'adhkar' || addModalKind === 'task') && (
+                <div className="space-y-3 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-400" />
+                      <span className="text-xs font-bold text-purple-200">توقيت وتنبيه صوتي مجدول</span>
+                    </div>
+                    <span className="text-[10px] text-purple-300/80 font-medium">اختياري</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        وقت التنبيه اليومي ⏰
+                      </label>
+                      <input
+                        type="time"
+                        value={newScheduledTime}
+                        onChange={(e) => {
+                          setNewScheduledTime(e.target.value);
+                          if (e.target.value && !newVoiceMessage) {
+                            setNewVoiceMessage(`يا دكتور عبد العزيز، حان الآن موعد ${newItemLabel || 'البند'}.`);
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-start gap-3 pt-2 sm:pt-6">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={newEnableVoiceAlert}
+                          onChange={(e) => setNewEnableVoiceAlert(e.target.checked)}
+                          className="w-4 h-4 accent-purple-500 rounded"
+                        />
+                        <span>تفعيل التنبيه الصوتي 🔊</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {newScheduledTime && newEnableVoiceAlert && (
+                    <div className="space-y-2 pt-2 border-t border-purple-500/20">
+                      <label className="block text-[11px] font-bold text-slate-300">
+                        الرسالة الصوتية المخصصة (النطق الآلي)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newVoiceMessage}
+                          onChange={(e) => setNewVoiceMessage(e.target.value)}
+                          placeholder={`يا دكتور عبد العزيز، حان الآن موعد ${newItemLabel || 'البند'}.`}
+                          className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handlePreviewVoice(newVoiceMessage)}
+                          className="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                          title="استمع إلى التنبيه الصوتي الآن"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                          <span>تجربة</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setAddModalKind(null)}
+                  onClick={() => {
+                    setAddModalKind(null);
+                    setEditingItemId(null);
+                  }}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
                 >
                   إلغاء
@@ -2728,8 +3369,125 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-500/20 transition-all"
                 >
-                  حفظ وإضافة إلى نظامي ✓
+                  {editingItemId ? 'حفظ التعديلات ✓' : 'حفظ وإضافة إلى نظامي ✓'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Built-in Item Schedule & Voice Alert Modal */}
+      {builtInScheduleModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setBuiltInScheduleModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">ضبط موعد وتنبيه صوتي مجدول</h3>
+                  <p className="text-[11px] text-slate-400">{builtInScheduleModal.label}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBuiltInScheduleModal(null)}
+                className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBuiltInSchedule} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  وقت التنبيه اليومي ⏰
+                </label>
+                <input
+                  type="time"
+                  value={newScheduledTime}
+                  onChange={(e) => setNewScheduledTime(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm font-mono focus:outline-none focus:border-purple-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  اترك الحقل فارغاً لإلغاء التنبيه الصوتي لهذا البند.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span className="text-xs font-bold text-slate-300">تشغيل تنبيه صوتي بصوت د. عبد العزيز 🔊</span>
+                <input
+                  type="checkbox"
+                  checked={newEnableVoiceAlert}
+                  onChange={(e) => setNewEnableVoiceAlert(e.target.checked)}
+                  className="w-4 h-4 accent-purple-500 rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  الرسالة الصوتية المخصصة
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newVoiceMessage}
+                    onChange={(e) => setNewVoiceMessage(e.target.value)}
+                    placeholder={`يا دكتور عبد العزيز، حان الآن موعد ${builtInScheduleModal.label}.`}
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handlePreviewVoice(newVoiceMessage)}
+                    className="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                    title="استمع إلى التنبيه الصوتي الآن"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>تجربة</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                {dailySystemService.getBuiltInSchedule(builtInScheduleModal.key) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dailySystemService.setBuiltInSchedule(builtInScheduleModal.key, null);
+                      setBuiltInScheduleModal(null);
+                      showToast(`تم إلغاء منبه ${builtInScheduleModal.label}`);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all"
+                  >
+                    إلغاء المنبه
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBuiltInScheduleModal(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
+                  >
+                    إغلاق
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-purple-500/20 transition-all"
+                  >
+                    حفظ التنبيه ✓
+                  </button>
+                </div>
               </div>
             </form>
           </div>

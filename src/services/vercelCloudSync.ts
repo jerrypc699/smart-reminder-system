@@ -13,6 +13,9 @@ export interface CloudSyncPayload {
   dailySystem?: any;
   updatedAt?: string;
   sourceDevice?: string;
+  deletedTaskIds?: string[];
+  deletedEmployeeIds?: string[];
+  deletedScheduledIds?: string[];
   forceWipe?: boolean;
 }
 
@@ -29,9 +32,11 @@ class VercelCloudSyncService {
   private lastKnownUpdate: string = '';
   private lastPayload: CloudSyncPayload | null = null;
   private pollingInterval: any = null;
-  private isSyncing: boolean = false;
+  private isFetching: boolean = false;
+  private isPushing: boolean = false;
   private hasFetchedOnce: boolean = false;
   private listeners: Set<(payload: CloudSyncPayload) => void> = new Set();
+  private pendingPush: Promise<boolean> | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -50,7 +55,7 @@ class VercelCloudSyncService {
   }
 
   public getIsSyncing(): boolean {
-    return this.isSyncing;
+    return this.isFetching || this.isPushing;
   }
 
   public hasSyncedFromCloud(): boolean {
@@ -62,7 +67,7 @@ class VercelCloudSyncService {
   }
 
   /**
-   * Subscribe to ultra-fast real-time cloud updates (polls every 2.5 seconds for instant sync)
+   * Subscribe to ultra-fast real-time cloud updates (polls every 2.0 seconds for instant sync)
    */
   public subscribe(callback: (payload: CloudSyncPayload) => void): () => void {
     this.listeners.add(callback);
@@ -80,12 +85,12 @@ class VercelCloudSyncService {
       // Immediate fetch on mount
       this.fetchFromCloud();
 
-      // Fast 2.5s polling for instant sync between PC & Mobile
+      // Fast 2.0s polling for instant sync between PC & Mobile
       this.pollingInterval = setInterval(() => {
         if (typeof document !== 'undefined' && !document.hidden) {
           this.fetchFromCloud();
         }
-      }, 2500);
+      }, 2000);
     } else {
       this.fetchFromCloud();
     }
@@ -100,19 +105,17 @@ class VercelCloudSyncService {
   }
 
   /**
-   * Fetch current cloud state from Vercel Blob with cache-busting
+   * Fetch current cloud state from Vercel with zero-CORS-preflight clean GET
    */
   public async fetchFromCloud(): Promise<CloudSyncPayload | null> {
-    if (this.isSyncing) return null;
+    if (this.isFetching) return null;
+    this.isFetching = true;
 
     try {
-      const res = await fetch(getApiUrl(`/api/sync?t=${Date.now()}`), {
-        headers: { 
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-      });
+      // Pure GET request with query-param timestamp: Avoids any custom headers to prevent CORS preflight blocks
+      const res = await fetch(getApiUrl(`/api/sync?t=${Date.now()}`));
 
+      this.isFetching = false;
       if (!res.ok) return null;
 
       const data: CloudSyncPayload = await res.json();
@@ -132,12 +135,13 @@ class VercelCloudSyncService {
 
       return data;
     } catch (err) {
+      this.isFetching = false;
       return null;
     }
   }
 
   /**
-   * Push current state to Vercel Blob Cloud
+   * Push current state to Vercel Cloud
    */
   public async pushToCloud(payload: Omit<CloudSyncPayload, 'updatedAt'>): Promise<boolean> {
     // Guard against fresh install blowing away cloud data before first pull
@@ -149,7 +153,7 @@ class VercelCloudSyncService {
       }
     }
 
-    this.isSyncing = true;
+    this.isPushing = true;
     try {
       const res = await fetch(getApiUrl('/api/sync'), {
         method: 'POST',
@@ -162,21 +166,18 @@ class VercelCloudSyncService {
         }),
       });
 
-      if (!res.ok) {
-        this.isSyncing = false;
-        return false;
-      }
+      this.isPushing = false;
+      if (!res.ok) return false;
 
       const result = await res.json();
       if (result.updatedAt) {
         this.lastKnownUpdate = result.updatedAt;
       }
 
-      this.isSyncing = false;
       return true;
     } catch (err) {
       console.warn('Vercel Cloud Push warning:', err);
-      this.isSyncing = false;
+      this.isPushing = false;
       return false;
     }
   }
@@ -215,6 +216,9 @@ class VercelCloudSyncService {
         whatsappSettings,
         prayerSettings: partial?.prayerSettings,
         audioSettings: partial?.audioSettings,
+        deletedTaskIds: partial?.deletedTaskIds,
+        deletedEmployeeIds: partial?.deletedEmployeeIds,
+        deletedScheduledIds: partial?.deletedScheduledIds,
         forceWipe: partial?.forceWipe,
       });
     } catch (err) {
@@ -225,7 +229,6 @@ class VercelCloudSyncService {
 
   /**
    * Upload any file (video, audio, PDF, image, Word, Excel, etc.) to Vercel Blob Cloud Storage.
-   * Uses direct client-to-blob upload with no 4.5MB limit, with serverless fallback.
    */
   public async uploadMediaFile(
     file: File | Blob, 
@@ -293,7 +296,7 @@ class VercelCloudSyncService {
       await this.fetchFromCloud();
     }
 
-    this.isSyncing = true;
+    this.isPushing = true;
     try {
       onStatus?.('جاري فحص البيانات المحلية...');
 
@@ -368,7 +371,7 @@ class VercelCloudSyncService {
         dailySystem: dailySystemService.exportForCloud(),
       });
 
-      this.isSyncing = false;
+      this.isPushing = false;
 
       if (pushed) {
         onStatus?.('تمت المزامنة بنجاح!');
@@ -383,7 +386,7 @@ class VercelCloudSyncService {
         throw new Error('فشل إرسال البيانات إلى السحابة');
       }
     } catch (err: any) {
-      this.isSyncing = false;
+      this.isPushing = false;
       onStatus?.(`خطأ أثناء المزامنة: ${err.message}`);
       return {
         success: false,

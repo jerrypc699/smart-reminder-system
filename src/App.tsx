@@ -1246,7 +1246,7 @@ export function App() {
     setTasks((prev) => {
       const updated = prev.filter((t) => t.id !== taskId);
       taskService.saveTasks(updated);
-      syncCurrentStateToCloud(updated);
+      vercelCloudSync.pushCurrentState({ tasks: updated, deletedTaskIds: [taskId] }).catch(console.warn);
       NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });
@@ -1289,7 +1289,7 @@ export function App() {
           : t
       );
       taskService.saveTasks(updated);
-      syncCurrentStateToCloud(updated);
+      vercelCloudSync.pushCurrentState({ tasks: updated, deletedTaskIds: [taskId] }).catch(console.warn);
       NativeAlarmService.scheduleTasks(updated).catch(console.warn);
       return updated;
     });

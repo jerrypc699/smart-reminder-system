@@ -105,10 +105,45 @@ async function readBlobJson<T = any>(path: string): Promise<T | null> {
   return null;
 }
 
+/**
+ * Merge two lists by item ID so mobile and PC never overwrite each other's tasks
+ */
+function mergeItemsById<T extends { id: string }>(
+  existingList: T[] = [],
+  incomingList: T[] = [],
+  deletedIds: string[] = []
+): T[] {
+  const deletedSet = new Set(deletedIds || []);
+  const map = new Map<string, T>();
+
+  // 1. Load existing items (filtering out any explicitly deleted ones)
+  if (Array.isArray(existingList)) {
+    for (const item of existingList) {
+      if (item && item.id && !deletedSet.has(item.id)) {
+        map.set(item.id, item);
+      }
+    }
+  }
+
+  // 2. Overlay incoming items (updating existing or inserting new)
+  if (Array.isArray(incomingList)) {
+    for (const item of incomingList) {
+      if (item && item.id && !deletedSet.has(item.id)) {
+        const prev = map.get(item.id);
+        map.set(item.id, prev ? { ...prev, ...item } : item);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Global CORS headers allowing all origins, methods, and request headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Expose-Headers', '*');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -122,7 +157,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let data = await readBlobJson<any>(STATE_PATH);
       const forceSeed = req.query.seed === '1' || req.query.seed === 'true';
 
-      // If data is null or empty, seed it with initial rich records
       const needsTasksSeed = forceSeed || !data || !Array.isArray(data.tasks) || data.tasks.length === 0;
       const needsEmployeesSeed = forceSeed || !data || !Array.isArray(data.employees) || data.employees.length === 0;
 
@@ -139,7 +173,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           seeded: true,
         };
 
-        // Persist the seeded state so subsequent calls receive it immediately
         try {
           await put(STATE_PATH, JSON.stringify(data), {
             access: 'public',
@@ -158,39 +191,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rawBody = req.body;
       const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : (rawBody || {});
 
-      // Fetch existing cloud state to prevent accidental wipe from uninitialized clients
+      // Fetch existing cloud state
       const existingData: any = (await readBlobJson<any>(STATE_PATH)) || {};
 
-      // Safeguard against fresh client boot wiping cloud database:
-      // If client sends empty tasks or empty employees, but existingData has items,
-      // and client did not explicitly flag `forceWipe: true`, keep existing items!
-      const shouldKeepExistingTasks =
-        (!body.tasks || body.tasks.length === 0) &&
-        Array.isArray(existingData.tasks) &&
-        existingData.tasks.length > 0 &&
-        !body.forceWipe;
+      const deletedTaskIds: string[] = Array.isArray(body.deletedTaskIds) ? body.deletedTaskIds : [];
+      const deletedEmployeeIds: string[] = Array.isArray(body.deletedEmployeeIds) ? body.deletedEmployeeIds : [];
+      const deletedScheduledIds: string[] = Array.isArray(body.deletedScheduledIds) ? body.deletedScheduledIds : [];
 
-      const shouldKeepExistingEmployees =
-        (!body.employees || body.employees.length === 0) &&
-        Array.isArray(existingData.employees) &&
-        existingData.employees.length > 0 &&
-        !body.forceWipe;
+      // Smart Merge by ID: Merges local tasks with existing cloud tasks so neither mobile nor PC overwrites the other!
+      let mergedTasks = existingData.tasks || [];
+      if (Array.isArray(body.tasks) && body.tasks.length > 0) {
+        mergedTasks = mergeItemsById(existingData.tasks || [], body.tasks, deletedTaskIds);
+      } else if (deletedTaskIds.length > 0) {
+        mergedTasks = (existingData.tasks || []).filter((t: any) => !deletedTaskIds.includes(t.id));
+      }
 
-      const shouldKeepExistingScheduled =
-        (!body.scheduledMedia || body.scheduledMedia.length === 0) &&
-        Array.isArray(existingData.scheduledMedia) &&
-        existingData.scheduledMedia.length > 0 &&
-        !body.forceWipe;
+      let mergedEmployees = existingData.employees || [];
+      if (Array.isArray(body.employees) && body.employees.length > 0) {
+        mergedEmployees = mergeItemsById(existingData.employees || [], body.employees, deletedEmployeeIds);
+      } else if (deletedEmployeeIds.length > 0) {
+        mergedEmployees = (existingData.employees || []).filter((e: any) => !deletedEmployeeIds.includes(e.id));
+      }
 
-      const mergedTasks = shouldKeepExistingTasks ? existingData.tasks : (body.tasks ?? existingData.tasks ?? SEED_TASKS);
-      const mergedEmployees = shouldKeepExistingEmployees ? existingData.employees : (body.employees ?? existingData.employees ?? SEED_EMPLOYEES);
-      const mergedScheduledMedia = shouldKeepExistingScheduled ? existingData.scheduledMedia : (body.scheduledMedia ?? existingData.scheduledMedia ?? []);
+      let mergedScheduledMedia = existingData.scheduledMedia || [];
+      if (Array.isArray(body.scheduledMedia) && body.scheduledMedia.length > 0) {
+        mergedScheduledMedia = mergeItemsById(existingData.scheduledMedia || [], body.scheduledMedia, deletedScheduledIds);
+      } else if (deletedScheduledIds.length > 0) {
+        mergedScheduledMedia = (existingData.scheduledMedia || []).filter((m: any) => !deletedScheduledIds.includes(m.id));
+      }
 
       const payload = {
         ...existingData,
         ...body,
-        tasks: mergedTasks,
-        employees: mergedEmployees,
+        tasks: mergedTasks.length > 0 ? mergedTasks : (existingData.tasks || SEED_TASKS),
+        employees: mergedEmployees.length > 0 ? mergedEmployees : (existingData.employees || SEED_EMPLOYEES),
         scheduledMedia: mergedScheduledMedia,
         mediaLibrary: body.mediaLibrary ?? existingData.mediaLibrary ?? [],
         dailySystem: body.dailySystem ?? existingData.dailySystem ?? null,

@@ -261,7 +261,7 @@ class SupabaseService {
     onScheduledMediaChange?: () => void;
     onSystemStateChange?: (key: string, payload: any) => void;
   }): () => void {
-    if (!this.client) return () => {};
+    if (!this.client) return () => { };
 
     try {
       this.channel = this.client
@@ -314,7 +314,7 @@ class SupabaseService {
       };
     } catch (err) {
       console.warn('Realtime subscription error:', err);
-      return () => {};
+      return () => { };
     }
   }
 

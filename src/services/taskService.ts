@@ -229,6 +229,9 @@ export class TaskService {
   public deleteTask(taskId: string): Task[] {
     const tasks = this.getTasks().filter((t) => t.id !== taskId);
     this.saveTasks(tasks);
+    import('./vercelCloudSync').then(({ vercelCloudSync }) => {
+      vercelCloudSync.pushCurrentState({ tasks, deletedTaskIds: [taskId] }).catch(console.warn);
+    }).catch(console.warn);
     import('./supabaseService').then(({ supabaseService }) => {
       if (supabaseService.isConfigured()) {
         supabaseService.deleteTask(taskId).catch(console.warn);
@@ -347,6 +350,9 @@ export class TaskService {
   public deleteEmployee(id: string): Employee[] {
     const list = this.getEmployees().filter((emp) => emp.id !== id);
     this.saveEmployees(list);
+    import('./vercelCloudSync').then(({ vercelCloudSync }) => {
+      vercelCloudSync.pushCurrentState({ employees: list, deletedEmployeeIds: [id] }).catch(console.warn);
+    }).catch(console.warn);
     import('./supabaseService').then(({ supabaseService }) => {
       if (supabaseService.isConfigured()) {
         supabaseService.deleteEmployee(id).catch(console.warn);

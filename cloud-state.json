@@ -20,7 +20,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه مهم: يرجى مراجعة التقرير وتدقيق الأرقام قبل الاجتماع.",
       "status": "pending",
       "repeat": "none",
-      "createdAt": "2026-11-15T21:36:47.477Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "task-2",
@@ -35,7 +35,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، تذكير عاجل: موعد اجتماع فريق العمل يبدأ بعد قليل، يرجى الاستعداد والانضمام.",
       "status": "pending",
       "repeat": "none",
-      "createdAt": "2026-11-15T21:36:47.477Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "task-3",
@@ -50,7 +50,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، حان وقت استراحة صحية قصيرة، تذكر شرب كوب ماء والابتعاد عن الشاشة قليلاً.",
       "status": "pending",
       "repeat": "daily",
-      "createdAt": "2026-11-15T21:36:47.477Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     }
   ],
   "employees": [
@@ -63,7 +63,7 @@
       "whatsappPhone": "201001234567",
       "email": "ahmed@smartreminder.clinic",
       "notes": "مسؤول الأنظمة التقنية وجداول الاجتماعات والتقارير التنفيذية.",
-      "createdAt": "2026-11-15T21:36:47.477Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "emp-2",
@@ -74,7 +74,7 @@
       "whatsappPhone": "201123456789",
       "email": "sara@smartreminder.clinic",
       "notes": "مسؤولة تنسيق مواعيد الكشوفات، ملفات المرضى، ونتائج الفحوصات.",
-      "createdAt": "2026-11-15T21:36:47.477Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "emp-3",
@@ -85,7 +85,7 @@
       "whatsappPhone": "201234567890",
       "email": "mahmoud@smartreminder.clinic",
       "notes": "متابعة استفسارات المرضى والاتصالات وتجهيز الوصفات والملفات.",
-      "createdAt": "2026-11-15T21:36:47.477Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     }
   ],
   "scheduledMedia": [],
@@ -176,7 +176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-15T21:36:51.698Z",
+  "updatedAt": "2026-11-15T21:36:53.898Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

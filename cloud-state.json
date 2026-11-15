@@ -176,7 +176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-15T21:36:55.933Z",
+  "updatedAt": "2026-11-15T21:37:07.631Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -206,5 +206,5 @@
   "deletedScheduledIds": [],
   "deletedMediaIds": [],
   "deletedHabitIds": [],
-  "sourceDevice": "PC"
+  "sourceDevice": "PC-Verification-Test"
 }

@@ -141,26 +141,7 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [
-          {
-            "id": "imp_task-1_2026-11-15",
-            "t": "مراجعة التقرير الطبي والأسبوعي",
-            "d": false,
-            "sourceTaskId": "task-1"
-          },
-          {
-            "id": "imp_task-2_2026-11-15",
-            "t": "اجتماع تنسيق فريق العمل عبر زووم",
-            "d": false,
-            "sourceTaskId": "task-2"
-          },
-          {
-            "id": "imp_task-3_2026-11-15",
-            "t": "استراحة وتجديد النشاط وشرب الماء",
-            "d": false,
-            "sourceTaskId": "task-3"
-          }
-        ],
+        "tasks": [],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -188,7 +169,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-15T21:42:25.817Z",
+  "updatedAt": "2026-11-15T21:42:54.094Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -121,7 +121,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
               <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-600/15 border border-amber-500/40 text-center space-y-3 shadow-lg shadow-amber-500/10">
                 <div className="flex items-center justify-center gap-2 text-amber-300 font-bold text-sm">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>تطبيق أندرويد الأصلي الإصدار v1.0.26 (APK)</span>
+                  <span>تطبيق أندرويد الأصلي الإصدار v1.0.27 (APK)</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   للأذان بصوت الشيخ مشاري كاملاً وتلقائياً والشاشة مقفلة وبدون الحاجة لفتح التطبيق، نوصي بتحميل ملف الـ APK الأصلي:
@@ -198,7 +198,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
               <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-500/15 via-sky-400/10 to-sky-600/15 border border-sky-500/40 text-center space-y-3 shadow-lg shadow-sky-500/10">
                 <div className="flex items-center justify-center gap-2 text-sky-300 font-bold text-sm">
                   <Apple className="w-4 h-4 text-sky-400" />
-                  <span>تطبيق آيفون الأصلي الإصدار v1.0.26 (iOS IPA)</span>
+                  <span>تطبيق آيفون الأصلي الإصدار v1.0.27 (iOS IPA)</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   إذا أردت تثبيت ملف التطبيق الأصلي عبر الكمبيوتر (ببرنامج Sideloadly أو AltStore أو Scarlet مجاناً):

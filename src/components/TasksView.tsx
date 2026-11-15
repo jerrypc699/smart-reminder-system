@@ -57,7 +57,9 @@ import {
   whatsappService,
   buildTaskWhatsAppMessage,
   formatWhatsAppDisplayPhone,
-  normalizeWhatsAppPhone
+  normalizeWhatsAppPhone,
+  formatArabicDate,
+  getArabicHonorific
 } from '../services/whatsappService';
 import { VoiceTaskModal } from './VoiceTaskModal';
 import { PdfExportModal } from './PdfExportModal';
@@ -2062,28 +2064,73 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         onChange={(e) => setWaCustomMessage(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                       />
-                      <div className="mt-1.5 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 whitespace-pre-line">
-                        <span className="text-[10px] text-emerald-400 font-bold block mb-0.5">
-                          معاينة الرسالة التي ستُرسل في الموعد:
-                        </span>
-                        {buildTaskWhatsAppMessage({
-                          id: editingTask?.id,
-                          title: title || 'عنوان المهمة',
-                          description,
-                          dueDate,
-                          dueTime,
-                          priority,
-                          category,
-                          employeeName: employees.find((e) => e.id === selectedEmployeeId)?.name,
-                          attachments,
-                          whatsapp: {
-                            enabled: true,
-                            phoneNumber: waPhone,
-                            recipientName: waRecipientName || employees.find((e) => e.id === selectedEmployeeId)?.name,
-                            customMessage: waCustomMessage,
-                            includeAttachmentsLinks: waIncludeAttachments,
-                          },
-                        })}
+                      {/* Visual Official Letterhead Preview Card - Exactly matching official letterhead */}
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            معاينة بطاقة التكليف الرسمية (الصورة التي ستُرسل للواتساب):
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold">تُرسل كصورة رسمية 📸</span>
+                        </div>
+
+                        <div
+                          className="w-full bg-white text-slate-900 rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-200 space-y-3 font-['Cairo',sans-serif] text-right"
+                          dir="rtl"
+                          style={{ backgroundColor: '#ffffff' }}
+                        >
+                          <h4 className="text-base sm:text-lg font-black text-[#17375E] text-center leading-snug">
+                            تكليف مهمة رسمية - {title.trim() || 'عنوان المهمة'}
+                          </h4>
+
+                          <div className="border border-slate-200/90 rounded-xl p-3 bg-[#fcfdfe] text-xs space-y-1.5">
+                            <div className="flex items-center justify-start text-right">
+                              <span className="font-bold text-slate-500 w-14 text-right shrink-0">من:</span>
+                              <span className="font-black text-[#17375E]">مكتب د/ عبد العزيز شطا</span>
+                            </div>
+                            <div className="flex items-center justify-start text-right">
+                              <span className="font-bold text-slate-500 w-14 text-right shrink-0">التاريخ:</span>
+                              <span className="font-bold text-slate-800">
+                                {formatArabicDate(dueDate || new Date().toISOString().split('T')[0])}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-0.5 text-right pt-0.5">
+                            <p className="text-sm font-black text-slate-900">
+                              {getArabicHonorific(waRecipientName.trim() || employees.find((e) => e.id === selectedEmployeeId)?.name)}،
+                            </p>
+                            <p className="text-[11px] font-semibold text-slate-600">
+                              تحية طيبة وبعد،
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl p-3 sm:p-4 bg-[#EEF3F8] border-r-[4px] border-[#17375E] space-y-2 text-right">
+                            <div>
+                              <span className="block text-[10px] text-slate-500 font-bold mb-0.5">المهمة</span>
+                              <p className="text-sm font-black text-[#17375E] leading-snug">
+                                {title.trim() || 'عنوان المهمة'}
+                              </p>
+                            </div>
+                            <div className="pt-1">
+                              <span className="block text-[10px] text-slate-500 font-bold mb-0.5">المطلوب</span>
+                              <p className="text-xs sm:text-sm font-extrabold text-[#17375E] leading-relaxed">
+                                {description.trim() || title.trim() || 'البدء في اتخاذ الإجراءات اللازمة فوراً وموافاتنا بالتقرير'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] font-bold text-slate-800 leading-relaxed text-right pt-0.5">
+                            يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.
+                          </p>
+
+                          <div className="border-t border-slate-200/80 pt-1" />
+
+                          <div className="text-right space-y-0.5 pt-0.5 pr-1">
+                            <p className="text-[11px] text-slate-600 font-semibold">مع خالص الشكر والتقدير،</p>
+                            <p className="text-xs sm:text-sm font-black text-[#17375E]">مكتب د/ عبد العزيز شطا</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -2109,13 +2156,47 @@ export const TasksView: React.FC<TasksViewProps> = ({
                       </label>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-500/20">
-                      <span className="text-[10px] text-slate-400">
+                    <div className="space-y-2 pt-2 border-t border-emerald-500/20">
+                      <span className="text-[10px] text-slate-400 block">
                         {whatsappService.getSettings().provider !== 'none'
                           ? `🤖 الوضع الآلي مفعّل (${whatsappService.getSettings().provider}) — سيُرسل تلقائياً بدون تدخل`
-                          : '💬 الوضع المباشر — يفتح المحادثة بالرسالة جاهزة (يمكن تفعيل بوابة إرسال آلي من الإعدادات)'}
+                          : '📸 يتم تحويل بطاقة التكليف لصورة رسمية عالية الدقة ومشاركتها عبر واتساب فوراً'}
                       </span>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={!normalizeWhatsAppPhone(waPhone)}
+                          onClick={() => {
+                            const previewTask: Task = {
+                              id: editingTask?.id || `wa-preview-${Date.now()}`,
+                              title: title.trim() || 'مهمة عمل رسمية',
+                              description: description.trim() || undefined,
+                              category,
+                              priority,
+                              dueDate,
+                              dueTime,
+                              reminderMinutesBefore,
+                              status: 'pending',
+                              repeat: 'none',
+                              createdAt: new Date().toISOString(),
+                              attachments,
+                              whatsapp: {
+                                enabled: true,
+                                phoneNumber: normalizeWhatsAppPhone(waPhone),
+                                recipientName: waRecipientName.trim() || employees.find((e) => e.id === selectedEmployeeId)?.name,
+                                customMessage: waCustomMessage.trim() || undefined,
+                                autoTriggerAtDueTime: true,
+                                includeAttachmentsLinks: waIncludeAttachments,
+                              },
+                            };
+                            setOfficialLetterTask(previewTask);
+                          }}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-110 active:scale-98 text-white font-black text-xs shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-40"
+                        >
+                          <Share2 className="w-4 h-4 text-white" />
+                          <span>إرسال كصورة على واتساب فوراً 📸</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -2135,7 +2216,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                               whatsapp: {
                                 enabled: true,
                                 phoneNumber: normalizeWhatsAppPhone(waPhone),
-                                recipientName: waRecipientName.trim() || undefined,
+                                recipientName: waRecipientName.trim() || employees.find((e) => e.id === selectedEmployeeId)?.name,
                                 customMessage: waCustomMessage.trim() || undefined,
                                 autoTriggerAtDueTime: true,
                                 includeAttachmentsLinks: waIncludeAttachments,
@@ -2143,56 +2224,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                             };
                             setOfficialLetterTask(previewTask);
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>معاينة بطاقة التكليف الرسمية 📄</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={!normalizeWhatsAppPhone(waPhone)}
-                          onClick={async () => {
-                            const testTask: Task = {
-                              id: editingTask?.id || `wa-preview-${Date.now()}`,
-                              title: title.trim() || 'مهمة تجريبية',
-                              description: description.trim() || undefined,
-                              category,
-                              priority,
-                              dueDate,
-                              dueTime,
-                              reminderMinutesBefore,
-                              status: 'pending',
-                              repeat: 'none',
-                              createdAt: new Date().toISOString(),
-                              attachments,
-                              whatsapp: {
-                                enabled: true,
-                                phoneNumber: normalizeWhatsAppPhone(waPhone),
-                                recipientName: waRecipientName.trim() || undefined,
-                                customMessage: waCustomMessage.trim() || undefined,
-                                autoTriggerAtDueTime: true,
-                                includeAttachmentsLinks: waIncludeAttachments,
-                              },
-                            };
-                            const res = await whatsappService.triggerTaskWhatsAppSend(testTask, {
-                              allowOpenApp: true,
-                              skipDedupe: true,
-                            });
-                            if (res.success) {
-                              showWaBanner(
-                                res.method === 'api'
-                                  ? '✅ تم إرسال رسالة التجربة عبر البوابة الآلية بنجاح!'
-                                  : '💬 تم فتح واتساب بالرسالة جاهزة للإرسال!'
-                              );
-                            } else {
-                              alert(res.error || 'تعذر إرسال الرسالة');
-                            }
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                          <span>تجربة الإرسال الآن 💬</span>
+                          <FileText className="w-3.5 h-3.5 text-blue-400" />
+                          <span>معاينة وتنزيل صورة الخطاب 📄</span>
                         </button>
                       </div>
                     </div>

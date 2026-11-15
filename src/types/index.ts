@@ -87,6 +87,7 @@ export interface Task {
   completedAt?: string;
   snoozeUntil?: string; // ISO string
   lastRemindedAt?: string;
+  lastDueAlarmAt?: string;
   cloudUrl?: string;
   // Employee dossier link
   employeeId?: string;

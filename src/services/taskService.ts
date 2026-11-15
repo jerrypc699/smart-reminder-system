@@ -214,6 +214,82 @@ export class TaskService {
   }
 
   /**
+   * Smart merge incoming cloud tasks with local state.
+   * NEVER blows away locally created tasks that haven't synced yet.
+   */
+  public mergeTasksWithCloud(cloudTasks: Task[]): Task[] {
+    const deletedIds = new Set(this.getDeletedTaskIds());
+    const localTasks = this.getTasks();
+    const map = new Map<string, Task>();
+
+    // 1. Put valid cloud tasks
+    if (Array.isArray(cloudTasks)) {
+      for (const t of cloudTasks) {
+        if (t && t.id && !deletedIds.has(t.id)) {
+          map.set(t.id, t);
+        }
+      }
+    }
+
+    // 2. Overlay non-deleted local tasks (preserve newly created tasks not yet in cloud)
+    for (const local of localTasks) {
+      if (local && local.id && !deletedIds.has(local.id)) {
+        if (!map.has(local.id)) {
+          map.set(local.id, local);
+        } else {
+          const remote = map.get(local.id)!;
+          map.set(local.id, {
+            ...remote,
+            ...local,
+            status: local.status === 'completed' || remote.status === 'completed' 
+              ? 'completed' 
+              : (local.status || remote.status),
+          });
+        }
+      }
+    }
+
+    const merged = Array.from(map.values());
+    this.saveTasks(merged, true);
+    return merged;
+  }
+
+  /**
+   * Smart merge incoming cloud employees with local state.
+   * NEVER blows away locally added employees that haven't synced yet.
+   */
+  public mergeEmployeesWithCloud(cloudEmployees: Employee[]): Employee[] {
+    const deletedIds = new Set(this.getDeletedEmployeeIds());
+    const localEmployees = this.getEmployees();
+    const map = new Map<string, Employee>();
+
+    // 1. Put valid cloud employees
+    if (Array.isArray(cloudEmployees)) {
+      for (const emp of cloudEmployees) {
+        if (emp && emp.id && !deletedIds.has(emp.id)) {
+          map.set(emp.id, emp);
+        }
+      }
+    }
+
+    // 2. Overlay non-deleted local employees (preserve newly created employees)
+    for (const local of localEmployees) {
+      if (local && local.id && !deletedIds.has(local.id)) {
+        if (!map.has(local.id)) {
+          map.set(local.id, local);
+        } else {
+          const remote = map.get(local.id)!;
+          map.set(local.id, { ...remote, ...local });
+        }
+      }
+    }
+
+    const merged = Array.from(map.values());
+    this.saveEmployees(merged, true);
+    return merged;
+  }
+
+  /**
    * Load tasks from LocalStorage, always filtering out tombstoned deletions
    */
   public getTasks(): Task[] {
@@ -268,6 +344,9 @@ export class TaskService {
     };
     tasks.unshift(newTask);
     this.saveTasks(tasks);
+    import('./vercelCloudSync').then(({ vercelCloudSync }) => {
+      vercelCloudSync.pushCurrentState({ tasks }).catch(console.warn);
+    }).catch(console.warn);
     return newTask;
   }
 
@@ -432,6 +511,14 @@ export class TaskService {
     };
     list.unshift(newEmp);
     this.saveEmployees(list);
+    import('./vercelCloudSync').then(({ vercelCloudSync }) => {
+      vercelCloudSync.pushCurrentState({ employees: list }).catch(console.warn);
+    }).catch(console.warn);
+    import('./supabaseService').then(({ supabaseService }) => {
+      if (supabaseService.isConfigured()) {
+        supabaseService.upsertEmployee(newEmp).catch(console.warn);
+      }
+    }).catch(console.warn);
     return newEmp;
   }
 
@@ -446,6 +533,9 @@ export class TaskService {
       return emp;
     });
     this.saveEmployees(list);
+    import('./vercelCloudSync').then(({ vercelCloudSync }) => {
+      vercelCloudSync.pushCurrentState({ employees: list }).catch(console.warn);
+    }).catch(console.warn);
     return list;
   }
 

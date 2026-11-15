@@ -57,8 +57,14 @@ public class TaskWhatsAppAlarmHelper {
 
     public static Intent buildWhatsAppIntent(String phone, String text) {
         String cleanPhone = phone != null ? phone.replaceAll("[^0-9]", "") : "";
-        String url = "https://api.whatsapp.com/send?phone=" + Uri.encode(cleanPhone) + "&text=" + Uri.encode(text != null ? text : "");
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        if (cleanPhone.startsWith("00")) {
+            cleanPhone = cleanPhone.substring(2);
+        } else if (cleanPhone.startsWith("01") && cleanPhone.length() == 11) {
+            cleanPhone = "20" + cleanPhone.substring(1);
+        }
+        String encodedText = Uri.encode(text != null ? text : "");
+        String nativeUri = "whatsapp://send?phone=" + cleanPhone + "&text=" + encodedText;
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(nativeUri));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return intent;
     }

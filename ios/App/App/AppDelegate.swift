@@ -118,13 +118,21 @@ public class VideoAlarmPlugin: CAPPlugin, CAPBridgedPlugin, CNContactPickerDeleg
         }
 
         let message = call.getString("text") ?? ""
-        let cleanPhone = rawPhone.replacingOccurrences(of: "+", with: "")
+        var cleanPhone = rawPhone.replacingOccurrences(of: "+", with: "")
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "-", with: "")
             .replacingOccurrences(of: "(", with: "")
             .replacingOccurrences(of: ")", with: "")
 
-        let encodedMsg = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if cleanPhone.hasPrefix("00") {
+            cleanPhone = String(cleanPhone.dropFirst(2))
+        } else if cleanPhone.hasPrefix("01") && cleanPhone.count == 11 {
+            cleanPhone = "20" + String(cleanPhone.dropFirst(1))
+        }
+
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-._~")
+        let encodedMsg = message.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
 
         DispatchQueue.main.async {
             if let nativeUrl = URL(string: "whatsapp://send?phone=\(cleanPhone)&text=\(encodedMsg)"),
@@ -132,8 +140,12 @@ public class VideoAlarmPlugin: CAPPlugin, CAPBridgedPlugin, CNContactPickerDeleg
                 UIApplication.shared.open(nativeUrl, options: [:]) { opened in
                     call.resolve(["opened": opened])
                 }
-            } else if let webUrl = URL(string: "https://wa.me/\(cleanPhone)?text=\(encodedMsg)") {
+            } else if let webUrl = URL(string: "https://api.whatsapp.com/send?phone=\(cleanPhone)&text=\(encodedMsg)") {
                 UIApplication.shared.open(webUrl, options: [:]) { opened in
+                    call.resolve(["opened": opened])
+                }
+            } else if let waMeUrl = URL(string: "https://wa.me/\(cleanPhone)?text=\(encodedMsg)") {
+                UIApplication.shared.open(waMeUrl, options: [:]) { opened in
                     call.resolve(["opened": opened])
                 }
             } else {

@@ -317,12 +317,19 @@ class AudioService {
       if (this.currentCustomAudio === audio) {
         this.currentCustomAudio = null;
       }
+      // Guaranteed fallback: synthesize crisp doctor alert tone through Web Audio API
+      try {
+        this.playChime('task', volume);
+      } catch {}
       onEnd?.();
     };
 
     audio.play().catch((err) => {
-      console.warn('Audio play blocked:', err);
+      console.warn('Audio play blocked/error:', err);
       this.notifySpeaking(false);
+      try {
+        this.playChime('task', volume);
+      } catch {}
       onEnd?.();
     });
   }

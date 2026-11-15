@@ -230,8 +230,22 @@ public class VideoAlarmPlugin extends Plugin {
             ctx.startActivity(waIntent);
             ret.put("opened", true);
         } catch (Exception e) {
-            ret.put("opened", false);
-            ret.put("error", e.getMessage());
+            try {
+                String cleanPhone = phone != null ? phone.replaceAll("[^0-9]", "") : "";
+                if (cleanPhone.startsWith("00")) {
+                    cleanPhone = cleanPhone.substring(2);
+                } else if (cleanPhone.startsWith("01") && cleanPhone.length() == 11) {
+                    cleanPhone = "20" + cleanPhone.substring(1);
+                }
+                String fallbackUrl = "https://api.whatsapp.com/send?phone=" + cleanPhone + "&text=" + Uri.encode(text != null ? text : "");
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
+                browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx.startActivity(browserIntent);
+                ret.put("opened", true);
+            } catch (Exception ex2) {
+                ret.put("opened", false);
+                ret.put("error", ex2.getMessage());
+            }
         }
         call.resolve(ret);
     }

@@ -404,7 +404,9 @@ class WhatsAppService {
     if (Capacitor.isNativePlatform()) {
       try {
         const res = await VideoAlarm.openWhatsApp({ phone, text: message });
-        return !!res?.opened;
+        if (res && res.opened) {
+          return true;
+        }
       } catch (err) {
         console.warn('Native VideoAlarm.openWhatsApp fallback to browser URL:', err);
       }
@@ -416,8 +418,14 @@ class WhatsAppService {
         window.location.href = url;
         return true;
       }
-      const win = window.open(url, '_blank', 'noopener,noreferrer');
-      if (win) return true;
+      try {
+        const win = window.open(url, '_blank', 'noopener,noreferrer');
+        if (win) return true;
+      } catch (e) {
+        console.warn('window.open blocked, using location.href:', e);
+      }
+      window.location.href = url;
+      return true;
     }
     return false;
   }
@@ -569,9 +577,8 @@ class WhatsAppService {
         const [y, m, d] = task.dueDate.split('-').map(Number);
         const [hh, mm] = task.dueTime.split(':').map(Number);
         if (!isNaN(y) && !isNaN(m) && !isNaN(d) && !isNaN(hh) && !isNaN(mm)) {
-          const base = new Date(y, m - 1, d, hh, mm, 0, 0);
-          const remMins = Number(task.reminderMinutesBefore) || 0;
-          triggerDate = new Date(base.getTime() - remMins * 60 * 1000);
+          // Trigger WhatsApp dispatch AT EXACT DUE TIME
+          triggerDate = new Date(y, m - 1, d, hh, mm, 0, 0);
         }
       }
 

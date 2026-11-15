@@ -178,14 +178,12 @@ export function App() {
       }
 
       if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
-        const cleanTasks = cloudData.tasks.filter((t) => !taskService.isTaskDeleted(t.id));
-        setTasks(cleanTasks);
-        taskService.saveTasks(cleanTasks, true);
-        NativeAlarmService.scheduleTasks(cleanTasks).catch(console.warn);
+        const mergedTasks = taskService.mergeTasksWithCloud(cloudData.tasks);
+        setTasks(mergedTasks);
+        NativeAlarmService.scheduleTasks(mergedTasks).catch(console.warn);
       }
       if (cloudData.employees && Array.isArray(cloudData.employees)) {
-        const cleanEmployees = cloudData.employees.filter((e) => !taskService.isEmployeeDeleted(e.id));
-        taskService.saveEmployees(cleanEmployees, true);
+        taskService.mergeEmployeesWithCloud(cloudData.employees);
       }
       if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia)) {
         const cleanScheduled = cloudData.scheduledMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
@@ -232,16 +230,14 @@ export function App() {
     // Initial pull from Supabase
     supabaseService.fetchTasks().then((spTasks) => {
       if (spTasks && spTasks.length > 0) {
-        const cleanTasks = spTasks.filter((t) => !taskService.isTaskDeleted(t.id));
-        setTasks(cleanTasks);
-        taskService.saveTasks(cleanTasks, true);
+        const merged = taskService.mergeTasksWithCloud(spTasks);
+        setTasks(merged);
       }
     }).catch(console.warn);
 
     supabaseService.fetchEmployees().then((spEmp) => {
       if (spEmp && spEmp.length > 0) {
-        const cleanEmp = spEmp.filter((e) => !taskService.isEmployeeDeleted(e.id));
-        taskService.saveEmployees(cleanEmp, true);
+        taskService.mergeEmployeesWithCloud(spEmp);
       }
     }).catch(console.warn);
 
@@ -258,17 +254,15 @@ export function App() {
       onTasksChange: async () => {
         const fresh = await supabaseService.fetchTasks();
         if (fresh && fresh.length > 0) {
-          const cleanTasks = fresh.filter((t) => !taskService.isTaskDeleted(t.id));
-          setTasks(cleanTasks);
-          taskService.saveTasks(cleanTasks, true);
-          NativeAlarmService.scheduleTasks(cleanTasks).catch(console.warn);
+          const merged = taskService.mergeTasksWithCloud(fresh);
+          setTasks(merged);
+          NativeAlarmService.scheduleTasks(merged).catch(console.warn);
         }
       },
       onEmployeesChange: async () => {
         const fresh = await supabaseService.fetchEmployees();
         if (fresh && fresh.length > 0) {
-          const cleanEmp = fresh.filter((e) => !taskService.isEmployeeDeleted(e.id));
-          taskService.saveEmployees(cleanEmp, true);
+          taskService.mergeEmployeesWithCloud(fresh);
         }
       },
       onScheduledMediaChange: async () => {
@@ -300,11 +294,11 @@ export function App() {
       const freshCloud = await vercelCloudSync.fetchFromCloud();
       if (freshCloud) {
         if (freshCloud.tasks && Array.isArray(freshCloud.tasks)) {
-          setTasks(freshCloud.tasks);
-          taskService.saveTasks(freshCloud.tasks, true);
+          const merged = taskService.mergeTasksWithCloud(freshCloud.tasks);
+          setTasks(merged);
         }
         if (freshCloud.employees && Array.isArray(freshCloud.employees)) {
-          taskService.saveEmployees(freshCloud.employees, true);
+          taskService.mergeEmployeesWithCloud(freshCloud.employees);
         }
         if (freshCloud.scheduledMedia && Array.isArray(freshCloud.scheduledMedia)) {
           setScheduledAudios(freshCloud.scheduledMedia);
@@ -988,36 +982,52 @@ export function App() {
       currentTasks.forEach((task) => {
         if (task.status === 'completed') return;
 
-        let shouldTrigger = false;
+        let shouldTriggerExactDue = false;
+        let shouldTriggerPreReminder = false;
 
         // Check snoozed task
         if (task.status === 'snoozed' && task.snoozeUntil) {
           const snoozeDate = new Date(task.snoozeUntil);
           if (now >= snoozeDate) {
-            shouldTrigger = true;
+            if (!task.lastDueAlarmAt || (now.getTime() - new Date(task.lastDueAlarmAt).getTime()) > 65000) {
+              shouldTriggerExactDue = true;
+            }
           }
         } else if (task.dueDate === todayDateStr && task.dueTime) {
           // Regular scheduled task
           const [tHour, tMin] = task.dueTime.split(':').map(Number);
-          const taskTime = new Date(now);
-          taskTime.setHours(tHour, tMin, 0, 0);
+          const tHourStr = tHour.toString().padStart(2, '0');
+          const tMinStr = tMin.toString().padStart(2, '0');
 
-          // Subtract reminder minutes before
-          const reminderTime = new Date(taskTime.getTime() - (task.reminderMinutesBefore || 0) * 60 * 1000);
-          const remHours = reminderTime.getHours().toString().padStart(2, '0');
-          const remMins = reminderTime.getMinutes().toString().padStart(2, '0');
+          // A. Exact Due Time Alarm (ساعة الميعاد المحدد بالضبط)
+          if (currentHours === tHourStr && currentMinutes === tMinStr) {
+            if (!task.lastDueAlarmAt || (now.getTime() - new Date(task.lastDueAlarmAt).getTime()) > 65000) {
+              shouldTriggerExactDue = true;
+            }
+          }
 
-          if (currentHours === remHours && currentMinutes === remMins) {
-            // Check if already reminded in the last 60 seconds
-            if (!task.lastRemindedAt || (now.getTime() - new Date(task.lastRemindedAt).getTime()) > 65000) {
-              shouldTrigger = true;
+          // B. Early Pre-Reminder (قبل الموعد بـ X دقائق إذا كانت محددة > 0)
+          const remMinsBefore = task.reminderMinutesBefore || 0;
+          if (remMinsBefore > 0) {
+            const taskTime = new Date(now);
+            taskTime.setHours(tHour, tMin, 0, 0);
+            const reminderTime = new Date(taskTime.getTime() - remMinsBefore * 60 * 1000);
+            const remHours = reminderTime.getHours().toString().padStart(2, '0');
+            const remMins = reminderTime.getMinutes().toString().padStart(2, '0');
+
+            if (currentHours === remHours && currentMinutes === remMins) {
+              if (!task.lastRemindedAt || (now.getTime() - new Date(task.lastRemindedAt).getTime()) > 65000) {
+                shouldTriggerPreReminder = true;
+              }
             }
           }
         }
 
-        if (shouldTrigger) {
-          // Mark lastRemindedAt
+        // Handle Exact Due Time / Snooze Alarm
+        if (shouldTriggerExactDue) {
+          // Mark lastDueAlarmAt & lastRemindedAt
           taskService.updateTask(task.id, {
+            lastDueAlarmAt: now.toISOString(),
             lastRemindedAt: now.toISOString(),
             status: 'pending',
             snoozeUntil: undefined,
@@ -1025,8 +1035,8 @@ export function App() {
           setTasks(taskService.getTasks());
 
           // Show Native Notification
-          notificationService.showNotification(`💼 تذكير بمهمة: ${task.title}`, {
-            body: `يا دكتور عبد العزيز: ${task.description || task.voiceMessage || 'حان موعد هذه المهمة الآن.'}`,
+          notificationService.showNotification(`📋 موعد مهمة الآن: ${task.title}`, {
+            body: `يا دكتور عبد العزيز: ${task.description || task.voiceMessage || 'حان موعد تنفيذ ومتابعة هذه المهمة الآن.'}`,
             tag: `task-${task.id}`,
           });
 
@@ -1120,6 +1130,34 @@ export function App() {
               audioUrl: task.cloudUrl,
               customAudioId: task.customAudioId,
             });
+          }
+        } else if (shouldTriggerPreReminder) {
+          // Early pre-reminder
+          taskService.updateTask(task.id, {
+            lastRemindedAt: now.toISOString(),
+          });
+          setTasks(taskService.getTasks());
+
+          notificationService.showNotification(`⏳ اقترب موعد مهمة: ${task.title}`, {
+            body: `يا دكتور عبد العزيز: باقي ${task.reminderMinutesBefore} دقائق على موعد المهمة.`,
+            tag: `pre-task-${task.id}`,
+          });
+
+          if (!audioSettings.soundMuted) {
+            audioService.playChime('task', audioSettings.masterVolume);
+            if (audioSettings.enableTts) {
+              setTimeout(() => {
+                audioService.speakAlert(
+                  `يا دكتور عبد العزيز: تنبيه مبكر، باقي ${task.reminderMinutesBefore} دقائق على موعد مهمة ${task.title}.`,
+                  {
+                    volume: audioSettings.masterVolume,
+                    rate: audioSettings.ttsRate,
+                    pitch: audioSettings.ttsPitch,
+                    voiceURI: audioSettings.ttsVoiceURI,
+                  }
+                );
+              }, 1000);
+            }
           }
         }
       });
@@ -1301,21 +1339,10 @@ export function App() {
 
   // Task Actions
   const handleAddTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-
-    setTasks((prev) => {
-      const updated = [newTask, ...prev];
-      taskService.saveTasks(updated);
-      syncCurrentStateToCloud(updated);
-      NativeAlarmService.scheduleTasks(updated).catch(console.warn);
-      return updated;
-    });
-
+    const newTask = taskService.addTask(taskData);
+    const updated = taskService.getTasks();
+    setTasks(updated);
+    NativeAlarmService.scheduleTasks(updated).catch(console.warn);
     audioService.playChime('click', 0.5);
     return newTask;
   };

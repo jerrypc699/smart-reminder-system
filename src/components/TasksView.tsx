@@ -210,7 +210,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       }
       showWaBanner('✓ تم تحديث بيانات الموظف بنجاح');
     } else {
-      taskService.addEmployee({
+      const newEmp = taskService.addEmployee({
         name: empFormName.trim(),
         role: empFormRole.trim(),
         department: empFormDept.trim(),
@@ -220,7 +220,18 @@ export const TasksView: React.FC<TasksViewProps> = ({
         notes: empFormNotes.trim(),
       });
       setEmployees(taskService.getEmployees());
-      showWaBanner('✓ تم إنشاء ملف الموظف الجديد بنجاح');
+
+      // If adding/editing a task, auto-assign this new employee immediately!
+      if (isAddModalOpen || editingTask) {
+        setSelectedEmployeeId(newEmp.id);
+        setSelectedEmployeeName(newEmp.name);
+        if (newEmp.whatsappPhone || newEmp.phone) {
+          setWaPhone(newEmp.whatsappPhone || newEmp.phone || '');
+          setWaRecipientName(newEmp.name);
+          setWaEnabled(true);
+        }
+      }
+      showWaBanner(`✓ تم حفظ وإضافة الموظف «${newEmp.name}» بنجاح`);
     }
 
     setIsEmployeeModalOpen(false);
@@ -671,6 +682,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
         employeeId: selectedEmployeeId || undefined,
         employeeName: selectedEmployeeName || undefined,
       });
+
+      // Clear any filter or search so the newly added task is immediately visible in the list
+      setSelectedFilter('all');
+      setSelectedCategory('all');
+      setSearchQuery('');
+      setViewMode('tasks');
     }
 
     setIsAddModalOpen(false);

@@ -15,6 +15,7 @@ import {
   Copy,
   ExternalLink
 } from 'lucide-react';
+import { APP_VERSION, APP_VERSION_LABEL, APK_DOWNLOAD_URL, IPA_DOWNLOAD_URL } from '../constants/version';
 
 interface InstallAppModalProps {
   isOpen: boolean;
@@ -121,19 +122,19 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
               <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-600/15 border border-amber-500/40 text-center space-y-3 shadow-lg shadow-amber-500/10">
                 <div className="flex items-center justify-center gap-2 text-amber-300 font-bold text-sm">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>تطبيق أندرويد الأصلي الإصدار v1.0.27 (APK)</span>
+                  <span>تطبيق أندرويد الأصلي الإصدار {APP_VERSION_LABEL} (APK)</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   للأذان بصوت الشيخ مشاري كاملاً وتلقائياً والشاشة مقفلة وبدون الحاجة لفتح التطبيق، نوصي بتحميل ملف الـ APK الأصلي:
                 </p>
                 <a
-                  href="https://github.com/jerrypc699/smart-reminder-system/releases/latest/download/DrAbdelaziz-Reminder.apk"
+                  href={APK_DOWNLOAD_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer no-underline"
                 >
                   <Download className="w-4 h-4 text-slate-950" />
-                  <span>تحميل تطبيق الأندرويد المحدث (DrAbdelaziz-Reminder.apk)</span>
+                  <span>تحميل تطبيق الأندرويد المحدث (DrAbdelaziz-Reminder-v{APP_VERSION}.apk)</span>
                 </a>
               </div>
 
@@ -198,19 +199,19 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
               <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-500/15 via-sky-400/10 to-sky-600/15 border border-sky-500/40 text-center space-y-3 shadow-lg shadow-sky-500/10">
                 <div className="flex items-center justify-center gap-2 text-sky-300 font-bold text-sm">
                   <Apple className="w-4 h-4 text-sky-400" />
-                  <span>تطبيق آيفون الأصلي الإصدار v1.0.27 (iOS IPA)</span>
+                  <span>تطبيق آيفون الأصلي الإصدار {APP_VERSION_LABEL} (iOS IPA)</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   إذا أردت تثبيت ملف التطبيق الأصلي عبر الكمبيوتر (ببرنامج Sideloadly أو AltStore أو Scarlet مجاناً):
                 </p>
                 <a
-                  href="https://github.com/jerrypc699/smart-reminder-system/releases/latest/download/DrAbdelaziz-Reminder.ipa"
+                  href={IPA_DOWNLOAD_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-black text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer no-underline"
                 >
                   <Download className="w-4 h-4 text-white" />
-                  <span>تحميل ملف الآيفون المحدث (DrAbdelaziz-Reminder.ipa)</span>
+                  <span>تحميل ملف الآيفون المحدث (DrAbdelaziz-Reminder-v{APP_VERSION}.ipa)</span>
                 </a>
               </div>
 

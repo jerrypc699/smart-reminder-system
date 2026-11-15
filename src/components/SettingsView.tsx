@@ -31,6 +31,7 @@ import { audioStorageService } from '../services/audioStorageService';
 import { notificationService } from '../services/notificationService';
 import { mobileBackgroundService } from '../services/mobileBackgroundService';
 import { whatsappService, normalizeWhatsAppPhone } from '../services/whatsappService';
+import { APP_VERSION_LABEL } from '../constants/version';
 
 interface SettingsViewProps {
   prayerSettings: PrayerSettings;
@@ -1225,7 +1226,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-bold text-white">إصدار التطبيق والنظام</h4>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                v1.0.29 (Build 29)
+                {APP_VERSION_LABEL}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">

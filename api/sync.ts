@@ -2,6 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { put, head } from '@vercel/blob';
 
 const STATE_PATH = 'dr-abdelaziz/state.json';
+const GITHUB_REPO = 'jerrypc699/smart-reminder-system';
+const GITHUB_BRANCH = 'sync-data';
+const GITHUB_FILE = 'cloud-state.json';
+
+// In-memory cache across serverless warm lambdas
+declare global {
+  var __drAbdelazizState: any;
+}
 
 const SEED_EMPLOYEES = [
   {
@@ -87,6 +95,93 @@ const SEED_TASKS = [
   },
 ];
 
+/**
+ * Read state from GitHub sync-data branch
+ */
+async function readGitHubState<T = any>(): Promise<T | null> {
+  const token = process.env.SYNC_GITHUB_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}&t=${Date.now()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'User-Agent': 'DrAbdelaziz-SmartReminder-Sync',
+          Accept: 'application/vnd.github.v3+json',
+        },
+        cache: 'no-store',
+      }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.content) return null;
+    const content = Buffer.from(json.content, 'base64').toString('utf-8');
+    return JSON.parse(content) as T;
+  } catch (e) {
+    console.warn('readGitHubState warning:', e);
+    return null;
+  }
+}
+
+/**
+ * Write state to GitHub sync-data branch with conflict retry
+ */
+async function writeGitHubState(data: any): Promise<boolean> {
+  const token = process.env.SYNC_GITHUB_TOKEN;
+  if (!token) return false;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      let sha: string | undefined;
+      const checkRes = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}?ref=${GITHUB_BRANCH}&t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'User-Agent': 'DrAbdelaziz-SmartReminder-Sync',
+            Accept: 'application/vnd.github.v3+json',
+          },
+          cache: 'no-store',
+        }
+      );
+      if (checkRes.ok) {
+        const checkJson = await checkRes.json();
+        sha = checkJson.sha;
+      }
+
+      const content = Buffer.from(JSON.stringify(data, null, 2), 'utf-8').toString('base64');
+      const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'User-Agent': 'DrAbdelaziz-SmartReminder-Sync',
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `chore: sync state update ${new Date().toISOString()}`,
+          content,
+          branch: GITHUB_BRANCH,
+          ...(sha ? { sha } : {}),
+        }),
+      });
+
+      if (putRes.ok) return true;
+      if (putRes.status === 409 && attempt === 0) {
+        // SHA conflict between concurrent pushes, retry once with fresh SHA
+        continue;
+      }
+    } catch (e) {
+      console.warn('writeGitHubState attempt warning:', e);
+    }
+  }
+  return false;
+}
+
+/**
+ * Fallback: Read state from Vercel Blob
+ */
 async function readBlobJson<T = any>(path: string): Promise<T | null> {
   try {
     const meta = await head(path);
@@ -154,7 +249,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      let data = await readBlobJson<any>(STATE_PATH);
+      let data: any = (await readGitHubState()) || (await readBlobJson<any>(STATE_PATH)) || globalThis.__drAbdelazizState || null;
       const forceSeed = req.query.seed === '1' || req.query.seed === 'true';
 
       const tombstones = data?.tombstones || {
@@ -179,6 +274,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           seeded: true,
         };
 
+        // Cache in memory
+        globalThis.__drAbdelazizState = data;
+
+        // Persist seed to GitHub
+        await writeGitHubState(data).catch(() => {});
+
+        // Try persist to blob if available
         try {
           await put(STATE_PATH, JSON.stringify(data), {
             access: 'public',
@@ -186,7 +288,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             allowOverwrite: true,
           });
         } catch (saveErr) {
-          console.warn('Could not auto-persist seed to blob:', saveErr);
+          // ignore blob limits
         }
       } else if (data) {
         // Filter out any tombstoned deletions before returning to client
@@ -234,8 +336,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rawBody = req.body;
       const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : (rawBody || {});
 
-      // Fetch existing cloud state
-      const existingData: any = (await readBlobJson<any>(STATE_PATH)) || {};
+      // Fetch existing cloud state (GitHub first, fallback Blob, fallback Memory)
+      const existingData: any =
+        (await readGitHubState()) ||
+        (await readBlobJson<any>(STATE_PATH)) ||
+        globalThis.__drAbdelazizState ||
+        {};
 
       const existingTombstones = existingData.tombstones || {
         taskIds: [],
@@ -366,15 +472,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         updatedAt: new Date().toISOString(),
       };
 
-      const blob = await put(STATE_PATH, JSON.stringify(payload), {
-        access: 'public',
-        addRandomSuffix: false,
-        allowOverwrite: true,
-      });
+      // 1. Update in-memory state
+      globalThis.__drAbdelazizState = payload;
+
+      // 2. Persist to GitHub sync-data branch
+      const githubSaved = await writeGitHubState(payload);
+
+      // 3. Fallback: try persisting to Vercel Blob (safely caught)
+      let blobUrl: string | undefined;
+      try {
+        const blob = await put(STATE_PATH, JSON.stringify(payload), {
+          access: 'public',
+          addRandomSuffix: false,
+          allowOverwrite: true,
+        });
+        blobUrl = blob.url;
+      } catch (blobErr) {
+        // Blob store suspended or quota reached, gracefully ignored
+      }
 
       return res.status(200).json({
         success: true,
-        url: blob.url,
+        persistedGitHub: githubSaved,
+        url: blobUrl,
         updatedAt: payload.updatedAt,
         tasksCount: payload.tasks.length,
         employeesCount: payload.employees.length,
@@ -386,6 +506,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (error: any) {
     console.error('API Sync Error:', error);
-    return res.status(500).json({ error: error.message || 'Internal Server Error' });
+    // If anything fails, return in-memory state with 200 instead of crashing client
+    if (globalThis.__drAbdelazizState) {
+      return res.status(200).json(globalThis.__drAbdelazizState);
+    }
+    return res.status(200).json({
+      success: false,
+      warning: error.message,
+      tasks: SEED_TASKS,
+      employees: SEED_EMPLOYEES,
+      scheduledMedia: [],
+      mediaLibrary: [],
+      updatedAt: new Date().toISOString(),
+    });
   }
 }

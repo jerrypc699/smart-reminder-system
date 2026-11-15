@@ -20,7 +20,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه مهم: يرجى مراجعة التقرير وتدقيق الأرقام قبل الاجتماع.",
       "status": "pending",
       "repeat": "none",
-      "createdAt": "2026-11-15T21:32:57.046Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "task-2",
@@ -35,7 +35,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، تذكير عاجل: موعد اجتماع فريق العمل يبدأ بعد قليل، يرجى الاستعداد والانضمام.",
       "status": "pending",
       "repeat": "none",
-      "createdAt": "2026-11-15T21:32:57.046Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "task-3",
@@ -50,7 +50,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، حان وقت استراحة صحية قصيرة، تذكر شرب كوب ماء والابتعاد عن الشاشة قليلاً.",
       "status": "pending",
       "repeat": "daily",
-      "createdAt": "2026-11-15T21:32:57.046Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     }
   ],
   "employees": [
@@ -63,7 +63,7 @@
       "whatsappPhone": "201001234567",
       "email": "ahmed@smartreminder.clinic",
       "notes": "مسؤول الأنظمة التقنية وجداول الاجتماعات والتقارير التنفيذية.",
-      "createdAt": "2026-11-15T21:32:57.046Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "emp-2",
@@ -74,7 +74,7 @@
       "whatsappPhone": "201123456789",
       "email": "sara@smartreminder.clinic",
       "notes": "مسؤولة تنسيق مواعيد الكشوفات، ملفات المرضى، ونتائج الفحوصات.",
-      "createdAt": "2026-11-15T21:32:57.046Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     },
     {
       "id": "emp-3",
@@ -85,13 +85,126 @@
       "whatsappPhone": "201234567890",
       "email": "mahmoud@smartreminder.clinic",
       "notes": "متابعة استفسارات المرضى والاتصالات وتجهيز الوصفات والملفات.",
-      "createdAt": "2026-11-15T21:32:57.046Z"
+      "createdAt": "2026-11-15T21:36:47.257Z"
     }
   ],
   "scheduledMedia": [],
   "mediaLibrary": [],
-  "whatsappSettings": {},
-  "dailySystem": null,
-  "updatedAt": "2026-11-15T21:32:57.545Z",
-  "seeded": true
+  "whatsappSettings": {
+    "provider": "none",
+    "defaultCountryCode": "20",
+    "greenApiInstanceId": "",
+    "greenApiToken": "",
+    "greenApiHost": "https://api.green-api.com",
+    "ultraMsgInstanceId": "",
+    "ultraMsgToken": "",
+    "callMeBotApiKey": "",
+    "metaPhoneNumberId": "",
+    "metaAccessToken": "",
+    "webhookUrl": "",
+    "webhookSecret": "",
+    "savedContacts": []
+  },
+  "dailySystem": {
+    "days": {
+      "2026-11-15": {
+        "date": "2026-11-15",
+        "prayers": {
+          "fajr": 0,
+          "dhuhr": 0,
+          "asr": 0,
+          "maghrib": 0,
+          "isha": 0
+        },
+        "adhkar": {
+          "sabah": false,
+          "masaa": false,
+          "nawm": false,
+          "dua": false
+        },
+        "quran": 0,
+        "sport": 0,
+        "study": 0,
+        "sleep": 0,
+        "water": 0,
+        "food": false,
+        "weight": "",
+        "tasks": [
+          {
+            "id": "imp_task-1_2026-11-15",
+            "t": "مراجعة التقرير الطبي والأسبوعي",
+            "d": false,
+            "sourceTaskId": "task-1"
+          },
+          {
+            "id": "imp_task-2_2026-11-15",
+            "t": "اجتماع تنسيق فريق العمل عبر زووم",
+            "d": false,
+            "sourceTaskId": "task-2"
+          },
+          {
+            "id": "imp_task-3_2026-11-15",
+            "t": "استراحة وتجديد النشاط وشرب الماء",
+            "d": false,
+            "sourceTaskId": "task-3"
+          }
+        ],
+        "dismissedTaskIds": [],
+        "notes": {
+          "good": "",
+          "block": "",
+          "tomorrow": ""
+        },
+        "customValues": {},
+        "customNotes": {}
+      }
+    },
+    "months": {},
+    "settings": {
+      "quran": 5,
+      "sport": 30,
+      "study": 60,
+      "sleep": 7,
+      "water": 8,
+      "autoImportTasks": true,
+      "autoImportIncludePendingPrevious": true,
+      "hiddenBuiltIns": [],
+      "customPrayers": [],
+      "customAdhkar": [],
+      "customHabits": [],
+      "customNotePrompts": [],
+      "builtInSchedules": {}
+    }
+  },
+  "updatedAt": "2026-11-15T21:36:47.967Z",
+  "seeded": true,
+  "prayerSettings": {
+    "cityName": "القاهرة",
+    "countryName": "مصر",
+    "latitude": 30.0444,
+    "longitude": 31.2357,
+    "method": "Egyptian",
+    "madhab": "shafi",
+    "preAzanReminderMinutes": 10,
+    "enablePreAzanAlert": true,
+    "enableAzanAudio": true,
+    "azanReciter": "mishary",
+    "enableDuaaAfterAzan": true
+  },
+  "audioSettings": {
+    "masterVolume": 0.85,
+    "enableTts": true,
+    "ttsVoiceURI": "",
+    "ttsRate": 0.95,
+    "ttsPitch": 1,
+    "chimeSound": "modern",
+    "enableSoundEffects": true,
+    "soundMuted": false
+  },
+  "deletedTaskIds": [],
+  "deletedEmployeeIds": [],
+  "deletedScheduledIds": [],
+  "deletedMediaIds": [],
+  "deletedHabitIds": [],
+  "sourceDevice": "PC"
 }

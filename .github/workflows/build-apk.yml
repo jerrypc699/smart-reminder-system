@@ -53,45 +53,44 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.23.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.24.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.23.apk
-          path: DrAbdelaziz-Reminder-v1.0.23.apk
+          name: DrAbdelaziz-Reminder-v1.0.24.apk
+          path: DrAbdelaziz-Reminder-v1.0.24.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.23
+      - name: Create or Update GitHub Release v1.0.24
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.23
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.23"
+          tag_name: v1.0.24
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.24"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.23
-            - إظهار وحفظ كافة المهام بدون اختفاء مع مزامنة سحابية فائقة الذكاء.
-            - انطلاق صوت التنبيه ورنة التذكير في تمام ساعة الميعاد المحدد بالضبط.
-            - حفظ وإضافة الموظفين الجدد بدون اختفاء والربط التلقائي ببيانات الواتساب.
-            - إرسال رسائل الواتساب الرسمية المنسقة بنقرة واحدة على أندرويد وآيفون.
-            - يعمل الأذان بصوت الشيخ مشاري العفاسي في مواقيت الصلاة تلقائياً والشاشة مغلقة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.24
+            - شاشة ترحيب افتتاحية ملكية تفاعلية تكتب «مرحباً بك يا د/ عبد العزيز» بتأثير كتابي احترافي.
+            - بطاقة ترحيب فخمة في لوحة التحكم وزر لإعادة عرض الترحيب في أي وقت.
+            - إمكانية التحكم في شاشة الترحيب وتفعيلها أو تعطيلها من الإعدادات.
+            - تنبيهات صوتية ومواقيت صلاة ومزامنة سحابية فائقة السرعة.
           files: |
-            DrAbdelaziz-Reminder-v1.0.23.apk
+            DrAbdelaziz-Reminder-v1.0.24.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Also Update Legacy Release v1.0.0
+      - name: Also Update Latest Tag
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.0
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.23"
+          tag_name: latest
+          name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.23.apk
+            DrAbdelaziz-Reminder-v1.0.24.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

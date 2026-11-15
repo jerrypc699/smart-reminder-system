@@ -48,40 +48,40 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.23.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.23.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.24.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.24.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.23.ipa
-          path: DrAbdelaziz-Reminder-v1.0.23.ipa
+          name: DrAbdelaziz-Reminder-v1.0.24.ipa
+          path: DrAbdelaziz-Reminder-v1.0.24.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.23
+      - name: Attach IPA to GitHub Release v1.0.24
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.23
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.23"
+          tag_name: v1.0.24
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.24"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.23
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.24
             - متاح بصيغة Android APK لأجهزة الأندرويد.
             - متاح بصيغة iOS IPA لأجهزة الآيفون والآيباد (تثبيت عبر Sideloadly أو AltStore أو Scarlet).
           files: |
-            DrAbdelaziz-Reminder-v1.0.23.ipa
+            DrAbdelaziz-Reminder-v1.0.24.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Also Update Legacy Release v1.0.0
+      - name: Also Update Latest Tag
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.0
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.23"
+          tag_name: latest
+          name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.23.ipa
+            DrAbdelaziz-Reminder-v1.0.24.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

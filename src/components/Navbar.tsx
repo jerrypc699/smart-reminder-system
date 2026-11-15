@@ -131,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   د. عبد العزيز
                 </h1>
                 <span className="inline-flex items-center text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono font-bold shrink-0">
-                  v1.0.23
+                  v1.0.24
                 </span>
                 <span className="hidden lg:inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#9E6E0B] border border-[#D4AF37]/30 font-bold shrink-0">
                   <Sparkles className="w-2.5 h-2.5" strokeWidth={2} />

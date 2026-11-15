@@ -12,6 +12,7 @@ import { FloatingDhikr } from './components/FloatingDhikr';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { InstallAppModal } from './components/InstallAppModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
+import { WelcomeSplash } from './components/WelcomeSplash';
 import { cloudSyncService } from './services/cloudSyncService';
 import { vercelCloudSync } from './services/vercelCloudSync';
 import { supabaseService } from './services/supabaseService';
@@ -78,6 +79,15 @@ export function App() {
 
   // Active Popup Alert
   const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
+
+  // Executive Welcome Splash Screen State (opens when system starts)
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('smart_reminder_show_welcome_splash') !== 'false';
+    } catch {
+      return true;
+    }
+  });
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -1469,6 +1479,7 @@ export function App() {
             prayerSettings={prayerSettings}
             setActiveTab={setActiveTab}
             onOpenInstallModal={() => setIsInstallModalOpen(true)}
+            onOpenWelcomeSplash={() => setShowWelcomeSplash(true)}
           />
         )}
 
@@ -1539,6 +1550,7 @@ export function App() {
             onOpenCloudModal={() => setIsCloudModalOpen(true)}
             theme={theme}
             onToggleTheme={toggleTheme}
+            onOpenWelcomeSplash={() => setShowWelcomeSplash(true)}
           />
         )}
       </main>
@@ -1584,6 +1596,17 @@ export function App() {
         }}
         onStopAudio={handleStopAudio}
         isSpeaking={isSpeaking}
+      />
+
+      {/* Executive Welcome Splash Screen on System Opening */}
+      <WelcomeSplash
+        isOpen={showWelcomeSplash}
+        onClose={() => setShowWelcomeSplash(false)}
+        nextPrayer={prayerCalc.nextPrayer}
+        remainingTime={prayerCalc.remaining}
+        todayTasksCount={pendingTasksCount}
+        hijriDate={hijriDate}
+        cityName={prayerSettings.cityName}
       />
 
       {/* Floating On-Screen Dhikr (Azkari App Style) */}

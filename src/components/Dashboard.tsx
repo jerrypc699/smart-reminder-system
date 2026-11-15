@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Compass,
   CheckSquare,
@@ -32,6 +32,7 @@ interface DashboardProps {
   prayerSettings: PrayerSettings;
   setActiveTab: (tab: string) => void;
   onOpenInstallModal?: () => void;
+  onOpenWelcomeSplash?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -45,12 +46,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onPlayAzanPreview,
   prayerSettings,
   setActiveTab,
+  onOpenWelcomeSplash,
 }) => {
   const [quickTitle, setQuickTitle] = useState('');
   const [quickTime, setQuickTime] = useState('');
   const [quickPriority, setQuickPriority] = useState<TaskPriority>('medium');
   const [quickCategory, setQuickCategory] = useState<TaskCategory>('work');
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [dashboardGreeting, setDashboardGreeting] = useState('');
+
+  // Typing animation for executive greeting
+  useEffect(() => {
+    const greeting = 'مرحباً بك يا د/ عبد العزيز';
+    let idx = 0;
+    const timer = setInterval(() => {
+      idx++;
+      setDashboardGreeting(greeting.slice(0, idx));
+      if (idx >= greeting.length) clearInterval(timer);
+    }, 55);
+    return () => clearInterval(timer);
+  }, []);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayTasks = tasks.filter((t) => t.dueDate === todayStr || !t.dueDate);
@@ -137,8 +152,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight">
-                  أهلاً بك، دكتور عبد العزيز
+                <h2 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-1.5">
+                  <span className="bg-gradient-to-r from-[#FFF4CC] via-[#F1D583] to-[#ECC764] bg-clip-text text-transparent">
+                    {dashboardGreeting || 'مرحباً بك يا د/ عبد العزيز'}
+                  </span>
+                  {dashboardGreeting.length < 'مرحباً بك يا د/ عبد العزيز'.length && (
+                    <span className="inline-block w-1.5 sm:w-2 h-4 sm:h-5 bg-[#F1D583] rounded-full animate-pulse" />
+                  )}
                 </h2>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/12 text-emerald-300 border border-emerald-500/25 font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -151,14 +171,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => audioService.playDoctorWelcome()}
-            className="btn-lux-secondary h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shrink-0 w-full sm:w-auto"
-          >
-            <Volume2 className="w-4 h-4 text-[#E7C66C]" strokeWidth={1.75} />
-            <span>نداء ترحيبي: «يا دكتور عبد العزيز»</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+            {onOpenWelcomeSplash && (
+              <button
+                type="button"
+                onClick={onOpenWelcomeSplash}
+                className="btn-lux-primary h-10 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0 shadow-sm"
+                title="عرض شاشة الترحيب الافتتاحية الفخمة"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>شاشة الترحيب ✨</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => audioService.playDoctorWelcome()}
+              className="btn-lux-secondary h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <Volume2 className="w-4 h-4 text-[#E7C66C]" strokeWidth={1.75} />
+              <span>نداء ترحيبي: «يا دكتور عبد العزيز»</span>
+            </button>
+          </div>
         </div>
       </div>
 

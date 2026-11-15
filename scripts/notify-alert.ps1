@@ -1,6 +1,6 @@
 param(
     [string]$AudioFile,
-    [string]$Title = "نظام د. عبد العزيز الذكي",
+    [string]$Title = "مرحباً بك يا د/ عبد العزيز 🌟",
     [string]$Message = "تذكير صوتي جديد",
     [int]$DurationSec = 0
 )

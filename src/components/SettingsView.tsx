@@ -46,6 +46,7 @@ interface SettingsViewProps {
   onOpenCloudModal?: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  onOpenWelcomeSplash?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -62,7 +63,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onOpenCloudModal,
   theme = 'light',
   onToggleTheme,
+  onOpenWelcomeSplash,
 }) => {
+  const [autoWelcomeSplash, setAutoWelcomeSplash] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('smart_reminder_show_welcome_splash') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleAutoWelcomeSplash = () => {
+    const nextVal = !autoWelcomeSplash;
+    setAutoWelcomeSplash(nextVal);
+    try {
+      localStorage.setItem('smart_reminder_show_welcome_splash', nextVal ? 'true' : 'false');
+    } catch {}
+  };
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
   const [savedAlert, setSavedAlert] = useState(false);
@@ -199,14 +216,72 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => audioService.playDoctorWelcome(audioSettings.masterVolume)}
-          className="btn-lux-gold px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center gap-2 shrink-0"
-        >
-          <Volume2 className="w-4 h-4" strokeWidth={2} />
-          <span>تجربة نداء الترحيب</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {onOpenWelcomeSplash && (
+            <button
+              type="button"
+              onClick={onOpenWelcomeSplash}
+              className="btn-lux-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-[#F1D583]" strokeWidth={2} />
+              <span>معاينة شاشة الترحيب</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => audioService.playDoctorWelcome(audioSettings.masterVolume)}
+            className="btn-lux-gold px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center gap-2"
+          >
+            <Volume2 className="w-4 h-4" strokeWidth={2} />
+            <span>تجربة نداء الترحيب</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Welcome Splash Experience Card */}
+      <div className="lux-card rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center shrink-0">
+            <Sparkles className="w-6 h-6 text-[#F1D583]" strokeWidth={1.75} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <span>شاشة الترحيب الافتتاحية: «مرحباً بك يا د/ عبد العزيز»</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#F1D583] border border-[#D4AF37]/30 font-bold">
+                تأثير كتابي احترافي
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              تظهر عند فتح وتشغيل النظام مع كتابة متحركة لاسم الدكتور وملخص فوري لصلوات ومهام اليوم.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          {onOpenWelcomeSplash && (
+            <button
+              type="button"
+              onClick={onOpenWelcomeSplash}
+              className="btn-lux-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-[#F1D583]" />
+              <span>معاينة الترحيب</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleToggleAutoWelcomeSplash}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center gap-2 transition-all ${
+              autoWelcomeSplash
+                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                : 'bg-white/5 text-slate-400 border border-white/10 hover:text-white'
+            }`}
+          >
+            <span>{autoWelcomeSplash ? 'مفعل عند الفتح ✓' : 'معطل عند الفتح'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Appearance & Daylight Theme Card */}

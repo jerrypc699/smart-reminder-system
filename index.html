@@ -18,6 +18,29 @@
       })();
     </script>
 
+    <!-- Force Instant Cache Purge for Immediate Updates -->
+    <script>
+      (function() {
+        var BUILD_VER = 'v1.0.25-aljazeera-wa-img-1';
+        try {
+          var cur = localStorage.getItem('dr_app_build_ver');
+          if (cur !== BUILD_VER) {
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+              });
+            }
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                for (var j = 0; j < regs.length; j++) regs[j].unregister();
+              });
+            }
+            localStorage.setItem('dr_app_build_ver', BUILD_VER);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- PWA & Mobile Web App Meta Tags -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#F4F6FA" />

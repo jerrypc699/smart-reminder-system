@@ -58,18 +58,7 @@
     "metaAccessToken": "",
     "webhookUrl": "",
     "webhookSecret": "",
-    "savedContacts": [
-      {
-        "id": "wa_contact_1794766708457",
-        "name": "Alwala Transport",
-        "phone": "201060957780"
-      },
-      {
-        "id": "wa_contact_1794720285008",
-        "name": "Jerry",
-        "phone": "201018282280"
-      }
-    ]
+    "savedContacts": []
   },
   "dailySystem": {
     "days": {
@@ -257,20 +246,14 @@
       "autoImportTasks": true,
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
-      "customPrayers": [
-        {
-          "id": "cp_1794672832184_28oy",
-          "label": "صلاه الضحى",
-          "points": 3
-        }
-      ],
+      "customPrayers": [],
       "customAdhkar": [],
       "customHabits": [],
       "customNotePrompts": [],
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-15T21:43:35.924Z",
+  "updatedAt": "2026-11-15T21:43:36.218Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -279,14 +262,14 @@
     "longitude": 31.2357,
     "method": "Egyptian",
     "madhab": "shafi",
-    "preAzanReminderMinutes": 10,
+    "preAzanReminderMinutes": 5,
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
-    "azanReciter": "mishary",
+    "azanReciter": "abdulbasit",
     "enableDuaaAfterAzan": true
   },
   "audioSettings": {
-    "masterVolume": 0.85,
+    "masterVolume": 1,
     "enableTts": true,
     "ttsVoiceURI": "",
     "ttsRate": 0.95,

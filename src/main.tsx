@@ -16,6 +16,7 @@ if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((reg) => {
+          reg.update();
           console.log('✓ Service Worker active for Dr. Abdelaziz PWA:', reg.scope);
         })
         .catch((err) => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v9';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v12';
 
 const STATIC_ASSETS = [
   '/',
@@ -32,7 +32,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: Clean up old caches
+// Activate: Clean up all old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -48,7 +48,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: Network first with Cache fallback for HTML/API, Cache first for assets
+// Fetch: Network First for all HTML, JS and CSS to ensure instant updates
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -65,10 +65,30 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (js, css, png, svg, mp3, fonts) -> Cache first, then network & update cache
+  // Code assets and HTML -> ALWAYS Network First (Guarantees immediate updates on deploy)
   if (
+    request.mode === 'navigate' ||
     url.pathname.endsWith('.js') ||
     url.pathname.endsWith('.css') ||
+    url.pathname === '/' ||
+    url.pathname === '/index.html'
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Media & static images (png, svg, mp3, fonts) -> Cache first, fallback to network
+  if (
     url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.woff2') ||
@@ -87,22 +107,6 @@ self.addEventListener('fetch', (event) => {
           })
           .catch(() => cached);
       })
-    );
-    return;
-  }
-
-  // Navigation (HTML pages) -> Network first, fallback to cached index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
     );
     return;
   }

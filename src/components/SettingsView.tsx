@@ -1139,6 +1139,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <span>استعادة الافتراضي</span>
         </button>
       </div>
+
+      {/* Version & Build Info Card */}
+      <div className="rounded-3xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold">
+            v1
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold text-white">إصدار التطبيق والنظام</h4>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                v1.0.23 (Build 24)
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              تطبيق د. عبد العزيز — المساعد التنفيذي الذكي، منبه الأذان ومزامنة السحابة
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenInstallModal}
+          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+        >
+          <Download className="w-3.5 h-3.5 text-emerald-400" />
+          <span>تحميل التحديث (APK / IPA)</span>
+        </button>
+      </div>
     </div>
   );
 };

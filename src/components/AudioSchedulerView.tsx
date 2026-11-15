@@ -88,6 +88,42 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   // Video Preview Modal state
   const [previewVideo, setPreviewVideo] = useState<{ url: string; title: string } | null>(null);
 
+  // Countdown test simulation state (allows testing the alarm on PC/Web before moving to mobile)
+  const [countdownTest, setCountdownTest] = useState<{ id: string; seconds: number; title: string; item: ScheduledMedia } | null>(null);
+  const countdownTimerRef = useRef<any>(null);
+
+  const startCountdownTest = (item: ScheduledMedia) => {
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    setCountdownTest({ id: item.id, seconds: 5, title: item.title, item });
+    
+    let left = 5;
+    countdownTimerRef.current = setInterval(() => {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+        setCountdownTest(null);
+        onTestScheduledAudio(item);
+      } else {
+        setCountdownTest({ id: item.id, seconds: left, title: item.title, item });
+      }
+    }, 1000);
+  };
+
+  const cancelCountdownTest = () => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setCountdownTest(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    };
+  }, []);
+
   // Load media files on mount
   const loadLibrary = async () => {
     try {
@@ -581,7 +617,33 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
         </div>
       </div>
 
-      {/* Alert Messages */}
+      {/* Alert Messages & Simulation Banner */}
+      {countdownTest && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-900/80 via-indigo-900/80 to-slate-900/80 border-2 border-purple-500 shadow-2xl flex items-center justify-between text-xs text-purple-100 animate-pulse">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-amber-400 shrink-0 animate-spin" />
+            <div className="text-right">
+              <p className="font-black text-white text-sm flex items-center gap-2">
+                <span>⚡ جاري محاكاة انطلاق المنبه:</span>
+                <span className="text-amber-300">"{countdownTest.title}"</span>
+              </p>
+              <p className="text-[11px] text-purple-200 mt-0.5">
+                ستفتح شاشة التنبيه ويبدأ العرض التلقائي خلال{' '}
+                <span className="text-xl font-black font-mono text-amber-300 mx-1">{countdownTest.seconds}</span>{' '}
+                ثوانٍ (تجربة حية تحاكي فتح التطبيق على الموبايل)...
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={cancelCountdownTest}
+            className="px-3.5 py-2 rounded-xl bg-rose-500/25 hover:bg-rose-500/40 border border-rose-500/40 text-rose-200 text-xs font-bold transition-all cursor-pointer"
+          >
+            إلغاء ✕
+          </button>
+        </div>
+      )}
+
       {uploadSuccess && (
         <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300 shadow-lg shadow-emerald-950/20 animate-fadeIn">
           <div className="flex items-center gap-2.5">
@@ -1067,7 +1129,18 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                             title="تشغيل وتجربة هذا التنبيه فوراً"
                           >
                             <Play className="w-3.5 h-3.5 text-purple-300 fill-purple-300" />
-                            <span>تشغيل وتجربة الآن</span>
+                            <span>تشغيل الآن</span>
+                          </button>
+
+                          {/* 5s Countdown Simulation Test Button (PC & Mobile) */}
+                          <button
+                            type="button"
+                            onClick={() => startCountdownTest(item)}
+                            className="px-2.5 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                            title="اختبار محاكاة المنبه بعد 5 ثوانٍ لتجربة انطلاق العرض التلقائي على الكمبيوتر قبل النقل للموبايل"
+                          >
+                            <Clock className="w-3.5 h-3.5 text-indigo-300" />
+                            <span>اختبار 5ث ⚡</span>
                           </button>
 
                           {isAndroidNative && (

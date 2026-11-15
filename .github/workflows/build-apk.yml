@@ -53,31 +53,30 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.28.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.29.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.28.apk
-          path: DrAbdelaziz-Reminder-v1.0.28.apk
+          name: DrAbdelaziz-Reminder-v1.0.29.apk
+          path: DrAbdelaziz-Reminder-v1.0.29.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.28
+      - name: Create or Update GitHub Release v1.0.29
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.28
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.28"
+          tag_name: v1.0.29
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.29"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.28
-            - إصلاح شامل لجدولة الوسائط والصوتيات والفيديو لتعمل بدقة متناهية فور حلول موعدها.
-            - إدراج أصوات النظام المدمجة تلقائياً بمكتبة الوسائط للجدولة الفورية (الأذان والتكبيرات ونداءات د. عبد العزيز).
-            - إضافة زر تشغيل وتجربة فورية لكل عنصر وسائط مجدول.
-            - اعتماد إرسال بطاقة التكليف كصورة رسمية على واتساب (مكتب د/ عبد العزيز شطا).
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.29
+            - إصلاح جذري لمشكلة اختفاء الفيديو بعد الجدولة (منع مسح الجدولة المحلية بواسطة المزامنة السحابية غير المتزامنة عبر mergeScheduledWithCloud).
+            - تفعيل التحديث التفاعلي الفوري لقائمة الجداول فور الإضافة.
+            - إضافة ميزة محاكاة واختبار المنبه بعد 5 ثوانٍ على الكمبيوتر والمتصفح قبل النقل للموبايل.
           files: |
-            DrAbdelaziz-Reminder-v1.0.28.apk
+            DrAbdelaziz-Reminder-v1.0.29.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -90,7 +89,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.28.apk
+            DrAbdelaziz-Reminder-v1.0.29.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

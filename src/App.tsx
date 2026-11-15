@@ -161,9 +161,8 @@ export function App() {
 
     const unsubMedia = cloudSyncService.subscribeScheduledMedia((cloudMedia) => {
       if (cloudMedia && Array.isArray(cloudMedia)) {
-        const cleanMedia = cloudMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
-        setScheduledAudios(cleanMedia);
-        audioStorageService.saveScheduledMedias(cleanMedia);
+        const merged = audioStorageService.mergeScheduledWithCloud(cloudMedia);
+        setScheduledAudios(merged);
       }
     });
 
@@ -217,9 +216,8 @@ export function App() {
         taskService.mergeEmployeesWithCloud(cloudData.employees);
       }
       if (cloudData.scheduledMedia && Array.isArray(cloudData.scheduledMedia)) {
-        const cleanScheduled = cloudData.scheduledMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
-        setScheduledAudios(cleanScheduled);
-        audioStorageService.saveScheduledMedias(cleanScheduled);
+        const merged = audioStorageService.mergeScheduledWithCloud(cloudData.scheduledMedia);
+        setScheduledAudios(merged);
       }
       if (cloudData.mediaLibrary && Array.isArray(cloudData.mediaLibrary)) {
         const cleanLibrary = cloudData.mediaLibrary.filter((m) => !audioStorageService.isMediaDeleted(m.id));
@@ -274,9 +272,8 @@ export function App() {
 
     supabaseService.fetchScheduledMedia().then((spMedia) => {
       if (spMedia && Array.isArray(spMedia)) {
-        const cleanMedia = spMedia.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
-        setScheduledAudios(cleanMedia);
-        audioStorageService.saveScheduledMedias(cleanMedia);
+        const merged = audioStorageService.mergeScheduledWithCloud(spMedia);
+        setScheduledAudios(merged);
       }
     }).catch(console.warn);
 
@@ -299,9 +296,8 @@ export function App() {
       onScheduledMediaChange: async () => {
         const fresh = await supabaseService.fetchScheduledMedia();
         if (fresh && Array.isArray(fresh)) {
-          const cleanMedia = fresh.filter((m) => !audioStorageService.isScheduledDeleted(m.id));
-          setScheduledAudios(cleanMedia);
-          audioStorageService.saveScheduledMedias(cleanMedia);
+          const merged = audioStorageService.mergeScheduledWithCloud(fresh);
+          setScheduledAudios(merged);
         }
       },
       onSystemStateChange: (key, data) => {
@@ -332,8 +328,8 @@ export function App() {
           taskService.mergeEmployeesWithCloud(freshCloud.employees);
         }
         if (freshCloud.scheduledMedia && Array.isArray(freshCloud.scheduledMedia)) {
-          setScheduledAudios(freshCloud.scheduledMedia);
-          audioStorageService.saveScheduledMedias(freshCloud.scheduledMedia);
+          const merged = audioStorageService.mergeScheduledWithCloud(freshCloud.scheduledMedia);
+          setScheduledAudios(merged);
         }
         if (freshCloud.dailySystem) {
           dailySystemService.mergeFromCloud(freshCloud.dailySystem);
@@ -437,6 +433,13 @@ export function App() {
   useEffect(() => {
     NativeAlarmService.scheduleMediaItems(scheduledAudios).catch(console.warn);
   }, [scheduledAudios]);
+
+  useEffect(() => {
+    const unsub = audioStorageService.onScheduledChange((list) => {
+      setScheduledAudios(list);
+    });
+    return unsub;
+  }, []);
 
   // Track prayers already reminded today to prevent repeated alerts
   const remindedPrayersRef = useRef<Set<string>>(new Set());

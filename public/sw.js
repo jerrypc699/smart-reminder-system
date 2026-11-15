@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dr-abdelaziz-pwa-v16';
+const CACHE_NAME = 'dr-abdelaziz-pwa-v17';
 
 const STATIC_ASSETS = [
   '/',

@@ -118,6 +118,7 @@ class AudioStorageService {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private urlCache: Map<string, string> = new Map();
   private libraryListeners: Set<() => void> = new Set();
+  private scheduledListeners: Set<(items: ScheduledMedia[]) => void> = new Set();
 
   public onLibraryChange(callback: () => void): () => void {
     this.libraryListeners.add(callback);
@@ -130,6 +131,22 @@ class AudioStorageService {
         cb();
       } catch (e) {
         console.warn('Library listener error:', e);
+      }
+    });
+  }
+
+  public onScheduledChange(callback: (items: ScheduledMedia[]) => void): () => void {
+    this.scheduledListeners.add(callback);
+    return () => this.scheduledListeners.delete(callback);
+  }
+
+  public notifyScheduledChange(items?: ScheduledMedia[]): void {
+    const list = items || this.getScheduledMedias();
+    this.scheduledListeners.forEach((cb) => {
+      try {
+        cb(list);
+      } catch (e) {
+        console.warn('Scheduled listener error:', e);
       }
     });
   }
@@ -771,6 +788,7 @@ class AudioStorageService {
       const filtered = Array.isArray(list) ? list.filter((item) => item && item.id && !deletedIds.has(item.id)) : [];
       localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(filtered));
       localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(filtered));
+      this.notifyScheduledChange(filtered);
     } catch (e) {
       console.error('Failed to save scheduled medias', e);
     }
@@ -778,6 +796,53 @@ class AudioStorageService {
 
   public saveScheduledAudios(list: ScheduledMedia[]): void {
     this.saveScheduledMedias(list);
+  }
+
+  /**
+   * Smart merge incoming cloud scheduled media items with local state.
+   * NEVER blows away locally scheduled items that haven't synced yet.
+   */
+  public mergeScheduledWithCloud(cloudList: ScheduledMedia[]): ScheduledMedia[] {
+    const deletedIds = new Set(this.getDeletedScheduledIds());
+    const localList = this.getScheduledMedias();
+    const map = new Map<string, ScheduledMedia>();
+
+    // 1. Put valid cloud items
+    if (Array.isArray(cloudList)) {
+      for (const item of cloudList) {
+        if (item && item.id && !deletedIds.has(item.id)) {
+          map.set(item.id, {
+            ...item,
+            mediaId: item.mediaId || item.audioId || '',
+            mediaName: item.mediaName || item.audioName || 'ملف وسائط',
+            mediaType: item.mediaType || 'audio',
+          });
+        }
+      }
+    }
+
+    // 2. Overlay non-deleted local items (preserve newly created scheduled items not yet in cloud)
+    for (const local of localList) {
+      if (local && local.id && !deletedIds.has(local.id)) {
+        if (!map.has(local.id)) {
+          map.set(local.id, local);
+        } else {
+          const remote = map.get(local.id)!;
+          map.set(local.id, {
+            ...remote,
+            ...local,
+            cloudUrl: local.cloudUrl || remote.cloudUrl,
+            enabled: local.enabled !== undefined ? local.enabled : remote.enabled,
+          });
+        }
+      }
+    }
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    this.saveScheduledMedias(merged);
+    return merged;
   }
 
   public addScheduledMedia(

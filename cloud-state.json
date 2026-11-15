@@ -1,25 +1,4 @@
 {
-  "success": true,
-  "test": "hello-from-sync",
-  "updatedAt": "2026-11-15T21:32:17.474Z",
-  "tasks": [
-    {
-      "id": "test-sync-task-99",
-      "title": "مهمة فحص المزامنة الحية",
-      "description": "اختبار دقة المزامنة بين الأجهزة",
-      "category": "work",
-      "priority": "high",
-      "employeeId": "emp-1",
-      "dueDate": "2026-11-15",
-      "dueTime": "23:30",
-      "reminderMinutesBefore": 5,
-      "status": "pending",
-      "repeat": "none",
-      "createdAt": "2026-11-15T21:32:17.016Z"
-    }
-  ],
-  "employees": [],
-  "scheduledMedia": [],
   "tombstones": {
     "taskIds": [],
     "employeeIds": [],
@@ -27,9 +6,92 @@
     "habitIds": [],
     "mediaIds": []
   },
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "مراجعة التقرير الطبي والأسبوعي",
+      "description": "تدقيق مؤشرات الأداء ومراجعة الأرقام النهائية قبل الاجتماع الدوري",
+      "category": "work",
+      "priority": "high",
+      "employeeId": "emp-1",
+      "dueDate": "2026-11-15",
+      "dueTime": "11:00",
+      "reminderMinutesBefore": 10,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه مهم: يرجى مراجعة التقرير وتدقيق الأرقام قبل الاجتماع.",
+      "status": "pending",
+      "repeat": "none",
+      "createdAt": "2026-11-15T21:32:57.046Z"
+    },
+    {
+      "id": "task-2",
+      "title": "اجتماع تنسيق فريق العمل عبر زووم",
+      "description": "مناقشة خطة تسليم مهام المرحلة الثانية وتوزيع الأدوار",
+      "category": "meeting",
+      "priority": "urgent",
+      "employeeId": "emp-2",
+      "dueDate": "2026-11-15",
+      "dueTime": "14:30",
+      "reminderMinutesBefore": 15,
+      "voiceMessage": "يا دكتور عبد العزيز، تذكير عاجل: موعد اجتماع فريق العمل يبدأ بعد قليل، يرجى الاستعداد والانضمام.",
+      "status": "pending",
+      "repeat": "none",
+      "createdAt": "2026-11-15T21:32:57.046Z"
+    },
+    {
+      "id": "task-3",
+      "title": "استراحة وتجديد النشاط وشرب الماء",
+      "description": "تمارين تمدد خفيفة وإراحة العينين من شاشات الحاسوب",
+      "category": "health",
+      "priority": "low",
+      "employeeId": "emp-3",
+      "dueDate": "2026-11-15",
+      "dueTime": "16:00",
+      "reminderMinutesBefore": 0,
+      "voiceMessage": "يا دكتور عبد العزيز، حان وقت استراحة صحية قصيرة، تذكر شرب كوب ماء والابتعاد عن الشاشة قليلاً.",
+      "status": "pending",
+      "repeat": "daily",
+      "createdAt": "2026-11-15T21:32:57.046Z"
+    }
+  ],
+  "employees": [
+    {
+      "id": "emp-1",
+      "name": "م. أحمد الشافعي",
+      "role": "مساعد تنفيذي وتقني",
+      "department": "المكتب التنفيذي والتقنية",
+      "phone": "01001234567",
+      "whatsappPhone": "201001234567",
+      "email": "ahmed@smartreminder.clinic",
+      "notes": "مسؤول الأنظمة التقنية وجداول الاجتماعات والتقارير التنفيذية.",
+      "createdAt": "2026-11-15T21:32:57.046Z"
+    },
+    {
+      "id": "emp-2",
+      "name": "د. سارة عادل",
+      "role": "منسقة العيادة والملفات الطبية",
+      "department": "العيادة الطبية",
+      "phone": "01123456789",
+      "whatsappPhone": "201123456789",
+      "email": "sara@smartreminder.clinic",
+      "notes": "مسؤولة تنسيق مواعيد الكشوفات، ملفات المرضى، ونتائج الفحوصات.",
+      "createdAt": "2026-11-15T21:32:57.046Z"
+    },
+    {
+      "id": "emp-3",
+      "name": "أ. محمود إبراهيم",
+      "role": "سكرتارية ومتابعة المرضى",
+      "department": "خدمة العملاء والاستقبال",
+      "phone": "01234567890",
+      "whatsappPhone": "201234567890",
+      "email": "mahmoud@smartreminder.clinic",
+      "notes": "متابعة استفسارات المرضى والاتصالات وتجهيز الوصفات والملفات.",
+      "createdAt": "2026-11-15T21:32:57.046Z"
+    }
+  ],
+  "scheduledMedia": [],
   "mediaLibrary": [],
+  "whatsappSettings": {},
   "dailySystem": null,
-  "whatsappSettings": null,
-  "prayerSettings": null,
-  "audioSettings": null
+  "updatedAt": "2026-11-15T21:32:57.545Z",
+  "seeded": true
 }

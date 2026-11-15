@@ -136,7 +136,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
               <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70 text-xs sm:text-sm text-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-600">من:</span>
-                  <span className="font-bold text-[#17375E]">مكتب الدكتور عبد العزيز</span>
+                  <span className="font-bold text-[#17375E]">مكتب د/ عبد العزيز شطا</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
                   <span className="font-bold text-slate-600">التاريخ:</span>
@@ -186,7 +186,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                   ،مع خالص الشكر والتقدير
                 </p>
                 <p className="text-sm sm:text-base font-black text-[#17375E]">
-                  مكتب الدكتور عبد العزيز
+                  مكتب د/ عبد العزيز شطا
                 </p>
               </div>
             </div>

@@ -195,7 +195,7 @@ export function buildTaskWhatsAppMessage(task: {
   lines.push('');
   lines.push(`📋 *تكليف مهمة رسمية - ${title}*`);
   lines.push('────────────────────────────');
-  lines.push('• *من:* مكتب الدكتور عبد العزيز');
+  lines.push('• *من:* مكتب د/ عبد العزيز شطا');
   lines.push(`• *التاريخ:* ${formattedDate}`);
   if (formattedTime) {
     lines.push(`• *الوقت المستهدف:* ${formattedTime}`);
@@ -231,7 +231,7 @@ export function buildTaskWhatsAppMessage(task: {
 
   // Signature
   lines.push('مع خالص الشكر والتقدير،');
-  lines.push('🏢 *مكتب الدكتور عبد العزيز*');
+  lines.push('🏢 *مكتب د/ عبد العزيز شطا*');
   lines.push('');
 
   // Bottom Footer

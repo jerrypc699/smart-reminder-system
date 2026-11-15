@@ -1,93 +1,36 @@
 {
   "tombstones": {
-    "taskIds": [],
-    "employeeIds": [],
-    "scheduledIds": [],
+    "taskIds": [
+      "task-2",
+      "task-1",
+      "task-3"
+    ],
+    "employeeIds": [
+      "emp-2",
+      "emp-3",
+      "emp-1",
+      "emp-1794720293116-yh55"
+    ],
+    "scheduledIds": [
+      "sched_media_1794426111209_rs5e",
+      "sched_media_1794773148917_744m"
+    ],
     "habitIds": [],
-    "mediaIds": []
+    "mediaIds": [
+      "/audio/abdulbasit.mp3",
+      "/audio/mishary.mp3",
+      "/audio/takbeerat.mp3",
+      "/audio/makkah.mp3",
+      "/audio/dr_abdelaziz_call.mp3",
+      "/audio/dr_abdelaziz_clinic_alert.mp3",
+      "/audio/dr_abdelaziz_task_alert.mp3",
+      "/audio/dr_abdelaziz_welcome.mp3",
+      "/audio/dr_abdelaziz_pre_azan.mp3",
+      "media_1794254117528_te8vb"
+    ]
   },
-  "tasks": [
-    {
-      "id": "task-1",
-      "title": "مراجعة التقرير الطبي والأسبوعي",
-      "description": "تدقيق مؤشرات الأداء ومراجعة الأرقام النهائية قبل الاجتماع الدوري",
-      "category": "work",
-      "priority": "high",
-      "employeeId": "emp-1",
-      "dueDate": "2026-11-15",
-      "dueTime": "11:00",
-      "reminderMinutesBefore": 10,
-      "voiceMessage": "يا دكتور عبد العزيز، تنبيه مهم: يرجى مراجعة التقرير وتدقيق الأرقام قبل الاجتماع.",
-      "status": "pending",
-      "repeat": "none",
-      "createdAt": "2026-11-15T19:56:43.000Z"
-    },
-    {
-      "id": "task-2",
-      "title": "اجتماع تنسيق فريق العمل عبر زووم",
-      "description": "مناقشة خطة تسليم مهام المرحلة الثانية وتوزيع الأدوار",
-      "category": "meeting",
-      "priority": "urgent",
-      "employeeId": "emp-2",
-      "dueDate": "2026-11-15",
-      "dueTime": "14:30",
-      "reminderMinutesBefore": 15,
-      "voiceMessage": "يا دكتور عبد العزيز، تذكير عاجل: موعد اجتماع فريق العمل يبدأ بعد قليل، يرجى الاستعداد والانضمام.",
-      "status": "pending",
-      "repeat": "none",
-      "createdAt": "2026-11-15T19:56:43.000Z"
-    },
-    {
-      "id": "task-3",
-      "title": "استراحة وتجديد النشاط وشرب الماء",
-      "description": "تمارين تمدد خفيفة وإراحة العينين من شاشات الحاسوب",
-      "category": "health",
-      "priority": "low",
-      "employeeId": "emp-3",
-      "dueDate": "2026-11-15",
-      "dueTime": "16:00",
-      "reminderMinutesBefore": 0,
-      "voiceMessage": "يا دكتور عبد العزيز، حان وقت استراحة صحية قصيرة، تذكر شرب كوب ماء والابتعاد عن الشاشة قليلاً.",
-      "status": "pending",
-      "repeat": "daily",
-      "createdAt": "2026-11-15T19:56:43.000Z"
-    }
-  ],
-  "employees": [
-    {
-      "id": "emp-1",
-      "name": "م. أحمد الشافعي",
-      "role": "مساعد تنفيذي وتقني",
-      "department": "المكتب التنفيذي والتقنية",
-      "phone": "01001234567",
-      "whatsappPhone": "201001234567",
-      "email": "ahmed@smartreminder.clinic",
-      "notes": "مسؤول الأنظمة التقنية وجداول الاجتماعات والتقارير التنفيذية.",
-      "createdAt": "2026-11-15T17:25:15.799Z"
-    },
-    {
-      "id": "emp-2",
-      "name": "د. سارة عادل",
-      "role": "منسقة العيادة والملفات الطبية",
-      "department": "العيادة الطبية",
-      "phone": "01123456789",
-      "whatsappPhone": "201123456789",
-      "email": "sara@smartreminder.clinic",
-      "notes": "مسؤولة تنسيق مواعيد الكشوفات، ملفات المرضى، ونتائج الفحوصات.",
-      "createdAt": "2026-11-15T17:25:15.799Z"
-    },
-    {
-      "id": "emp-3",
-      "name": "أ. محمود إبراهيم",
-      "role": "سكرتارية ومتابعة المرضى",
-      "department": "خدمة العملاء والاستقبال",
-      "phone": "01234567890",
-      "whatsappPhone": "201234567890",
-      "email": "mahmoud@smartreminder.clinic",
-      "notes": "متابعة استفسارات المرضى والاتصالات وتجهيز الوصفات والملفات.",
-      "createdAt": "2026-11-15T17:25:15.799Z"
-    }
-  ],
+  "tasks": [],
+  "employees": [],
   "scheduledMedia": [],
   "mediaLibrary": [
     {
@@ -115,7 +58,18 @@
     "metaAccessToken": "",
     "webhookUrl": "",
     "webhookSecret": "",
-    "savedContacts": []
+    "savedContacts": [
+      {
+        "id": "wa_contact_1794766708457",
+        "name": "Alwala Transport",
+        "phone": "201060957780"
+      },
+      {
+        "id": "wa_contact_1794720285008",
+        "name": "Jerry",
+        "phone": "201018282280"
+      }
+    ]
   },
   "dailySystem": {
     "days": {
@@ -150,6 +104,147 @@
         },
         "customValues": {},
         "customNotes": {}
+      },
+      "2026-11-11": {
+        "date": "2026-11-11",
+        "prayers": {
+          "fajr": 0,
+          "dhuhr": 0,
+          "asr": 0,
+          "maghrib": 0,
+          "isha": 0
+        },
+        "adhkar": {
+          "sabah": false,
+          "masaa": false,
+          "nawm": false,
+          "dua": false
+        },
+        "quran": 0,
+        "sport": 0,
+        "study": 0,
+        "sleep": 0,
+        "water": 0,
+        "food": false,
+        "weight": "",
+        "tasks": [],
+        "dismissedTaskIds": [
+          "task-1794427174600-p2tck"
+        ],
+        "notes": {
+          "good": "",
+          "block": "",
+          "tomorrow": ""
+        },
+        "customValues": {},
+        "customNotes": {}
+      },
+      "2026-11-12": {
+        "date": "2026-11-12",
+        "prayers": {
+          "fajr": 0,
+          "dhuhr": 0,
+          "asr": 0,
+          "maghrib": 0,
+          "isha": 0
+        },
+        "adhkar": {
+          "sabah": false,
+          "masaa": false,
+          "nawm": false,
+          "dua": false
+        },
+        "quran": 0,
+        "sport": 0,
+        "study": 0,
+        "sleep": 0,
+        "water": 0,
+        "food": false,
+        "weight": "",
+        "tasks": [],
+        "dismissedTaskIds": [],
+        "notes": {
+          "good": "",
+          "block": "",
+          "tomorrow": ""
+        },
+        "customValues": {},
+        "customNotes": {}
+      },
+      "2026-11-14": {
+        "date": "2026-11-14",
+        "prayers": {
+          "fajr": 0,
+          "dhuhr": 0,
+          "asr": 0,
+          "maghrib": 0,
+          "isha": 0,
+          "cp_1794672832184_28oy": 2
+        },
+        "adhkar": {
+          "sabah": false,
+          "masaa": false,
+          "nawm": false,
+          "dua": false
+        },
+        "quran": 0,
+        "sport": 0,
+        "study": 0,
+        "sleep": 0,
+        "water": 0,
+        "food": false,
+        "weight": "",
+        "tasks": [],
+        "dismissedTaskIds": [],
+        "notes": {
+          "good": "",
+          "block": "",
+          "tomorrow": ""
+        },
+        "customValues": {},
+        "customNotes": {}
+      },
+      "2026-11-09": {
+        "date": "2026-11-09",
+        "prayers": {
+          "fajr": 2,
+          "dhuhr": 2,
+          "asr": 2,
+          "maghrib": 2,
+          "isha": 2
+        },
+        "adhkar": {
+          "sabah": true,
+          "masaa": true,
+          "nawm": true,
+          "dua": true
+        },
+        "quran": 0,
+        "sport": 45,
+        "study": 0,
+        "sleep": 0,
+        "water": 0,
+        "food": false,
+        "weight": "",
+        "tasks": [
+          {
+            "t": "",
+            "d": false
+          },
+          {
+            "t": "",
+            "d": false
+          },
+          {
+            "t": "",
+            "d": false
+          }
+        ],
+        "notes": {
+          "good": "",
+          "block": "",
+          "tomorrow": ""
+        }
       }
     },
     "months": {},
@@ -162,14 +257,20 @@
       "autoImportTasks": true,
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
-      "customPrayers": [],
+      "customPrayers": [
+        {
+          "id": "cp_1794672832184_28oy",
+          "label": "صلاه الضحى",
+          "points": 3
+        }
+      ],
       "customAdhkar": [],
       "customHabits": [],
       "customNotePrompts": [],
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-15T21:42:54.094Z",
+  "updatedAt": "2026-11-15T21:43:35.924Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -194,10 +295,33 @@
     "enableSoundEffects": true,
     "soundMuted": false
   },
-  "deletedTaskIds": [],
-  "deletedEmployeeIds": [],
-  "deletedScheduledIds": [],
-  "deletedMediaIds": [],
+  "deletedTaskIds": [
+    "task-2",
+    "task-1",
+    "task-3"
+  ],
+  "deletedEmployeeIds": [
+    "emp-2",
+    "emp-3",
+    "emp-1",
+    "emp-1794720293116-yh55"
+  ],
+  "deletedScheduledIds": [
+    "sched_media_1794426111209_rs5e",
+    "sched_media_1794773148917_744m"
+  ],
+  "deletedMediaIds": [
+    "/audio/abdulbasit.mp3",
+    "/audio/mishary.mp3",
+    "/audio/takbeerat.mp3",
+    "/audio/makkah.mp3",
+    "/audio/dr_abdelaziz_call.mp3",
+    "/audio/dr_abdelaziz_clinic_alert.mp3",
+    "/audio/dr_abdelaziz_task_alert.mp3",
+    "/audio/dr_abdelaziz_welcome.mp3",
+    "/audio/dr_abdelaziz_pre_azan.mp3",
+    "media_1794254117528_te8vb"
+  ],
   "deletedHabitIds": [],
-  "sourceDevice": "PC"
+  "sourceDevice": "Mobile"
 }

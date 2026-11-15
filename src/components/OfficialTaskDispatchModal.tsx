@@ -1,14 +1,19 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   X,
   MessageCircle,
   Copy,
   Download,
   Check,
-  FileText,
   Share2,
-  Sparkles
+  Sparkles,
+  Loader2,
+  ImageIcon
 } from 'lucide-react';
+import html2canvas from 'html2canvas-pro';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import type { Task } from '../types';
 import {
   buildTaskWhatsAppMessage,
@@ -24,6 +29,13 @@ interface OfficialTaskDispatchModalProps {
   onSendWhatsApp?: (task: Task) => void;
 }
 
+interface PreparedImage {
+  file: File;
+  blob: Blob;
+  dataUrl: string;
+  base64: string;
+}
+
 export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps> = ({
   task,
   isOpen,
@@ -31,124 +43,272 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
   onSendWhatsApp
 }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharingImage, setIsSharingImage] = useState(false);
+  const [isPreRendering, setIsPreRendering] = useState(false);
+  const [readyImage, setReadyImage] = useState<PreparedImage | null>(null);
   const [showStatusToast, setShowStatusToast] = useState<string | null>(null);
-
-  if (!isOpen || !task) return null;
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const formattedDate = formatArabicDate(task.dueDate || todayStr);
-  const recipientName = task.whatsapp?.recipientName || task.employeeName || '';
-  const honorific = getArabicHonorific(recipientName);
-  const taskTitle = task.title?.trim() || 'مهمة عمل رسمية';
-  const taskRequired = task.description?.trim() || task.title?.trim() || 'البدء في اتخاذ الإجراءات اللازمة فوراً وموافاتنا بالتقرير';
-
-  const messageText = buildTaskWhatsAppMessage(task);
 
   const displayToast = (msg: string) => {
     setShowStatusToast(msg);
-    setTimeout(() => setShowStatusToast(null), 4000);
+    setTimeout(() => setShowStatusToast(null), 5000);
   };
 
-  // Convert letter card to PNG image and share/send directly to WhatsApp
-  const handleSendAsWhatsAppImage = async () => {
-    if (!cardRef.current) return;
-    setIsSharingImage(true);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const formattedDate = formatArabicDate(task?.dueDate || todayStr);
+  const recipientName = task?.whatsapp?.recipientName || task?.employeeName || '';
+  const honorific = getArabicHonorific(recipientName);
+  const taskTitle = task?.title?.trim() || 'مهمة عمل رسمية';
+  const taskRequired =
+    task?.description?.trim() ||
+    task?.title?.trim() ||
+    'البدء في اتخاذ الإجراءات اللازمة فوراً وموافاتنا بالتقرير';
+
+  const messageText = task ? buildTaskWhatsAppMessage(task) : '';
+
+  // Background Pre-rendering: As soon as the modal opens and DOM settles,
+  // render the card into a File and Base64 so it can be shared instantly on tap
+  useEffect(() => {
+    if (!isOpen || !task) {
+      setReadyImage(null);
+      setIsPreRendering(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsPreRendering(true);
+
+    const renderCard = async () => {
+      // Allow browser to render DOM node and web fonts cleanly
+      await new Promise((res) => setTimeout(res, 200));
+      if (isCancelled || !cardRef.current) return;
+
+      try {
+        const canvas = await html2canvas(cardRef.current, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        if (isCancelled) return;
+
+        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
+
+        canvas.toBlob(
+          (blob) => {
+            if (isCancelled || !blob) {
+              setIsPreRendering(false);
+              return;
+            }
+            const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
+            const fileName = `تكليف_رسمي_${safeTitle}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            setReadyImage({
+              file,
+              blob,
+              dataUrl,
+              base64
+            });
+            setIsPreRendering(false);
+          },
+          'image/png',
+          1.0
+        );
+      } catch (err) {
+        console.warn('Failed to pre-render card:', err);
+        setIsPreRendering(false);
+      }
+    };
+
+    renderCard();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    isOpen,
+    task?.id,
+    task?.title,
+    task?.description,
+    task?.dueDate,
+    recipientName
+  ]);
+
+  if (!isOpen || !task) return null;
+
+  // On-demand canvas generator if clicked before pre-rendering finishes
+  const ensureImageReady = async (): Promise<PreparedImage | null> => {
+    if (readyImage) return readyImage;
+    if (!cardRef.current) return null;
+
     try {
-      const html2canvasModule = await import('html2canvas-pro');
-      const html2canvas = html2canvasModule.default || html2canvasModule;
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false
       });
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          setIsSharingImage(false);
-          return;
-        }
-
-        const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
-        const fileName = `تكليف_رسمي_${safeTitle}.png`;
-        const file = new File([blob], fileName, { type: 'image/png' });
-
-        // 1. Native Mobile Share Sheet (Android & iOS) -> opens WhatsApp with image attached!
-        if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: `تكليف مهمة رسمية - ${taskTitle}`,
-              text: `تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا\nالمهمة: ${taskTitle}\nالمطلوب: ${taskRequired}`
-            });
-            setIsSharingImage(false);
-            displayToast('✅ تم فتح المشاركة كصورة بنجاح!');
-            return;
-          } catch (shareErr: any) {
-            if (shareErr.name === 'AbortError') {
-              setIsSharingImage(false);
-              return;
-            }
-          }
-        }
-
-        // 2. Clipboard copy fallback (Copies image directly into clipboard)
-        let copiedImage = false;
-        try {
-          if (navigator.clipboard && 'write' in navigator.clipboard) {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            copiedImage = true;
-          }
-        } catch (clipErr) {
-          console.warn('Clipboard write image fallback:', clipErr);
-        }
-
-        // 3. Download the image file to device
-        const downloadUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = downloadUrl;
-        link.click();
-
-        // 4. Open WhatsApp chat with the contact
-        const phone = task.whatsapp?.phoneNumber || '';
-        const caption = `مرفق صورة تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا:\n📌 المهمة: *${taskTitle}*\n🎯 المطلوب: *${taskRequired}*`;
-        whatsappService.openWhatsAppChat(phone, caption);
-
-        if (copiedImage) {
-          displayToast('✅ تم نسخ صورة الخطاب للحافظة وحفظها! الصق الصورة (Ctrl+V أو لصق) في محادثة الواتساب لإرسالها فوراً.');
-        } else {
-          displayToast('✅ تم حفظ صورة الخطاب في جهازك! أرفق الصورة الآن في محادثة الواتساب.');
-        }
-        setIsSharingImage(false);
-      }, 'image/png', 1.0);
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
+      const blob = await new Promise<Blob | null>((res) =>
+        canvas.toBlob(res, 'image/png', 1.0)
+      );
+      if (!blob) return null;
+      const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
+      const file = new File([blob], `تكليف_رسمي_${safeTitle}.png`, {
+        type: 'image/png'
+      });
+      const prepared = { file, blob, dataUrl, base64 };
+      setReadyImage(prepared);
+      return prepared;
     } catch (e) {
-      console.error('Error generating official card image:', e);
-      setIsSharingImage(false);
-      displayToast('⚠️ تعذر إنشاء الصورة؛ يرجى المحاولة مرة أخرى.');
+      console.warn('ensureImageReady error:', e);
+      return null;
     }
   };
 
+  // 1. Primary Action: Send As Image to WhatsApp across Android, iOS & Web
+  const handleSendAsWhatsAppImage = async () => {
+    setIsSharingImage(true);
+
+    try {
+      const img = await ensureImageReady();
+      if (!img) {
+        displayToast('⚠️ تعذر تجهيز صورة الخطاب؛ يرجى المحاولة مرة أخرى.');
+        setIsSharingImage(false);
+        return;
+      }
+
+      const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `تكليف_رسمي_${safeTitle}_${Date.now()}.png`;
+
+      // Branch A: Native Android or iOS Capacitor App
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const writeRes = await Filesystem.writeFile({
+            path: fileName,
+            data: img.base64,
+            directory: Directory.Cache
+          });
+
+          await Share.share({
+            title: `تكليف مهمة رسمية - ${taskTitle}`,
+            text: `تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا\nالمهمة: ${taskTitle}\nالمطلوب: ${taskRequired}`,
+            files: [writeRes.uri],
+            dialogTitle: 'إرسال بطاقة التكليف كصورة عبر واتساب'
+          });
+
+          displayToast('✅ تم فتح مشاركة الصورة بنجاح!');
+          setIsSharingImage(false);
+          return;
+        } catch (nativeErr: any) {
+          if (nativeErr?.message?.includes('canceled') || nativeErr?.name === 'AbortError') {
+            setIsSharingImage(false);
+            return;
+          }
+          console.warn('Native Capacitor share error, falling back:', nativeErr);
+        }
+      }
+
+      // Branch B: Web / Mobile Browser (Safari on iOS, Chrome on Android)
+      // Because img.file was pre-rendered, navigator.share runs in the active user gesture
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.canShare &&
+        navigator.canShare({ files: [img.file] })
+      ) {
+        try {
+          await navigator.share({
+            files: [img.file],
+            title: `تكليف مهمة رسمية - ${taskTitle}`,
+            text: `تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا\nالمهمة: ${taskTitle}\nالمطلوب: ${taskRequired}`
+          });
+          displayToast('✅ تم فتح مشاركة الصورة بنجاح!');
+          setIsSharingImage(false);
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            setIsSharingImage(false);
+            return;
+          }
+          console.warn('navigator.share failed, using fallback:', shareErr);
+        }
+      }
+
+      // Branch C: Desktop Browser / Unsupported Share Fallback
+      // 1. Copy image directly into system clipboard
+      let didCopy = false;
+      try {
+        if (navigator.clipboard && 'write' in navigator.clipboard) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': img.blob })
+          ]);
+          didCopy = true;
+        }
+      } catch (clipErr) {
+        console.warn('Clipboard write image fallback error:', clipErr);
+      }
+
+      // 2. Download the PNG file
+      const downloadUrl = URL.createObjectURL(img.blob);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = downloadUrl;
+      link.click();
+
+      // 3. Open WhatsApp chat with recipient
+      const phone = task.whatsapp?.phoneNumber || '';
+      const caption = `مرفق صورة تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا:\n📌 المهمة: *${taskTitle}*\n🎯 المطلوب: *${taskRequired}*`;
+      whatsappService.openWhatsAppChat(phone, caption);
+
+      if (didCopy) {
+        displayToast(
+          '✅ تم نسخ صورة التكليف للحافظة وحفظها! الصق الصورة فوراً (Ctrl+V أو لصق) في محادثة الواتساب.'
+        );
+      } else {
+        displayToast(
+          '✅ تم تنزيل صورة التكليف في جهازك! أرفق الصورة الآن في محادثة الواتساب المفتوحة.'
+        );
+      }
+    } catch (e) {
+      console.error('Error sharing official card image:', e);
+      displayToast('⚠️ تعذر إرسال الصورة؛ يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsSharingImage(false);
+    }
+  };
+
+  // 2. Download Image File
   const handleDownloadImage = async () => {
-    if (!cardRef.current) return;
     setIsDownloading(true);
     try {
-      const html2canvasModule = await import('html2canvas-pro');
-      const html2canvas = html2canvasModule.default || html2canvasModule;
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
-      });
+      const img = await ensureImageReady();
+      if (!img) {
+        displayToast('⚠️ تعذر حفظ الصورة.');
+        setIsDownloading(false);
+        return;
+      }
+      const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `تكليف_رسمي_${safeTitle}.png`;
+
+      if (Capacitor.isNativePlatform()) {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: img.base64,
+          directory: Directory.Documents
+        });
+        displayToast('✅ تم حفظ صورة الخطاب في مستندات هاتفك بنجاح!');
+        return;
+      }
+
       const link = document.createElement('a');
-      link.download = `تكليف_رسمي_${taskTitle.replace(/[\\/:*?"<>|]/g, '_')}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
+      link.download = fileName;
+      link.href = img.dataUrl;
       link.click();
       displayToast('✅ تم حفظ صورة الخطاب في جهازك بنجاح!');
     } catch (e) {
@@ -159,17 +319,43 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     }
   };
 
+  // 3. Copy PNG Image bytes directly to clipboard
+  const handleCopyImageToClipboard = async () => {
+    try {
+      const img = await ensureImageReady();
+      if (!img) {
+        displayToast('⚠️ تعذر نسخ الصورة.');
+        return;
+      }
+      if (navigator.clipboard && 'write' in navigator.clipboard) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': img.blob })
+        ]);
+        setCopiedImage(true);
+        displayToast('✅ تم نسخ صورة الخطاب إلى الحافظة بنجاح! يمكنك لصقها (Paste) في أي محادثة.');
+        setTimeout(() => setCopiedImage(false), 3000);
+        return;
+      }
+      displayToast('⚠️ خاصية نسخ الصورة للحافظة غير مدعومة في هذا المتصفح.');
+    } catch (e) {
+      console.warn('Clipboard image copy error:', e);
+      displayToast('⚠️ تعذر نسخ الصورة؛ يرجى تنزيلها كملف.');
+    }
+  };
+
+  // 4. Copy Message Text
   const handleCopyText = async () => {
     try {
       await navigator.clipboard.writeText(messageText);
-      setCopied(true);
+      setCopiedText(true);
       displayToast('✅ تم نسخ نص الرسالة للحافظة بنجاح!');
-      setTimeout(() => setCopied(false), 2500);
+      setTimeout(() => setCopiedText(false), 2500);
     } catch {
       // fallback
     }
   };
 
+  // 5. Direct WhatsApp Text Send
   const handleDirectWhatsAppTextSend = () => {
     if (onSendWhatsApp) {
       onSendWhatsApp(task);
@@ -206,38 +392,45 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
 
         {/* Status Toast */}
         {showStatusToast && (
-          <div className="mb-3 p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold animate-pulse text-center">
+          <div className="mb-3 p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold animate-pulse text-center leading-relaxed">
             {showStatusToast}
           </div>
         )}
 
         {/* Scrollable Container for Card Preview */}
         <div className="overflow-x-auto pb-2 flex justify-center">
-          {/* THE OFFICIAL CARD AS SHOWN IN THE IMAGE (Matching user's reference photo 100%) */}
+          {/* THE OFFICIAL CARD: Exactly matches reference image media_1794766965447_a21d570e.jpg */}
           <div
             ref={cardRef}
-            className="w-full min-w-[320px] max-w-[460px] bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 select-text font-['Cairo',sans-serif] p-6 sm:p-8 space-y-5"
+            className="w-full min-w-[340px] max-w-[460px] bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 select-text font-['Cairo',sans-serif] p-6 sm:p-8 space-y-4"
             dir="rtl"
+            style={{ backgroundColor: '#ffffff' }}
           >
             {/* 1. Document Title: تكليف مهمة رسمية - [اسم المهمة] */}
-            <h2 className="text-xl sm:text-2xl font-black text-[#17375E] text-center leading-snug">
+            <h2 className="text-xl sm:text-2xl font-black text-[#17375E] text-center leading-snug tracking-tight">
               تكليف مهمة رسمية - {taskTitle}
             </h2>
 
-            {/* 2. Sender & Date Bordered Box */}
-            <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/60 text-xs sm:text-sm text-slate-800 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-600">من:</span>
-                <span className="font-extrabold text-[#17375E]">مكتب د/ عبد العزيز شطا</span>
+            {/* 2. Sender & Date Box (White/off-white rounded box with thin border) */}
+            <div className="border border-slate-200/90 rounded-xl p-4 bg-[#fcfdfe] text-xs sm:text-sm space-y-2.5">
+              <div className="flex items-center justify-start text-right">
+                <span className="font-bold text-slate-500 w-16 text-right shrink-0">
+                  من:
+                </span>
+                <span className="font-black text-[#17375E]">
+                  مكتب د/ عبد العزيز شطا
+                </span>
               </div>
-              <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
-                <span className="font-bold text-slate-600">التاريخ:</span>
-                <span className="font-bold text-slate-700">{formattedDate}</span>
+              <div className="flex items-center justify-start text-right">
+                <span className="font-bold text-slate-500 w-16 text-right shrink-0">
+                  التاريخ:
+                </span>
+                <span className="font-bold text-slate-800">{formattedDate}</span>
               </div>
             </div>
 
             {/* 3. Salutation */}
-            <div className="space-y-1 text-right">
+            <div className="space-y-1 text-right pt-1">
               <p className="text-base sm:text-lg font-black text-slate-900">
                 {honorific}،
               </p>
@@ -246,10 +439,10 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
               </p>
             </div>
 
-            {/* 4. Highlighted Mission Card (Soft Blue with Navy Right Border) */}
-            <div className="rounded-2xl p-4 sm:p-5 bg-[#EEF3F8] border-r-[5px] border-[#17375E] space-y-3.5 text-right">
+            {/* 4. Highlighted Mission Card (Soft Blue #EEF3F8 with Navy Right Border) */}
+            <div className="rounded-xl p-4 sm:p-5 bg-[#EEF3F8] border-r-[5px] border-[#17375E] space-y-3.5 text-right">
               <div>
-                <span className="block text-[11px] text-slate-500 font-semibold mb-1">
+                <span className="block text-[11px] text-slate-500 font-bold mb-1">
                   المهمة
                 </span>
                 <p className="text-base sm:text-lg font-black text-[#17375E] leading-snug">
@@ -257,8 +450,8 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                 </p>
               </div>
 
-              <div className="border-t border-slate-300/50 pt-3">
-                <span className="block text-[11px] text-slate-500 font-semibold mb-1">
+              <div className="pt-2">
+                <span className="block text-[11px] text-slate-500 font-bold mb-1">
                   المطلوب
                 </span>
                 <p className="text-sm sm:text-base font-extrabold text-[#17375E] leading-relaxed">
@@ -268,17 +461,17 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             </div>
 
             {/* 5. Directive */}
-            <p className="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed text-right">
+            <p className="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed text-right pt-1">
               يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.
             </p>
 
             {/* 6. Subtle Separator Line */}
-            <div className="border-t border-slate-200 pt-2" />
+            <div className="border-t border-slate-200/90 pt-1" />
 
-            {/* 7. Closing Signature */}
-            <div className="text-left space-y-1" dir="ltr">
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                ،مع خالص الشكر والتقدير
+            {/* 7. Closing Signature (Right-aligned matching original letterhead) */}
+            <div className="text-right space-y-1 pt-1 pr-1">
+              <p className="text-xs sm:text-sm text-slate-600 font-semibold">
+                مع خالص الشكر والتقدير،
               </p>
               <p className="text-sm sm:text-base font-black text-[#17375E]">
                 مكتب د/ عبد العزيز شطا
@@ -296,42 +489,76 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             disabled={isSharingImage}
             className="w-full h-12 px-5 rounded-2xl text-sm font-black text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-110 active:scale-98 flex items-center justify-center gap-2.5 cursor-pointer shadow-lg shadow-emerald-950/60 transition-all disabled:opacity-50"
           >
-            <Share2 className="w-5 h-5 text-white" />
-            <span>
-              {isSharingImage ? 'جاري تحويل الخطاب إلى صورة...' : 'إرسال كصورة على واتساب فوراً 📸'}
-            </span>
+            {isSharingImage || isPreRendering ? (
+              <>
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+                <span>
+                  {isPreRendering
+                    ? 'جاري إعداد صورة الخطاب...'
+                    : 'جاري فتح الواتساب وإرسال الصورة...'}
+                </span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-5 h-5 text-white" />
+                <span>إرسال كصورة على واتساب فوراً 📸</span>
+              </>
+            )}
           </button>
 
           {/* Secondary Options Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Download Image File */}
             <button
               type="button"
               onClick={handleDownloadImage}
               disabled={isDownloading}
-              className="h-10 px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all disabled:opacity-50"
+              className="h-10 px-2 sm:px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all disabled:opacity-50"
             >
-              <Download className="w-4 h-4 text-[#ECC764]" />
-              <span>{isDownloading ? 'جاري الحفظ...' : 'حفظ كصورة في الهاتف 💾'}</span>
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#ECC764]" />
+              ) : (
+                <Download className="w-4 h-4 text-[#ECC764]" />
+              )}
+              <span>حفظ كصورة 💾</span>
+            </button>
+
+            {/* Copy Image to Clipboard */}
+            <button
+              type="button"
+              onClick={handleCopyImageToClipboard}
+              className="h-10 px-2 sm:px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all"
+            >
+              {copiedImage ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-400">تم نسخ الصورة!</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-4 h-4 text-sky-400" />
+                  <span>نسخ الصورة 🖼️</span>
+                </>
+              )}
             </button>
 
             {/* Send as Formatted Text */}
             <button
               type="button"
               onClick={handleDirectWhatsAppTextSend}
-              className="h-10 px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all"
+              className="h-10 px-2 sm:px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all"
             >
               <MessageCircle className="w-4 h-4 text-emerald-400" />
-              <span>إرسال كنص مكتوب 💬</span>
+              <span>إرسال كنص 💬</span>
             </button>
 
             {/* Copy Message Text */}
             <button
               type="button"
               onClick={handleCopyText}
-              className="h-10 px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all"
+              className="h-10 px-2 sm:px-3 rounded-xl text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 transition-all"
             >
-              {copied ? (
+              {copiedText ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-400" />
                   <span className="text-emerald-400">تم نسخ النص!</span>
@@ -339,7 +566,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
               ) : (
                 <>
                   <Copy className="w-4 h-4 text-slate-300" />
-                  <span>نسخ نص الرسالة 📋</span>
+                  <span>نسخ النص 📋</span>
                 </>
               )}
             </button>

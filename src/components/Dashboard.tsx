@@ -61,9 +61,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     let idx = 0;
     const timer = setInterval(() => {
       idx++;
-      setDashboardGreeting(greeting.slice(0, idx));
-      if (idx >= greeting.length) clearInterval(timer);
-    }, 55);
+      if (idx >= greeting.length) {
+        setDashboardGreeting(greeting);
+        clearInterval(timer);
+      } else {
+        setDashboardGreeting(greeting.slice(0, idx));
+      }
+    }, 35);
     return () => clearInterval(timer);
   }, []);
 

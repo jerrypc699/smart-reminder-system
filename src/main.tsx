@@ -66,7 +66,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             onClick={() => {
               try {
                 sessionStorage.clear();
-              } catch {}
+              } catch { }
               window.location.reload();
             }}
             className="px-6 py-3 rounded-xl font-black text-sm bg-gradient-to-r from-[#FFF4CC] via-[#F1D583] to-[#D4AF37] text-[#070B14] shadow-lg cursor-pointer"

@@ -1,1 +1,35 @@
-{"success": true, "test": "hello-from-sync", "updatedAt": "2026-11-15T21:30:00Z"}
+{
+  "success": true,
+  "test": "hello-from-sync",
+  "updatedAt": "2026-11-15T21:32:17.474Z",
+  "tasks": [
+    {
+      "id": "test-sync-task-99",
+      "title": "مهمة فحص المزامنة الحية",
+      "description": "اختبار دقة المزامنة بين الأجهزة",
+      "category": "work",
+      "priority": "high",
+      "employeeId": "emp-1",
+      "dueDate": "2026-11-15",
+      "dueTime": "23:30",
+      "reminderMinutesBefore": 5,
+      "status": "pending",
+      "repeat": "none",
+      "createdAt": "2026-11-15T21:32:17.016Z"
+    }
+  ],
+  "employees": [],
+  "scheduledMedia": [],
+  "tombstones": {
+    "taskIds": [],
+    "employeeIds": [],
+    "scheduledIds": [],
+    "habitIds": [],
+    "mediaIds": []
+  },
+  "mediaLibrary": [],
+  "dailySystem": null,
+  "whatsappSettings": null,
+  "prayerSettings": null,
+  "audioSettings": null
+}

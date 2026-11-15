@@ -1196,33 +1196,38 @@ export function App() {
       // 4. Check Scheduled Custom Audio and Video Files
       const schedList = audioStorageService.getScheduledMedias();
       schedList.forEach((item) => {
-        if (!item.enabled) return;
+        if (!item.enabled || !item.scheduledTime) return;
 
-        let shouldPlay = false;
+        const [schedH, schedM] = item.scheduledTime.split(':').map(Number);
+        if (isNaN(schedH) || isNaN(schedM)) return;
+
+        const schedHoursStr = schedH.toString().padStart(2, '0');
+        const schedMinsStr = schedM.toString().padStart(2, '0');
+        const isCurrentMinute = (currentHours === schedHoursStr) && (currentMinutes === schedMinsStr);
+
+        // Catch alarms due in the last 5 minutes (in case phone was asleep or tab backgrounded)
+        const schedToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), schedH, schedM, 0, 0);
+        const diffFromSchedMs = now.getTime() - schedToday.getTime();
+        const wasDueRecently = diffFromSchedMs >= 0 && diffFromSchedMs < 5 * 60 * 1000;
+
+        let isTargetDay = false;
         const dayOfWeek = now.getDay();
         const isWorkday = dayOfWeek >= 0 && dayOfWeek <= 4; // Sun - Thu
 
         if (item.repeat === 'none') {
-          if (item.scheduledDate === todayDateStr && item.scheduledTime === `${currentHours}:${currentMinutes}`) {
-            shouldPlay = true;
-          }
+          isTargetDay = item.scheduledDate === todayDateStr;
         } else if (item.repeat === 'daily') {
-          if (item.scheduledTime === `${currentHours}:${currentMinutes}`) {
-            shouldPlay = true;
-          }
+          isTargetDay = true;
         } else if (item.repeat === 'workdays') {
-          if (isWorkday && item.scheduledTime === `${currentHours}:${currentMinutes}`) {
-            shouldPlay = true;
-          }
+          isTargetDay = isWorkday;
         } else if (item.repeat === 'weekly') {
-          const schedDay = new Date(`${item.scheduledDate}T00:00:00`).getDay();
-          if (dayOfWeek === schedDay && item.scheduledTime === `${currentHours}:${currentMinutes}`) {
-            shouldPlay = true;
-          }
+          const schedDay = item.scheduledDate ? new Date(`${item.scheduledDate}T00:00:00`).getDay() : 0;
+          isTargetDay = dayOfWeek === schedDay;
         }
 
-        if (shouldPlay) {
-          if (!item.lastPlayedAt || (now.getTime() - new Date(item.lastPlayedAt).getTime()) > 65000) {
+        if (isTargetDay && (isCurrentMinute || wasDueRecently)) {
+          const lastPlayedTime = item.lastPlayedAt ? new Date(item.lastPlayedAt).getTime() : 0;
+          if (!item.lastPlayedAt || (now.getTime() - lastPlayedTime) > 65000) {
             triggerScheduledMediaPlayback({
               scheduledId: item.id,
               mediaId: item.mediaId,
@@ -1545,10 +1550,18 @@ export function App() {
             scheduledAudios={scheduledAudios}
             onRefreshScheduled={refreshScheduledAudios}
             onTestScheduledAudio={async (item) => {
-              const url = await audioStorageService.getMediaObjectUrl(item.mediaId);
-              if (url && item.mediaType === 'audio') {
-                audioService.playCustomAudio(url, (item.volume ?? 0.9) * audioSettings.masterVolume);
-              }
+              await triggerScheduledMediaPlayback({
+                scheduledId: item.id,
+                mediaId: item.mediaId,
+                mediaName: item.mediaName,
+                mediaType: item.mediaType,
+                title: item.title,
+                description: item.description,
+                cloudUrl: item.cloudUrl,
+                isVideo: item.mediaType === 'video',
+                isTestAlarm: true,
+                volume: item.volume,
+              });
             }}
             masterVolume={audioSettings.masterVolume}
           />

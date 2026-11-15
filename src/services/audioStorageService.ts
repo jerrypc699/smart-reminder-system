@@ -12,6 +12,108 @@ const MEDIA_META_STORAGE_KEY = 'smart_reminder_media_meta_v2';
 const DELETED_SCHED_KEY = 'dr_abdelaziz_deleted_sched_v1';
 const DELETED_MEDIA_KEY = 'dr_abdelaziz_deleted_media_v1';
 
+export const SYSTEM_BUILTIN_MEDIA: StoredMediaMeta[] = [
+  {
+    id: '/audio/dr_abdelaziz_welcome.mp3',
+    name: 'رسالة ترحيب د. عبد العزيز شطا',
+    size: 95424,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 12,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'custom',
+    cloudUrl: '/audio/dr_abdelaziz_welcome.mp3',
+  },
+  {
+    id: '/audio/dr_abdelaziz_task_alert.mp3',
+    name: 'تنبيه تكليف مهمة رسمية - د. عبد العزيز شطا',
+    size: 71040,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 9,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'task',
+    cloudUrl: '/audio/dr_abdelaziz_task_alert.mp3',
+  },
+  {
+    id: '/audio/dr_abdelaziz_clinic_alert.mp3',
+    name: 'تنبيه مواعيد العيادة - د. عبد العزيز شطا',
+    size: 58176,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 7,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'custom',
+    cloudUrl: '/audio/dr_abdelaziz_clinic_alert.mp3',
+  },
+  {
+    id: '/audio/dr_abdelaziz_call.mp3',
+    name: 'نداء واستدعاء عاجل - د. عبد العزيز شطا',
+    size: 18624,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 3,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'custom',
+    cloudUrl: '/audio/dr_abdelaziz_call.mp3',
+  },
+  {
+    id: '/audio/dr_abdelaziz_pre_azan.mp3',
+    name: 'تنبيه اقتراب موعد الأذان - د. عبد العزيز شطا',
+    size: 63168,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 8,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'azan',
+    cloudUrl: '/audio/dr_abdelaziz_pre_azan.mp3',
+  },
+  {
+    id: '/audio/takbeerat.mp3',
+    name: 'تكبيرات العيد والحرم المكي',
+    size: 3905536,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 244,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'azan',
+    cloudUrl: '/audio/takbeerat.mp3',
+  },
+  {
+    id: '/audio/makkah.mp3',
+    name: 'أذان الحرم المكي الشريف',
+    size: 3236257,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 202,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'azan',
+    cloudUrl: '/audio/makkah.mp3',
+  },
+  {
+    id: '/audio/mishary.mp3',
+    name: 'أذان بصوت الشيخ مشاري العفاسي',
+    size: 3905536,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 244,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'azan',
+    cloudUrl: '/audio/mishary.mp3',
+  },
+  {
+    id: '/audio/abdulbasit.mp3',
+    name: 'أذان بصوت الشيخ عبد الباسط عبد الصمد',
+    size: 2921534,
+    type: 'audio/mpeg',
+    mediaType: 'audio',
+    duration: 182,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    category: 'azan',
+    cloudUrl: '/audio/abdulbasit.mp3',
+  },
+];
+
 class AudioStorageService {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private urlCache: Map<string, string> = new Map();
@@ -329,9 +431,23 @@ class AudioStorageService {
       return this.urlCache.get(id)!;
     }
 
-    if (id && (id.startsWith('http://') || id.startsWith('https://'))) {
+    if (id && (
+      id.startsWith('http://') || 
+      id.startsWith('https://') || 
+      id.startsWith('/') || 
+      id.startsWith('./') ||
+      id.startsWith('blob:') ||
+      id.startsWith('data:')
+    )) {
       this.urlCache.set(id, id);
       return id;
+    }
+
+    // Check if id matches any built-in system sound
+    const builtin = SYSTEM_BUILTIN_MEDIA.find((b) => b.id === id || b.id.includes(id));
+    if (builtin) {
+      this.urlCache.set(id, builtin.id);
+      return builtin.id;
     }
 
     // 1. Direct ID lookup in local IndexedDB
@@ -452,6 +568,13 @@ class AudioStorageService {
           category: 'scheduled',
           cloudUrl: s.cloudUrl,
         });
+      }
+    });
+
+    // 4. Pre-seed built-in system audio media if not deleted
+    SYSTEM_BUILTIN_MEDIA.forEach((item) => {
+      if (!deleted.has(item.id) && !map.has(item.id)) {
+        map.set(item.id, item);
       }
     });
 

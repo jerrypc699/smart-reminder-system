@@ -43,6 +43,7 @@ interface AudioSchedulerViewProps {
 export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   scheduledAudios,
   onRefreshScheduled,
+  onTestScheduledAudio,
   masterVolume,
 }) => {
   const [mediaLibrary, setMediaLibrary] = useState<StoredMediaMeta[]>([]);
@@ -513,9 +514,9 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (mediaLibrary.length === 0) {
-                alert('يرجى رفع ملف فيديو أو صوت أولاً لتتمكن من جدولته.');
-                return;
+              if (mediaLibrary.length > 0 && !selectedMediaId) {
+                setSelectedMediaId(mediaLibrary[0].id);
+                if (!title) setTitle(mediaLibrary[0].name);
               }
               setIsScheduleModalOpen(true);
             }}
@@ -1058,6 +1059,17 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5">
+                          {/* Immediate Play / Test Button */}
+                          <button
+                            type="button"
+                            onClick={() => onTestScheduledAudio(item)}
+                            className="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                            title="تشغيل وتجربة هذا التنبيه فوراً"
+                          >
+                            <Play className="w-3.5 h-3.5 text-purple-300 fill-purple-300" />
+                            <span>تشغيل وتجربة الآن</span>
+                          </button>
+
                           {isAndroidNative && (
                             <button
                               type="button"

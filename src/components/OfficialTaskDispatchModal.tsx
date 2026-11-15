@@ -5,10 +5,8 @@ import {
   Copy,
   Download,
   Check,
-  Share2,
   FileText
 } from 'lucide-react';
-import html2canvas from 'html2canvas-pro';
 import type { Task } from '../types';
 import {
   buildTaskWhatsAppMessage,
@@ -59,6 +57,8 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     if (!cardRef.current) return;
     setIsDownloading(true);
     try {
+      const html2canvasModule = await import('html2canvas-pro');
+      const html2canvas = html2canvasModule.default || html2canvasModule;
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
         useCORS: true,
@@ -246,3 +246,4 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     </div>
   );
 };
+

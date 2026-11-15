@@ -244,11 +244,11 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
             <div className="min-w-0">
               <span className="block text-[10px] text-slate-400 font-medium">الصلاة القادمة</span>
               <span className="block text-xs font-bold text-emerald-300 truncate">
-                {nextPrayer ? `صلاة ${nextPrayer.arabicName}` : 'محسوبة بدقة'}
+                {nextPrayer?.arabicName ? `صلاة ${nextPrayer.arabicName}` : 'محسوبة بدقة'}
               </span>
               {remainingTime && (
                 <span className="block text-[9.5px] text-slate-400 font-mono mt-0.5">
-                  متبقي {remainingTime.hours > 0 ? `${remainingTime.hours} س و ` : ''}{remainingTime.minutes} د
+                  متبقي {(remainingTime.hours || 0) > 0 ? `${remainingTime.hours} س و ` : ''}{remainingTime.minutes || 0} د
                 </span>
               )}
             </div>

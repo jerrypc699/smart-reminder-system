@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { PrayerTimesView } from './components/PrayerTimesView';
@@ -88,6 +88,10 @@ export function App() {
       return true;
     }
   });
+
+  const handleCloseWelcomeSplash = useCallback(() => {
+    setShowWelcomeSplash(false);
+  }, []);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -1601,7 +1605,7 @@ export function App() {
       {/* Executive Welcome Splash Screen on System Opening */}
       <WelcomeSplash
         isOpen={showWelcomeSplash}
-        onClose={() => setShowWelcomeSplash(false)}
+        onClose={handleCloseWelcomeSplash}
         nextPrayer={prayerCalc.nextPrayer}
         remainingTime={prayerCalc.remaining}
         todayTasksCount={pendingTasksCount}

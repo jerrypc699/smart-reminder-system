@@ -80,17 +80,34 @@ export function App() {
   // Active Popup Alert
   const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
 
-  // Executive Welcome Splash Screen State (opens when system starts)
-  const [showWelcomeSplash, setShowWelcomeSplash] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('smart_reminder_show_welcome_splash') !== 'false';
-    } catch {
-      return true;
-    }
-  });
+  // Executive Welcome Splash Screen State (always opens when system starts)
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState<boolean>(true);
 
   const handleCloseWelcomeSplash = useCallback(() => {
     setShowWelcomeSplash(false);
+  }, []);
+
+  // Re-trigger welcome splash when app is re-opened or resumed after 10+ seconds
+  useEffect(() => {
+    let hiddenAt = 0;
+    const handleVisChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        if (hiddenAt > 0 && Date.now() - hiddenAt > 10000) {
+          setShowWelcomeSplash(true);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisChange);
+    window.addEventListener('focus', () => {
+      if (hiddenAt > 0 && Date.now() - hiddenAt > 10000) {
+        setShowWelcomeSplash(true);
+      }
+    });
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisChange);
+    };
   }, []);
 
   // PWA Install State

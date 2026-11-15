@@ -174,7 +174,7 @@ export function buildTaskWhatsAppMessage(task: {
           .map((a, i) => `  ${i + 1}. 📄 *${a.name}*${a.cloudUrl ? `\n     🔗 رابط الملف السحابي: ${a.cloudUrl}` : ''}`)
       : [];
 
-  if (custom) {
+  if (custom && !custom.includes('إشعار تكليف ومتابعة') && !custom.includes('رقم المرجع') && !custom.includes('تذكير بمهمة') && !custom.includes('تذكير مهمة')) {
     let text = custom
       .replace(/\{العنوان\}|\{title\}/gi, title)
       .replace(/\{التاريخ\}|\{date\}/gi, formattedDate || dueDate)

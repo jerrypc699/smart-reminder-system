@@ -53,31 +53,30 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.24.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.25.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.24.apk
-          path: DrAbdelaziz-Reminder-v1.0.24.apk
+          name: DrAbdelaziz-Reminder-v1.0.25.apk
+          path: DrAbdelaziz-Reminder-v1.0.25.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.24
+      - name: Create or Update GitHub Release v1.0.25
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.24
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.24"
+          tag_name: v1.0.25
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.25"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.24
-            - شاشة ترحيب افتتاحية ملكية تفاعلية تكتب «مرحباً بك يا د/ عبد العزيز» بتأثير كتابي احترافي.
-            - بطاقة ترحيب فخمة في لوحة التحكم وزر لإعادة عرض الترحيب في أي وقت.
-            - إمكانية التحكم في شاشة الترحيب وتفعيلها أو تعطيلها من الإعدادات.
-            - تنبيهات صوتية ومواقيت صلاة ومزامنة سحابية فائقة السرعة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.25
+            - شاشة ترحيب افتتاحية ملكية تظهر تلقائياً عند فتح التطبيق مع التشكيل الكامل وكتابة ذهبية مجسمة لاسم د/ عبد العزيز شطا.
+            - تنسيق رسائل الواتساب الرسمية بنموذج «البريد المرسل» المعتمد المطابق للتوجيهات الإدارية.
+            - فتح ذاتي وسلس للوحة التحكم خلال ثوانٍ معدودة دون الحاجة لأي نقرات.
           files: |
-            DrAbdelaziz-Reminder-v1.0.24.apk
+            DrAbdelaziz-Reminder-v1.0.25.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -90,7 +89,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.24.apk
+            DrAbdelaziz-Reminder-v1.0.25.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

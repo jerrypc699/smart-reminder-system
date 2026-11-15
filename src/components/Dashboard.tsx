@@ -57,17 +57,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Typing animation for executive greeting
   useEffect(() => {
-    const greeting = 'مرحباً بك يا د/ عبد العزيز شطا';
+    const greeting = 'مَرْحَبًا بِكَ يَا د/ عَبْدُ العَزِيزِ شَطَا';
+    const clusters = greeting.match(/\P{M}\p{M}*/gu) || [greeting];
     let idx = 0;
     const timer = setInterval(() => {
       idx++;
-      if (idx >= greeting.length) {
+      if (idx >= clusters.length) {
         setDashboardGreeting(greeting);
         clearInterval(timer);
       } else {
-        setDashboardGreeting(greeting.slice(0, idx));
+        setDashboardGreeting(clusters.slice(0, idx).join(''));
       }
-    }, 35);
+    }, 30);
     return () => clearInterval(timer);
   }, []);
 
@@ -158,9 +159,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-1.5">
                   <span className="bg-gradient-to-r from-[#FFF4CC] via-[#F1D583] to-[#ECC764] bg-clip-text text-transparent">
-                    {dashboardGreeting || 'مرحباً بك يا د/ عبد العزيز شطا'}
+                    {dashboardGreeting || 'مَرْحَبًا بِكَ يَا د/ عَبْدُ العَزِيزِ شَطَا'}
                   </span>
-                  {dashboardGreeting.length < 'مرحباً بك يا د/ عبد العزيز شطا'.length && (
+                  {dashboardGreeting.length < 'مَرْحَبًا بِكَ يَا د/ عَبْدُ العَزِيزِ شَطَا'.length && (
                     <span className="inline-block w-1.5 sm:w-2 h-4 sm:h-5 bg-[#F1D583] rounded-full animate-pulse" />
                   )}
                 </h2>

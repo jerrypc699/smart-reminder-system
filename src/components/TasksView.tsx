@@ -62,6 +62,7 @@ import {
 import { VoiceTaskModal } from './VoiceTaskModal';
 import { PdfExportModal } from './PdfExportModal';
 import { ImageLightboxModal } from './ImageLightboxModal';
+import { OfficialTaskDispatchModal } from './OfficialTaskDispatchModal';
 
 interface TasksViewProps {
   tasks: Task[];
@@ -128,6 +129,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   );
   const [waStatusBanner, setWaStatusBanner] = useState<string | null>(null);
   const [waSendingId, setWaSendingId] = useState<string | null>(null);
+  const [officialLetterTask, setOfficialLetterTask] = useState<Task | null>(null);
 
   // Employee Dossiers & Staff State
   const [viewMode, setViewMode] = useState<'tasks' | 'employees'>('tasks');
@@ -1224,6 +1226,16 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         <MessageCircle className="w-4 h-4" />
                       </button>
 
+                      {/* View Official Task Dispatch Card (البريد المرسل) */}
+                      <button
+                        type="button"
+                        onClick={() => setOfficialLetterTask(task)}
+                        title="معاينة بطاقة التكليف الرسمية (البريد المرسل) وحفظها كصورة أو إرسالها"
+                        className="p-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+
                       {/* Quick Attach Document / File */}
                       <button
                         type="button"
@@ -2112,51 +2124,86 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           ? `🤖 الوضع الآلي مفعّل (${whatsappService.getSettings().provider}) — سيُرسل تلقائياً بدون تدخل`
                           : '💬 الوضع المباشر — يفتح المحادثة بالرسالة جاهزة (يمكن تفعيل بوابة إرسال آلي من الإعدادات)'}
                       </span>
-                      <button
-                        type="button"
-                        disabled={!normalizeWhatsAppPhone(waPhone)}
-                        onClick={async () => {
-                          const testTask: Task = {
-                            id: editingTask?.id || `wa-preview-${Date.now()}`,
-                            title: title.trim() || 'مهمة تجريبية',
-                            description: description.trim() || undefined,
-                            category,
-                            priority,
-                            dueDate,
-                            dueTime,
-                            reminderMinutesBefore,
-                            status: 'pending',
-                            repeat: 'none',
-                            createdAt: new Date().toISOString(),
-                            attachments,
-                            whatsapp: {
-                              enabled: true,
-                              phoneNumber: normalizeWhatsAppPhone(waPhone),
-                              recipientName: waRecipientName.trim() || undefined,
-                              customMessage: waCustomMessage.trim() || undefined,
-                              autoTriggerAtDueTime: true,
-                              includeAttachmentsLinks: waIncludeAttachments,
-                            },
-                          };
-                          const res = await whatsappService.triggerTaskWhatsAppSend(testTask, {
-                            allowOpenApp: true,
-                            skipDedupe: true,
-                          });
-                          if (res.success) {
-                            showWaBanner(
-                              res.method === 'api'
-                                ? '✅ تم إرسال رسالة التجربة عبر البوابة الآلية بنجاح!'
-                                : '💬 تم فتح واتساب بالرسالة جاهزة للإرسال!'
-                            );
-                          } else {
-                            alert(res.error || 'تعذر إرسال الرسالة');
-                          }
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer shrink-0"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>تجربة الإرسال الآن 💬</span>
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const previewTask: Task = {
+                              id: editingTask?.id || `preview-${Date.now()}`,
+                              title: title.trim() || 'مهمة عمل جديدة',
+                              description: description.trim() || undefined,
+                              category,
+                              priority,
+                              dueDate,
+                              dueTime,
+                              reminderMinutesBefore,
+                              status: 'pending',
+                              repeat: 'none',
+                              createdAt: new Date().toISOString(),
+                              attachments,
+                              whatsapp: {
+                                enabled: true,
+                                phoneNumber: normalizeWhatsAppPhone(waPhone),
+                                recipientName: waRecipientName.trim() || undefined,
+                                customMessage: waCustomMessage.trim() || undefined,
+                                autoTriggerAtDueTime: true,
+                                includeAttachmentsLinks: waIncludeAttachments,
+                              },
+                            };
+                            setOfficialLetterTask(previewTask);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>معاينة بطاقة التكليف الرسمية 📄</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={!normalizeWhatsAppPhone(waPhone)}
+                          onClick={async () => {
+                            const testTask: Task = {
+                              id: editingTask?.id || `wa-preview-${Date.now()}`,
+                              title: title.trim() || 'مهمة تجريبية',
+                              description: description.trim() || undefined,
+                              category,
+                              priority,
+                              dueDate,
+                              dueTime,
+                              reminderMinutesBefore,
+                              status: 'pending',
+                              repeat: 'none',
+                              createdAt: new Date().toISOString(),
+                              attachments,
+                              whatsapp: {
+                                enabled: true,
+                                phoneNumber: normalizeWhatsAppPhone(waPhone),
+                                recipientName: waRecipientName.trim() || undefined,
+                                customMessage: waCustomMessage.trim() || undefined,
+                                autoTriggerAtDueTime: true,
+                                includeAttachmentsLinks: waIncludeAttachments,
+                              },
+                            };
+                            const res = await whatsappService.triggerTaskWhatsAppSend(testTask, {
+                              allowOpenApp: true,
+                              skipDedupe: true,
+                            });
+                            if (res.success) {
+                              showWaBanner(
+                                res.method === 'api'
+                                  ? '✅ تم إرسال رسالة التجربة عبر البوابة الآلية بنجاح!'
+                                  : '💬 تم فتح واتساب بالرسالة جاهزة للإرسال!'
+                              );
+                            } else {
+                              alert(res.error || 'تعذر إرسال الرسالة');
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>تجربة الإرسال الآن 💬</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2927,6 +2974,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Official Task Dispatch Letter Modal (البريد المرسل) */}
+      <OfficialTaskDispatchModal
+        task={officialLetterTask}
+        isOpen={Boolean(officialLetterTask)}
+        onClose={() => setOfficialLetterTask(null)}
+        onSendWhatsApp={(t) => handleSendTaskWhatsAppNow(t)}
+      />
     </div>
   );
 };

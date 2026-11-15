@@ -123,6 +123,20 @@ export function formatCategoryLabel(cat?: string): string {
   }
 }
 
+export function getArabicHonorific(name?: string): string {
+  if (!name || !name.trim()) return 'السادة الكرام / فريق العمل المحترم';
+  const clean = name.trim();
+  const commonFemaleNames = [
+    'ميسون', 'مريم', 'زينب', 'نور', 'ريم', 'ياسمين', 'هدى', 'منى', 'سحر', 'نهى', 'سها',
+    'منال', 'أمل', 'إيمان', 'دعاء', 'ولاء', 'وفاء', 'نجلاء', 'شيماء', 'إسراء', 'سمر',
+    'ريهام', 'مي', 'ندى', 'هند', 'شيرين', 'عبير', 'خلود', 'حنان', 'سهام', 'ابتسام',
+    'إلهام', 'أميرة', 'آية', 'سارة', 'فاطمة', 'عائشة', 'خديجة', 'دينا', 'رنا', 'سلمى',
+    'نورهان', 'رانيا', 'داليا', 'هبة', 'رضوى', 'شروق', 'حبيبة', 'ملك', 'فريدة', 'جنا'
+  ];
+  const isFemale = clean.endsWith('ة') || clean.endsWith('ه') || commonFemaleNames.some((fn) => clean.includes(fn));
+  return isFemale ? `السيدة المحترمة / ${clean}` : `السيد المحترم / ${clean}`;
+}
+
 export function buildTaskWhatsAppMessage(task: {
   id?: string;
   title?: string;
@@ -143,18 +157,14 @@ export function buildTaskWhatsAppMessage(task: {
 }): string {
   const custom = task.whatsapp?.customMessage?.trim();
   const title = task.title?.trim() || 'مهمة عمل جديدة';
-  const dueDate = task.dueDate || '';
+  const dueDate = task.dueDate || new Date().toISOString().split('T')[0];
   const dueTime = task.dueTime || '';
-  const desc = task.description?.trim() || '';
+  const desc = task.description?.trim() || task.title?.trim() || '';
   const recipient = task.whatsapp?.recipientName?.trim() || task.employeeName?.trim() || '';
-  const refCode = task.id
-    ? task.id.replace(/^(task-?|t-?)/i, '').slice(0, 8).toUpperCase()
-    : `${Date.now().toString(36).slice(-5).toUpperCase()}`;
 
   const formattedDate = formatArabicDate(dueDate);
   const formattedTime = formatArabicTime(dueTime);
-  const priorityLabel = formatPriorityLabel(task.priority);
-  const categoryLabel = formatCategoryLabel(task.category);
+  const honorific = getArabicHonorific(recipient);
 
   const includeAtts = task.whatsapp?.includeAttachmentsLinks !== false;
   const attLinks =
@@ -177,68 +187,56 @@ export function buildTaskWhatsAppMessage(task: {
     return text;
   }
 
-  // Formal Executive Corporate Email Format for WhatsApp
+  // Exact Formal Executive Dispatch Template as requested (البريد المرسل - تكليف مهمة رسمية)
   const lines: string[] = [];
 
-  // 1. Salutation
-  lines.push('السلام عليكم ورحمة الله وبركاته،');
-  if (recipient) {
-    lines.push(`السيد المحترم / *${recipient}*، تحية طيبة وبعد،`);
-  } else {
-    lines.push('السادة الكرام / فريق العمل المحترم، تحية طيبة وبعد،');
-  }
-
-  // 2. Executive Header & Reference
+  // Top Bar
+  lines.push('📬 *البريد المرسل*');
   lines.push('');
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━');
-  lines.push('📋 *إشعار تكليف ومتابعة مهمة رسمية*');
-  lines.push(`🔖 *رقم المرجع:* #REF-${refCode}`);
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`📋 *تكليف مهمة رسمية - ${title}*`);
+  lines.push('────────────────────────────');
+  lines.push('• *من:* مكتب الدكتور عبد العزيز');
+  lines.push(`• *التاريخ:* ${formattedDate}`);
+  if (formattedTime) {
+    lines.push(`• *الوقت المستهدف:* ${formattedTime}`);
+  }
+  lines.push('────────────────────────────');
   lines.push('');
 
-  // 3. Task Metadata
-  lines.push(`📌 *موضوع المهمة:* *${title}*`);
-  lines.push(`⭐ *مستوى الأهمية:* ${priorityLabel}`);
-  lines.push(`📂 *القسم والتصنيف:* ${categoryLabel}`);
+  // Salutation
+  lines.push(`${honorific}،`);
+  lines.push('تحية طيبة وبعد،');
+  lines.push('');
 
-  if (formattedDate || formattedTime) {
-    lines.push('');
-    if (formattedDate) {
-      lines.push(`🗓️ *تاريخ التنفيذ المستهدف:* ${formattedDate}`);
-    }
-    if (formattedTime) {
-      lines.push(`⏰ *توقيت الاستحقاق:* ${formattedTime}`);
-    }
-  }
+  // Highlighted Mission Container
+  lines.push('┌───────────────────────────');
+  lines.push('│ 📌 *المهمة:*');
+  lines.push(`│ *${title}*`);
+  lines.push('│');
+  lines.push('│ 🎯 *المطلوب:*');
+  lines.push(`│ *${desc}*`);
+  lines.push('└───────────────────────────');
+  lines.push('');
 
-  // 4. Scope of Work
-  if (desc) {
-    lines.push('');
-    lines.push('━━━━━━━━━━━━━━━━━━━━━━');
-    lines.push('📝 *نطاق العمل والتفاصيل التنفيذية المطلوبة:*');
-    lines.push(desc);
-  }
-
-  // 5. Cloud Attachments
+  // Attachments if any
   if (attLinks.length > 0) {
-    lines.push('');
-    lines.push('━━━━━━━━━━━━━━━━━━━━━━');
-    lines.push('📎 *المستندات والملفات المرفقة بالمهمة:*');
+    lines.push('📎 *المستندات والملفات المرفقة:*');
     lines.push(attLinks.join('\n'));
+    lines.push('');
   }
 
-  // 6. Directive
-  lines.push('');
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━');
-  lines.push('🎯 *التوجيه الإداري والمتابعة:*');
-  lines.push('يرجى التفضل بمراجعة تفاصيل المهمة والبدء في الإجراءات وفق الجدول الزمني المحدد أعلاه، وموافاتنا بتقرير الإنجاز أو إشعار التأكيد فور الانتهاء.');
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━');
+  // Directive
+  lines.push('يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.');
   lines.push('');
 
-  // 7. Signature
-  lines.push('مع خالص الشكر ووافر التقدير والاحترام،');
+  // Signature
+  lines.push('مع خالص الشكر والتقدير،');
   lines.push('🏢 *مكتب الدكتور عبد العزيز*');
-  lines.push('نظام إدارة الأعمال والمتابعة الذكية');
+  lines.push('');
+
+  // Bottom Footer
+  lines.push('────────────────────────────');
+  lines.push('🏛️ *إدارة المتابعة*');
 
   return lines.join('\n');
 }

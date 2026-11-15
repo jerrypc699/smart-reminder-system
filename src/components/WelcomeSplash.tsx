@@ -35,28 +35,26 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
   const FULL_TEXT = 'مرحباً بك يا د/ عبد العزيز';
   const [displayedText, setDisplayedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
-  const [autoCloseSeconds, setAutoCloseSeconds] = useState(5);
+  const [isExiting, setIsExiting] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [isPausedByUser, setIsPausedByUser] = useState(false);
 
-  // Typewriter effect
+  // Precise 3.5s total duration with smooth typing
   useEffect(() => {
     if (!isOpen) {
       setDisplayedText('');
       setIsTypingDone(false);
-      setAutoCloseSeconds(5);
+      setIsExiting(false);
       setIsPlayingAudio(false);
-      setIsPausedByUser(false);
       return;
     }
 
     let charIndex = 0;
     setDisplayedText('');
     setIsTypingDone(false);
-    setAutoCloseSeconds(5);
+    setIsExiting(false);
 
-    // Initial subtle breathing pause before typing starts
-    const initialDelay = setTimeout(() => {
+    // 1. Start typing immediately (60ms)
+    const startDelay = setTimeout(() => {
       const typingInterval = setInterval(() => {
         charIndex++;
         setDisplayedText(FULL_TEXT.slice(0, charIndex));
@@ -65,38 +63,33 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
           clearInterval(typingInterval);
           setIsTypingDone(true);
         }
-      }, 70);
+      }, 40); // 26 chars * 40ms = ~1.04s
 
       return () => clearInterval(typingInterval);
-    }, 280);
+    }, 60);
 
-    return () => clearTimeout(initialDelay);
-  }, [isOpen]);
+    // 2. Auto-close system entrance: at 3.2s fade-out, at 3.5s call onClose()
+    const exitTimer = setTimeout(() => {
+      setIsExiting(true);
+    }, 3200);
 
-  // Countdown auto-dismiss after typing is done
-  useEffect(() => {
-    if (!isOpen || !isTypingDone || isPausedByUser) return;
+    const closeTimer = setTimeout(() => {
+      onClose();
+    }, 3550);
 
-    const timer = setInterval(() => {
-      setAutoCloseSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onClose();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    return () => {
+      clearTimeout(startDelay);
+      clearTimeout(exitTimer);
+      clearTimeout(closeTimer);
+    };
+  }, [isOpen, onClose]);
 
-    return () => clearInterval(timer);
-  }, [isOpen, isTypingDone, isPausedByUser, onClose]);
-
-  // Handle ESC or Enter key
+  // Handle ESC or Enter or Space key to skip instantly
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Enter') {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
         onClose();
       }
     };
@@ -105,19 +98,19 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handlePlayVoice = () => {
+  const handlePlayVoice = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsPlayingAudio(true);
-    setIsPausedByUser(true); // Don't auto-dismiss while audio is playing
     audioService.initAudioContext();
     audioService.playDoctorWelcome(1.0, () => {
       setIsPlayingAudio(false);
     });
   };
 
-  const handleReplayTypewriter = () => {
+  const handleReplayTypewriter = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setDisplayedText('');
     setIsTypingDone(false);
-    setAutoCloseSeconds(5);
     let charIndex = 0;
     const interval = setInterval(() => {
       charIndex++;
@@ -126,7 +119,7 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
         clearInterval(interval);
         setIsTypingDone(true);
       }
-    }, 70);
+    }, 40);
   };
 
   if (!isOpen) return null;
@@ -140,14 +133,10 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-6 overflow-hidden select-none bg-[#050811]/92 backdrop-blur-2xl animate-fade-in"
-      onMouseEnter={() => setIsPausedByUser(true)}
-      onClick={(e) => {
-        // If clicked on backdrop outside the modal
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
+      className={`fixed inset-0 z-[100] w-screen h-[100dvh] min-h-[100dvh] flex items-center justify-center p-3 sm:p-6 overflow-hidden select-none bg-[#050811]/95 backdrop-blur-3xl pt-safe pb-safe cursor-pointer transition-all duration-350 ${
+        isExiting ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
+      }`}
+      onClick={onClose}
     >
       {/* Dynamic Ambient Radiant Halos */}
       <div
@@ -333,19 +322,22 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({
           </button>
         </div>
 
-        {/* Subtle Auto-Close Progress Bar & Indicator */}
-        {isTypingDone && (
-          <div className="mt-5 pt-3 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-slate-400">
-            <span>
-              {isPausedByUser ? (
-                'تم إيقاف الإغلاق التلقائي (انقر دخول للمتابعة)'
-              ) : (
-                `دخول تلقائي خلال ${autoCloseSeconds} ثوان...`
-              )}
-            </span>
-            <span className="font-mono text-[10px] text-slate-400">Esc للدخول السريع</span>
+        {/* Precision Auto-Open Progress Line (3.5s) */}
+        <div className="mt-5 pt-3 border-t border-white/[0.08]">
+          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#FFF4CC] via-[#F1D583] to-[#D4AF37] rounded-full transition-all duration-[3400ms] ease-linear"
+              style={{ width: isTypingDone ? '100%' : '35%' }}
+            />
           </div>
-        )}
+          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="flex items-center gap-1.5 text-[#F1D583] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F1D583] animate-ping" />
+              جاري فتح النظام تلقائياً خلال 3 ثوانٍ...
+            </span>
+            <span className="text-[10px] text-slate-400">انقر في أي مكان للدخول الفوري</span>
+          </div>
+        </div>
       </div>
     </div>
   );

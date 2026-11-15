@@ -15,12 +15,14 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ isOpen, onClose })
   const [displayedText, setDisplayedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [progressWidth, setProgressWidth] = useState(0);
 
   useEffect(() => {
     if (!isOpen) {
       setDisplayedText('');
       setIsTypingDone(false);
       setIsExiting(false);
+      setProgressWidth(0);
       return;
     }
 
@@ -29,7 +31,12 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ isOpen, onClose })
     setIsTypingDone(false);
     setIsExiting(false);
 
-    // Ultra-smooth typewriter: completes within ~1 second
+    // Smooth continuous progress from 0% to 100% across the 3 seconds
+    const progressStart = setTimeout(() => {
+      setProgressWidth(100);
+    }, 50);
+
+    // Ultra-smooth typewriter: writes full text in ~0.9s
     const typingInterval = setInterval(() => {
       charIndex++;
       if (charIndex >= FULL_TEXT.length) {
@@ -39,37 +46,24 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ isOpen, onClose })
       } else {
         setDisplayedText(FULL_TEXT.slice(0, charIndex));
       }
-    }, 35);
+    }, 32);
 
-    // Displays for ~3.2 seconds total, then smoothly fades out
+    // At 3.0s: smooth fade out starts
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 3100);
+    }, 3000);
 
-    // Enters system automatically at ~3.5 seconds
+    // At 3.3s: enters system completely and automatically (no clicks required!)
     const closeTimer = setTimeout(() => {
       onClose();
-    }, 3500);
+    }, 3350);
 
     return () => {
+      clearTimeout(progressStart);
       clearInterval(typingInterval);
       clearTimeout(exitTimer);
       clearTimeout(closeTimer);
     };
-  }, [isOpen, onClose]);
-
-  // Click anywhere or press ESC/Enter/Space to skip immediately
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -77,10 +71,9 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ isOpen, onClose })
   return (
     <div
       dir="rtl"
-      className={`fixed inset-0 z-[99999] w-screen h-screen flex flex-col items-center justify-center p-6 select-none bg-[#060911] overflow-hidden cursor-pointer transition-opacity duration-500 ease-out ${
+      className={`fixed inset-0 z-[99999] w-screen h-screen flex flex-col items-center justify-center p-6 select-none bg-[#060911] overflow-hidden cursor-default transition-opacity duration-400 ease-out ${
         isExiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
-      onClick={onClose}
     >
       {/* Luxury ambient radiant lighting */}
       <div
@@ -132,18 +125,19 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ isOpen, onClose })
           طاب يومكم بكل خير دكتور عبد العزيز • جدول أعمالك وتنبيهاتك جاهزة
         </p>
 
-        {/* Minimalist Golden Progress Line (3.5s auto-fill) */}
+        {/* Minimalist Golden Progress Line (Synchronized with 3s auto-open) */}
         <div className="w-56 sm:w-80 h-[3px] bg-white/10 rounded-full overflow-hidden mt-4">
           <div
-            className="h-full bg-gradient-to-r from-[#FFF4CC] via-[#F1D583] to-[#D4AF37] rounded-full transition-all duration-[3100ms] ease-out shadow-[0_0_10px_#F1D583]"
-            style={{ width: isTypingDone ? '100%' : '15%' }}
+            className="h-full bg-gradient-to-r from-[#FFF4CC] via-[#F1D583] to-[#D4AF37] rounded-full shadow-[0_0_10px_#F1D583] transition-all duration-[3000ms] ease-out"
+            style={{ width: `${progressWidth}%` }}
           />
         </div>
 
-        {/* Subtle tap-to-skip hint */}
-        <span className="text-[11px] text-slate-500 font-normal">
-          انقر في أي مكان للدخول الفوري
-        </span>
+        {/* Auto-Open Status Indicator */}
+        <div className="flex items-center gap-2 text-xs text-[#F1D583]/90 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#F1D583] animate-ping" />
+          <span>جاري فتح النظام تلقائياً...</span>
+        </div>
       </div>
     </div>
   );

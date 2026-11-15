@@ -1207,21 +1207,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {/* Send / Schedule WhatsApp Button */}
+                      {/* Send WhatsApp Official Dispatch Card / Image Button */}
                       <button
                         type="button"
-                        disabled={waSendingId === task.id}
-                        onClick={() => handleSendTaskWhatsAppNow(task)}
-                        title={
-                          task.whatsapp?.enabled && task.whatsapp.phoneNumber
-                            ? `إرسال الآن عبر واتساب إلى ${task.whatsapp.recipientName || task.whatsapp.phoneNumber}`
-                            : 'تحديد رقم واتساب لإرسال المهمة في موعدها'
-                        }
-                        className={`p-2 rounded-xl border transition-colors cursor-pointer disabled:opacity-50 ${
-                          task.whatsapp?.enabled && task.whatsapp.phoneNumber
-                            ? 'bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border-emerald-500/45'
-                            : 'bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border-slate-700 hover:border-emerald-500/30'
-                        }`}
+                        onClick={() => setOfficialLetterTask(task)}
+                        title="إرسال بطاقة التكليف كصورة رسمية على واتساب 📸"
+                        className="p-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/45 transition-colors cursor-pointer flex items-center gap-1"
                       >
                         <MessageCircle className="w-4 h-4" />
                       </button>
@@ -2721,9 +2712,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
                                     {t.whatsapp?.enabled && (
                                       <button
                                         type="button"
-                                        onClick={() => handleSendTaskWhatsAppNow(t)}
+                                        onClick={() => setOfficialLetterTask(t)}
                                         className="p-1 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-900 cursor-pointer"
-                                        title="إرسال المهمة على الواتساب الآن"
+                                        title="إرسال المهمة كصورة رسمية على الواتساب 📸"
                                       >
                                         <MessageCircle className="w-3.5 h-3.5" />
                                       </button>

@@ -1168,7 +1168,9 @@
       "water": 8,
       "autoImportTasks": true,
       "autoImportIncludePendingPrevious": true,
-      "hiddenBuiltIns": [],
+      "hiddenBuiltIns": [
+        "item_weight"
+      ],
       "customPrayers": [],
       "customAdhkar": [],
       "customHabits": [
@@ -1189,7 +1191,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:16:11.620Z",
+  "updatedAt": "2026-11-16T20:16:33.508Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -1058,7 +1058,7 @@
         "study": 45,
         "sleep": 6,
         "water": 8,
-        "food": false,
+        "food": true,
         "weight": "",
         "tasks": [
           {
@@ -1195,7 +1195,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:20:10.807Z",
+  "updatedAt": "2026-11-16T20:20:45.167Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -101,6 +101,19 @@
       "id": "task-1794811505102-k7vk0",
       "status": "pending",
       "createdAt": "2026-11-16T06:45:05.102Z"
+    },
+    {
+      "title": "محمد رضا",
+      "dueDate": "2026-11-16",
+      "dueTime": "11:21",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تذكير بمهمة: محمد رضا. يرجى متابعتها الآن.",
+      "repeat": "none",
+      "id": "task-1794813709909-tvr2b",
+      "status": "pending",
+      "createdAt": "2026-11-16T07:21:49.909Z"
     }
   ],
   "employees": [
@@ -481,6 +494,12 @@
             "t": "‏التامينات",
             "d": false,
             "sourceTaskId": "task-1794811505102-k7vk0"
+          },
+          {
+            "id": "imp_task-1794813709909-tvr2b_2026-11-16",
+            "t": "محمد رضا",
+            "d": false,
+            "sourceTaskId": "task-1794813709909-tvr2b"
           }
         ],
         "dismissedTaskIds": [],
@@ -510,7 +529,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T07:21:06.775Z",
+  "updatedAt": "2026-11-16T07:21:50.850Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

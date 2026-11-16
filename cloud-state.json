@@ -430,8 +430,9 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794380757098-pd7sl",
-      "status": "pending",
-      "createdAt": "2026-11-11T07:05:57.098Z"
+      "status": "completed",
+      "createdAt": "2026-11-11T07:05:57.098Z",
+      "completedAt": "2026-11-16T20:13:20.032Z"
     },
     {
       "title": "طلال",
@@ -1095,12 +1096,6 @@
             "sourceTaskId": "task-1794417698928-4sndw"
           },
           {
-            "id": "imp_task-1794380757098-pd7sl_2026-11-16",
-            "t": "مذكره لدوسان",
-            "d": false,
-            "sourceTaskId": "task-1794380757098-pd7sl"
-          },
-          {
             "id": "imp_task-1794372746085-uanyq_2026-11-16",
             "t": "اجتماع شركه الامن",
             "d": true,
@@ -1191,7 +1186,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:13:19.537Z",
+  "updatedAt": "2026-11-16T20:13:20.569Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

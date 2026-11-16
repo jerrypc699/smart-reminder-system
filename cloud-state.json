@@ -80,6 +80,27 @@
       "id": "task-1794806517423-5o605",
       "status": "pending",
       "createdAt": "2026-11-16T05:21:57.423Z"
+    },
+    {
+      "title": "‏التامينات",
+      "dueDate": "2026-11-16",
+      "dueTime": "09:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، ‏التامينات",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201028376154",
+        "recipientName": "محمد عزيز شطا",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1794811505102-k7vk0",
+      "status": "pending",
+      "createdAt": "2026-11-16T06:45:05.102Z"
     }
   ],
   "employees": [
@@ -391,7 +412,26 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-16",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794806517423-5o605_2026-11-16",
+            "t": "اجتماع شركة الامن",
+            "d": false,
+            "sourceTaskId": "task-1794806517423-5o605"
+          },
+          {
+            "id": "imp_task-1794811505102-k7vk0_2026-11-16",
+            "t": "‏التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794811505102-k7vk0"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -419,7 +459,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T06:45:04.951Z",
+  "updatedAt": "2026-11-16T06:45:05.630Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

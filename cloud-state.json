@@ -71,7 +71,9 @@
         "phoneNumber": "201022696509",
         "recipientName": "اسامه",
         "autoTriggerAtDueTime": true,
-        "includeAttachmentsLinks": true
+        "includeAttachmentsLinks": true,
+        "lastSentAt": "2026-11-16T05:23:24.601Z",
+        "lastSendStatus": "opened_app"
       },
       "employeeId": "emp-1794721519551-ctr9",
       "employeeName": "اسامه",
@@ -410,7 +412,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T05:21:58.249Z",
+  "updatedAt": "2026-11-16T05:23:25.487Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

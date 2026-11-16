@@ -104,13 +104,7 @@
     "metaAccessToken": "",
     "webhookUrl": "",
     "webhookSecret": "",
-    "savedContacts": [
-      {
-        "id": "wa_contact_1794805777656",
-        "name": "محمد عزيز شطا",
-        "phone": "201028376154"
-      }
-    ]
+    "savedContacts": []
   },
   "dailySystem": {
     "days": {
@@ -337,7 +331,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T05:09:38.225Z",
+  "updatedAt": "2026-11-16T05:09:39.923Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

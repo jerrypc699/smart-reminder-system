@@ -1174,7 +1174,16 @@
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
       "customPrayers": [],
-      "customAdhkar": [],
+      "customAdhkar": [
+        {
+          "id": "ca_1794860540699_ocfw",
+          "label": "فتح حرار",
+          "points": 2,
+          "scheduledTime": "22:25",
+          "enableVoiceAlert": true,
+          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد فتح حرار."
+        }
+      ],
       "customHabits": [
         {
           "label": "بودكاست",
@@ -1193,7 +1202,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:21:21.737Z",
+  "updatedAt": "2026-11-16T20:22:22.908Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

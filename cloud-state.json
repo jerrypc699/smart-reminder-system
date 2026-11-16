@@ -1114,7 +1114,9 @@
           "block": "",
           "tomorrow": ""
         },
-        "customValues": {},
+        "customValues": {
+          "ch_1794860163532_k3vu": 1
+        },
         "customNotes": {}
       },
       "2026-11-10": {
@@ -1192,7 +1194,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:19:13.067Z",
+  "updatedAt": "2026-11-16T20:19:35.496Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

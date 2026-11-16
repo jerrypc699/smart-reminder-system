@@ -510,7 +510,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T06:57:18.506Z",
+  "updatedAt": "2026-11-16T06:57:23.360Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -519,7 +519,7 @@
     "longitude": 31.2357,
     "method": "Egyptian",
     "madhab": "shafi",
-    "preAzanReminderMinutes": 5,
+    "preAzanReminderMinutes": 10,
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
     "azanReciter": "abdulbasit",

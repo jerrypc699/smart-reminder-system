@@ -525,7 +525,7 @@
           {
             "id": "imp_task-1794834316765-ir5cl_2026-11-16",
             "t": "اخمد على",
-            "d": true,
+            "d": false,
             "sourceTaskId": "task-1794834316765-ir5cl"
           }
         ],
@@ -556,7 +556,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:17:17.688Z",
+  "updatedAt": "2026-11-16T13:17:19.424Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

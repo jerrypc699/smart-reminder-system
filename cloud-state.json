@@ -1176,7 +1176,16 @@
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
       "customPrayers": [],
-      "customAdhkar": [],
+      "customAdhkar": [
+        {
+          "id": "ca_1794860692985_cv10",
+          "label": "دعوات  عزيز",
+          "points": 2,
+          "scheduledTime": "22:26",
+          "enableVoiceAlert": true,
+          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد دعوات  عزيز."
+        }
+      ],
       "customHabits": [
         {
           "label": "بودكاست",
@@ -1195,7 +1204,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:23:58.072Z",
+  "updatedAt": "2026-11-16T20:24:54.999Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

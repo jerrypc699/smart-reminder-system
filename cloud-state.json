@@ -1052,7 +1052,7 @@
           "dua": false
         },
         "quran": 0,
-        "sport": 0,
+        "sport": 5,
         "study": 0,
         "sleep": 0,
         "water": 0,
@@ -1176,7 +1176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:14:03.325Z",
+  "updatedAt": "2026-11-16T20:14:12.027Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

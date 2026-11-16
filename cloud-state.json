@@ -129,6 +129,11 @@
     "webhookSecret": "",
     "savedContacts": [
       {
+        "id": "wa_contact_1794806508354",
+        "name": "اسامه ادارى القاهره",
+        "phone": "201022696509"
+      },
+      {
         "id": "wa_contact_1794806431352",
         "name": "اسامه",
         "phone": "201012747513"
@@ -372,7 +377,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T05:21:39.928Z",
+  "updatedAt": "2026-11-16T05:21:49.246Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

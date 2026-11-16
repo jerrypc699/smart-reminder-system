@@ -504,22 +504,13 @@
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
       "customPrayers": [],
-      "customAdhkar": [
-        {
-          "id": "ca_1794812888479_6vq2",
-          "label": "ذكر دخول اجتماع",
-          "points": 1,
-          "scheduledTime": "09:15",
-          "enableVoiceAlert": true,
-          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد ذكر دخول اجتماع ."
-        }
-      ],
+      "customAdhkar": [],
       "customHabits": [],
       "customNotePrompts": [],
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T07:08:10.278Z",
+  "updatedAt": "2026-11-16T07:08:11.621Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

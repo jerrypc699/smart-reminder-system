@@ -519,12 +519,6 @@
             "t": "محمد رضا",
             "d": false,
             "sourceTaskId": "task-1794813709909-tvr2b"
-          },
-          {
-            "id": "imp_task-1794834316765-ir5cl_2026-11-16",
-            "t": "اخمد على",
-            "d": false,
-            "sourceTaskId": "task-1794834316765-ir5cl"
           }
         ],
         "dismissedTaskIds": [],
@@ -554,7 +548,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:13:59.627Z",
+  "updatedAt": "2026-11-16T13:14:41.985Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

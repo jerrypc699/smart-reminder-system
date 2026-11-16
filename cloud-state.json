@@ -1039,11 +1039,11 @@
       "2026-11-16": {
         "date": "2026-11-16",
         "prayers": {
-          "fajr": 0,
-          "dhuhr": 0,
-          "asr": 0,
-          "maghrib": 0,
-          "isha": 0
+          "fajr": 2,
+          "dhuhr": 2,
+          "asr": 2,
+          "maghrib": 2,
+          "isha": 2
         },
         "adhkar": {
           "sabah": false,
@@ -1176,7 +1176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:13:25.842Z",
+  "updatedAt": "2026-11-16T20:14:01.339Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

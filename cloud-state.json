@@ -303,7 +303,14 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-3_2026-11-16",
+            "t": "استراحة وتجديد النشاط وشرب الماء",
+            "d": false,
+            "sourceTaskId": "task-3"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -331,7 +338,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T02:31:50.783Z",
+  "updatedAt": "2026-11-16T02:31:50.349Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -347,7 +354,7 @@
     "enableDuaaAfterAzan": true
   },
   "audioSettings": {
-    "masterVolume": 1,
+    "masterVolume": 0.85,
     "enableTts": true,
     "ttsVoiceURI": "",
     "ttsRate": 0.95,

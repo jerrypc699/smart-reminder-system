@@ -17,7 +17,9 @@
       "sched_media_1794811975434_2t0o",
       "sched_media_1794806826690_3lpo"
     ],
-    "habitIds": [],
+    "habitIds": [
+      "ca_1794860540699_ocfw"
+    ],
     "mediaIds": [
       "/audio/abdulbasit.mp3",
       "/audio/mishary.mp3",
@@ -1174,16 +1176,7 @@
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
       "customPrayers": [],
-      "customAdhkar": [
-        {
-          "id": "ca_1794860540699_ocfw",
-          "label": "فتح حرار",
-          "points": 2,
-          "scheduledTime": "22:25",
-          "enableVoiceAlert": true,
-          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد فتح حرار."
-        }
-      ],
+      "customAdhkar": [],
       "customHabits": [
         {
           "label": "بودكاست",
@@ -1202,7 +1195,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:22:22.908Z",
+  "updatedAt": "2026-11-16T20:23:58.072Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1262,6 +1255,8 @@
     "media_1794811952774_lrlgr",
     "media_1794744469799_zp1eq"
   ],
-  "deletedHabitIds": [],
+  "deletedHabitIds": [
+    "ca_1794860540699_ocfw"
+  ],
   "sourceDevice": "Mobile"
 }

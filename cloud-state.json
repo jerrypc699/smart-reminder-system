@@ -127,11 +127,12 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794834316765-ir5cl",
-      "status": "pending",
+      "status": "snoozed",
       "createdAt": "2026-11-16T13:05:16.765Z",
       "attachments": [],
       "lastDueAlarmAt": "2026-11-16T13:10:17.249Z",
-      "lastRemindedAt": "2026-11-16T13:10:17.249Z"
+      "lastRemindedAt": "2026-11-16T13:10:17.249Z",
+      "snoozeUntil": "2026-11-16T13:15:38.428Z"
     }
   ],
   "employees": [
@@ -553,7 +554,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:10:20.127Z",
+  "updatedAt": "2026-11-16T13:10:39.420Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

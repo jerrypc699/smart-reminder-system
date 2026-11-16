@@ -1173,7 +1173,8 @@
       "autoImportTasks": true,
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [
-        "item_weight"
+        "item_weight",
+        "card_prayer"
       ],
       "customPrayers": [],
       "customAdhkar": [],
@@ -1195,7 +1196,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:20:52.916Z",
+  "updatedAt": "2026-11-16T20:20:57.881Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

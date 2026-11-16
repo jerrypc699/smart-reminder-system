@@ -1055,7 +1055,7 @@
         "sport": 15,
         "study": 45,
         "sleep": 6,
-        "water": 2,
+        "water": 8,
         "food": false,
         "weight": "",
         "tasks": [
@@ -1176,7 +1176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:14:32.086Z",
+  "updatedAt": "2026-11-16T20:14:38.066Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -626,6 +626,21 @@
       "status": "completed",
       "createdAt": "2026-11-10T05:12:13.277Z",
       "completedAt": "2026-11-10T05:12:35.402Z"
+    },
+    {
+      "title": "شغل",
+      "description": "هامه",
+      "dueDate": "2026-11-16",
+      "dueTime": "21:54",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: شغل.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1794858711808-frqoa",
+      "status": "pending",
+      "createdAt": "2026-11-16T19:51:51.808Z"
     }
   ],
   "employees": [
@@ -1087,7 +1102,14 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794858711808-frqoa_2026-11-16",
+            "t": "شغل",
+            "d": false,
+            "sourceTaskId": "task-1794858711808-frqoa"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -1157,7 +1179,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T19:50:21.355Z",
+  "updatedAt": "2026-11-16T19:51:53.266Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

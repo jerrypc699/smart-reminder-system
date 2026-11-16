@@ -29,7 +29,8 @@
       "/audio/dr_abdelaziz_welcome.mp3",
       "/audio/dr_abdelaziz_pre_azan.mp3",
       "media_1794254117528_te8vb",
-      "media_1793970805634_o92fl"
+      "media_1793970805634_o92fl",
+      "media_1794287719549_hkw3n"
     ]
   },
   "tasks": [
@@ -818,16 +819,6 @@
       "category": "scheduled"
     },
     {
-      "id": "media_1794287719549_hkw3n",
-      "name": "تسجيل صوتي ٧:١٥:١٩ ص",
-      "size": 110768,
-      "type": "audio/webm",
-      "mediaType": "audio",
-      "duration": 7,
-      "createdAt": "2026-11-10T05:15:19.549Z",
-      "category": "task"
-    },
-    {
       "id": "media_1794287700702_c2gjj",
       "name": "تسجيل صوتي ٧:١٥:٠٠ ص",
       "size": 324,
@@ -1267,7 +1258,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:04:17.764Z",
+  "updatedAt": "2026-11-16T20:04:27.268Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1320,7 +1311,8 @@
     "/audio/dr_abdelaziz_welcome.mp3",
     "/audio/dr_abdelaziz_pre_azan.mp3",
     "media_1794254117528_te8vb",
-    "media_1793970805634_o92fl"
+    "media_1793970805634_o92fl",
+    "media_1794287719549_hkw3n"
   ],
   "deletedHabitIds": [],
   "sourceDevice": "Mobile"

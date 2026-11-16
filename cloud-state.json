@@ -127,13 +127,12 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794834316765-ir5cl",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-16T13:05:16.765Z",
       "attachments": [],
       "lastDueAlarmAt": "2026-11-16T13:10:17.249Z",
       "lastRemindedAt": "2026-11-16T13:10:17.249Z",
-      "snoozeUntil": "2026-11-16T13:15:38.428Z",
-      "completedAt": "2026-11-16T13:13:48.227Z"
+      "snoozeUntil": "2026-11-16T13:15:38.428Z"
     }
   ],
   "employees": [
@@ -524,7 +523,7 @@
           {
             "id": "imp_task-1794834316765-ir5cl_2026-11-16",
             "t": "اخمد على",
-            "d": true,
+            "d": false,
             "sourceTaskId": "task-1794834316765-ir5cl"
           }
         ],
@@ -555,7 +554,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:13:50.213Z",
+  "updatedAt": "2026-11-16T13:13:50.712Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -573,7 +572,7 @@
   "audioSettings": {
     "masterVolume": 1,
     "enableTts": true,
-    "ttsVoiceURI": "com.apple.voice.super-compact.ar-001.Maged",
+    "ttsVoiceURI": "",
     "ttsRate": 1.3,
     "ttsPitch": 1.2,
     "chimeSound": "modern",

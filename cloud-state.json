@@ -889,6 +889,11 @@
     "webhookSecret": "",
     "savedContacts": [
       {
+        "id": "wa_contact_1794858958538",
+        "name": "حبيبى",
+        "phone": "201066613188"
+      },
+      {
         "id": "wa_contact_1794806508354",
         "name": "اسامه ادارى القاهره",
         "phone": "201022696509"
@@ -1179,7 +1184,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T19:51:53.492Z",
+  "updatedAt": "2026-11-16T19:56:01.189Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

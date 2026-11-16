@@ -548,7 +548,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:16:36.693Z",
+  "updatedAt": "2026-11-16T13:16:43.099Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -566,7 +566,7 @@
   "audioSettings": {
     "masterVolume": 1,
     "enableTts": true,
-    "ttsVoiceURI": "",
+    "ttsVoiceURI": "com.apple.voice.super-compact.ar-001.Maged",
     "ttsRate": 1.3,
     "ttsPitch": 1.2,
     "chimeSound": "modern",

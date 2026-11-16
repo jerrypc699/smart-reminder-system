@@ -51,6 +51,33 @@
       "id": "task-1794805787590-1m88e",
       "status": "pending",
       "createdAt": "2026-11-16T05:09:47.590Z"
+    },
+    {
+      "title": "اجتماع شركة الامن",
+      "description": "النسب ، شركة الامن",
+      "dueDate": "2026-11-16",
+      "dueTime": "07:23",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع شركة الامن.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "custom",
+      "customAudioId": "media_1794681253301_6as2e",
+      "customAudioName": "v14044g50000dbr2c8fog65uf9gog9b0",
+      "cloudUrl": "",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201022696509",
+        "recipientName": "اسامه",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "employeeId": "emp-1794721519551-ctr9",
+      "employeeName": "اسامه",
+      "id": "task-1794806517423-5o605",
+      "status": "pending",
+      "createdAt": "2026-11-16T05:21:57.423Z"
     }
   ],
   "employees": [
@@ -348,6 +375,12 @@
             "t": "محمد",
             "d": false,
             "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794806517423-5o605_2026-11-16",
+            "t": "اجتماع شركة الامن",
+            "d": false,
+            "sourceTaskId": "task-1794806517423-5o605"
           }
         ],
         "dismissedTaskIds": [],
@@ -377,7 +410,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T05:21:49.246Z",
+  "updatedAt": "2026-11-16T05:21:58.362Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

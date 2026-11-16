@@ -503,14 +503,23 @@
       "autoImportTasks": true,
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
-      "customPrayers": [],
+      "customPrayers": [
+        {
+          "id": "cp_1794812797018_ahih",
+          "label": "صلاه استخاره",
+          "points": 3,
+          "scheduledTime": "09:10",
+          "enableVoiceAlert": true,
+          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد صلاه استخاره ."
+        }
+      ],
       "customAdhkar": [],
       "customHabits": [],
       "customNotePrompts": [],
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T07:06:37.184Z",
+  "updatedAt": "2026-11-16T07:06:38.945Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

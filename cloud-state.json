@@ -332,14 +332,7 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [
-          {
-            "id": "imp_task-1794805787590-1m88e_2026-11-16",
-            "t": "محمد",
-            "d": false,
-            "sourceTaskId": "task-1794805787590-1m88e"
-          }
-        ],
+        "tasks": [],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -367,7 +360,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T05:09:48.123Z",
+  "updatedAt": "2026-11-16T05:09:49.903Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

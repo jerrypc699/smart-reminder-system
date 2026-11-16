@@ -129,6 +129,11 @@
     "webhookSecret": "",
     "savedContacts": [
       {
+        "id": "wa_contact_1794806431352",
+        "name": "ميسون مكتب",
+        "phone": "201012747513"
+      },
+      {
         "id": "wa_contact_1794805777656",
         "name": "محمد عزيز شطا",
         "phone": "201028376154"
@@ -332,7 +337,14 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-16",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -360,7 +372,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T05:15:09.357Z",
+  "updatedAt": "2026-11-16T05:20:32.175Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

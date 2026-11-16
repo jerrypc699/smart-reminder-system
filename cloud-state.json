@@ -1094,18 +1094,6 @@
             "t": "مجدى الحدا د",
             "d": false,
             "sourceTaskId": "task-1794417698928-4sndw"
-          },
-          {
-            "id": "imp_task-1794372746085-uanyq_2026-11-16",
-            "t": "اجتماع شركه الامن",
-            "d": true,
-            "sourceTaskId": "task-1794372746085-uanyq"
-          },
-          {
-            "id": "imp_task-1794369844953-4cvfp_2026-11-16",
-            "t": "المهندس احمد حسن",
-            "d": false,
-            "sourceTaskId": "task-1794369844953-4cvfp"
           }
         ],
         "dismissedTaskIds": [
@@ -1116,7 +1104,9 @@
           "task-1794813709909-tvr2b",
           "task-1794834316765-ir5cl",
           "task-1794369956255-gi0lj",
-          "task-1794369997570-sv128"
+          "task-1794369997570-sv128",
+          "task-1794372746085-uanyq",
+          "task-1794369844953-4cvfp"
         ],
         "notes": {
           "good": "",
@@ -1186,7 +1176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:13:23.342Z",
+  "updatedAt": "2026-11-16T20:13:25.842Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -338,7 +338,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T02:32:02.007Z",
+  "updatedAt": "2026-11-16T02:32:03.696Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -354,7 +354,7 @@
     "enableDuaaAfterAzan": true
   },
   "audioSettings": {
-    "masterVolume": 1,
+    "masterVolume": 0.85,
     "enableTts": true,
     "ttsVoiceURI": "",
     "ttsRate": 0.95,

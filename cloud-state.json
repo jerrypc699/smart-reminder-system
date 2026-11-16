@@ -476,7 +476,32 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-16",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794806517423-5o605_2026-11-16",
+            "t": "اجتماع شركة الامن",
+            "d": false,
+            "sourceTaskId": "task-1794806517423-5o605"
+          },
+          {
+            "id": "imp_task-1794811505102-k7vk0_2026-11-16",
+            "t": "‏التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794811505102-k7vk0"
+          },
+          {
+            "id": "imp_task-1794813709909-tvr2b_2026-11-16",
+            "t": "محمد رضا",
+            "d": false,
+            "sourceTaskId": "task-1794813709909-tvr2b"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -504,7 +529,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:04:35.839Z",
+  "updatedAt": "2026-11-16T13:04:51.568Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

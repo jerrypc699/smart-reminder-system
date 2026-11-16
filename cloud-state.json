@@ -703,12 +703,13 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": true,
+      "enabled": false,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
       "id": "sched_media_1794859649520_ot80",
-      "createdAt": "2026-11-16T20:07:29.520Z"
+      "createdAt": "2026-11-16T20:07:29.520Z",
+      "lastPlayedAt": "2026-11-16T20:20:09.823Z"
     }
   ],
   "mediaLibrary": [
@@ -1194,7 +1195,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:19:52.492Z",
+  "updatedAt": "2026-11-16T20:20:10.807Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

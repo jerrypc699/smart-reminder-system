@@ -647,7 +647,7 @@
       "repeat": "none",
       "audioMode": "custom",
       "id": "task-1794858711808-frqoa",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-16T19:51:51.808Z",
       "customAudioId": "media_1794811958262_98r0e",
       "customAudioName": "v26044gc0000dbhvdu7og65p4ensr3bg",
@@ -658,7 +658,8 @@
         "recipientName": "حبيبى",
         "autoTriggerAtDueTime": true,
         "includeAttachmentsLinks": true
-      }
+      },
+      "completedAt": "2026-11-16T20:12:57.447Z"
     }
   ],
   "employees": [
@@ -1057,7 +1058,7 @@
           {
             "id": "imp_task-1794858711808-frqoa_2026-11-16",
             "t": "شغل",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1794858711808-frqoa"
           },
           {
@@ -1238,7 +1239,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:07:30.403Z",
+  "updatedAt": "2026-11-16T20:12:58.193Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

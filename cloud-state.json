@@ -537,8 +537,9 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794369956255-gi0lj",
-      "status": "pending",
-      "createdAt": "2026-11-11T04:05:56.255Z"
+      "status": "completed",
+      "createdAt": "2026-11-11T04:05:56.255Z",
+      "completedAt": "2026-11-16T20:19:12.004Z"
     },
     {
       "title": "المهندس احمد حسن",
@@ -1191,7 +1192,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:16:33.508Z",
+  "updatedAt": "2026-11-16T20:19:12.966Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

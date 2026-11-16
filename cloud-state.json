@@ -1096,12 +1096,6 @@
             "sourceTaskId": "task-1794417698928-4sndw"
           },
           {
-            "id": "imp_task-1794380757098-pd7sl_2026-11-16",
-            "t": "مذكره لدوسان",
-            "d": false,
-            "sourceTaskId": "task-1794380757098-pd7sl"
-          },
-          {
             "id": "imp_task-1794372746085-uanyq_2026-11-16",
             "t": "اجتماع شركه الامن",
             "d": true,
@@ -1192,7 +1186,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:13:21.350Z",
+  "updatedAt": "2026-11-16T20:13:21.745Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

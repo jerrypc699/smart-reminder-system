@@ -114,6 +114,21 @@
       "id": "task-1794813709909-tvr2b",
       "status": "pending",
       "createdAt": "2026-11-16T07:21:49.909Z"
+    },
+    {
+      "title": "اخمد على",
+      "description": "سيارات",
+      "dueDate": "2026-11-16",
+      "dueTime": "15:06",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اخمد على.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1794834316765-ir5cl",
+      "status": "pending",
+      "createdAt": "2026-11-16T13:05:16.765Z"
     }
   ],
   "employees": [
@@ -500,6 +515,12 @@
             "t": "محمد رضا",
             "d": false,
             "sourceTaskId": "task-1794813709909-tvr2b"
+          },
+          {
+            "id": "imp_task-1794834316765-ir5cl_2026-11-16",
+            "t": "اخمد على",
+            "d": false,
+            "sourceTaskId": "task-1794834316765-ir5cl"
           }
         ],
         "dismissedTaskIds": [],
@@ -529,7 +550,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:04:51.568Z",
+  "updatedAt": "2026-11-16T13:05:18.143Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

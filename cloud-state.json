@@ -127,12 +127,13 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794834316765-ir5cl",
-      "status": "snoozed",
+      "status": "completed",
       "createdAt": "2026-11-16T13:05:16.765Z",
       "attachments": [],
       "lastDueAlarmAt": "2026-11-16T13:10:17.249Z",
       "lastRemindedAt": "2026-11-16T13:10:17.249Z",
-      "snoozeUntil": "2026-11-16T13:15:38.428Z"
+      "snoozeUntil": "2026-11-16T13:15:38.428Z",
+      "completedAt": "2026-11-16T13:13:48.227Z"
     }
   ],
   "employees": [
@@ -523,7 +524,7 @@
           {
             "id": "imp_task-1794834316765-ir5cl_2026-11-16",
             "t": "اخمد على",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1794834316765-ir5cl"
           }
         ],
@@ -554,7 +555,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T13:10:44.923Z",
+  "updatedAt": "2026-11-16T13:13:50.213Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -1053,7 +1053,7 @@
         },
         "quran": 0,
         "sport": 15,
-        "study": 0,
+        "study": 45,
         "sleep": 0,
         "water": 0,
         "food": false,
@@ -1176,7 +1176,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:14:15.250Z",
+  "updatedAt": "2026-11-16T20:14:18.119Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -1106,6 +1106,12 @@
             "sourceTaskId": "task-1794377097414-1pi99"
           },
           {
+            "id": "imp_task-1794376749516-x6n27_2026-11-16",
+            "t": "صلاه استخاره",
+            "d": false,
+            "sourceTaskId": "task-1794376749516-x6n27"
+          },
+          {
             "id": "imp_task-1794372746085-uanyq_2026-11-16",
             "t": "اجتماع شركه الامن",
             "d": true,
@@ -1196,7 +1202,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T20:13:17.328Z",
+  "updatedAt": "2026-11-16T20:13:17.436Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

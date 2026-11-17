@@ -762,9 +762,8 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794944151057-wpc5s",
-      "status": "completed",
-      "createdAt": "2026-11-17T19:35:51.057Z",
-      "completedAt": "2026-11-17T19:40:59.775Z"
+      "status": "pending",
+      "createdAt": "2026-11-17T19:35:51.057Z"
     }
   ],
   "employees": [
@@ -1323,7 +1322,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T19:41:00.521Z",
+  "updatedAt": "2026-11-17T19:41:01.464Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

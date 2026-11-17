@@ -749,6 +749,21 @@
       "createdAt": "2026-11-17T15:09:18.919Z",
       "lastDueAlarmAt": "2026-11-17T15:11:04.422Z",
       "lastRemindedAt": "2026-11-17T15:11:04.422Z"
+    },
+    {
+      "title": "عرض لمهندس محمود جمال",
+      "description": "ملف تعريفى للشركه",
+      "dueDate": "2026-11-18",
+      "dueTime": "11:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: عرض لمهندس محمود جمال.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1794944151057-wpc5s",
+      "status": "pending",
+      "createdAt": "2026-11-17T19:35:51.057Z"
     }
   ],
   "employees": [
@@ -1307,7 +1322,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T19:35:36.966Z",
+  "updatedAt": "2026-11-17T19:35:51.802Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

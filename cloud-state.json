@@ -1299,7 +1299,7 @@
         "notes": {
           "good": "",
           "block": "",
-          "tomorrow": ""
+          "tomorrow": "حسا"
         },
         "customValues": {},
         "customNotes": {}
@@ -1322,7 +1322,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T19:35:51.938Z",
+  "updatedAt": "2026-11-17T19:40:38.237Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

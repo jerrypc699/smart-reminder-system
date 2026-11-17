@@ -18,7 +18,8 @@
       "sched_media_1794806826690_3lpo"
     ],
     "habitIds": [
-      "ca_1794860540699_ocfw"
+      "ca_1794860540699_ocfw",
+      "ca_1794860692985_cv10"
     ],
     "mediaIds": [
       "/audio/abdulbasit.mp3",
@@ -1299,16 +1300,7 @@
       "autoImportIncludePendingPrevious": true,
       "hiddenBuiltIns": [],
       "customPrayers": [],
-      "customAdhkar": [
-        {
-          "id": "ca_1794860692985_cv10",
-          "label": "دعوات  عزيز",
-          "points": 2,
-          "scheduledTime": "22:26",
-          "enableVoiceAlert": true,
-          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد دعوات  عزيز."
-        }
-      ],
+      "customAdhkar": [],
       "customHabits": [
         {
           "label": "بودكاست",
@@ -1327,7 +1319,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T03:48:08.791Z",
+  "updatedAt": "2026-11-17T03:48:37.281Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1388,7 +1380,8 @@
     "media_1794744469799_zp1eq"
   ],
   "deletedHabitIds": [
-    "ca_1794860540699_ocfw"
+    "ca_1794860540699_ocfw",
+    "ca_1794860692985_cv10"
   ],
   "sourceDevice": "Mobile"
 }

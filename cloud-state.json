@@ -1276,11 +1276,11 @@
       "2026-11-17": {
         "date": "2026-11-17",
         "prayers": {
-          "fajr": 2,
-          "dhuhr": 2,
-          "asr": 2,
-          "maghrib": 2,
-          "isha": 2
+          "fajr": 0,
+          "dhuhr": 0,
+          "asr": 0,
+          "maghrib": 0,
+          "isha": 0
         },
         "adhkar": {
           "sabah": false,
@@ -1293,14 +1293,14 @@
         "study": 0,
         "sleep": 0,
         "water": 0,
-        "food": true,
+        "food": false,
         "weight": "",
         "tasks": [],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
           "block": "",
-          "tomorrow": "مراجعه حساب الشمالى"
+          "tomorrow": ""
         },
         "customValues": {},
         "customNotes": {}
@@ -1323,7 +1323,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T20:31:47.388Z",
+  "updatedAt": "2026-11-17T20:31:51.317Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1346,7 +1346,7 @@
     "ttsPitch": 1.2,
     "chimeSound": "modern",
     "enableSoundEffects": true,
-    "soundMuted": false
+    "soundMuted": true
   },
   "deletedTaskIds": [
     "task-2",

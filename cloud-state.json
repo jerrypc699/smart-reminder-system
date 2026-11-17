@@ -1343,7 +1343,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T14:47:02.868Z",
+  "updatedAt": "2026-11-17T14:47:04.905Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1408,5 +1408,5 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "PC"
+  "sourceDevice": "Mobile"
 }

@@ -686,6 +686,21 @@
       "id": "task-1794887282519-zqse0",
       "status": "pending",
       "createdAt": "2026-11-17T03:48:02.519Z"
+    },
+    {
+      "title": "مستحقات السيارات",
+      "description": "هاوس جاس",
+      "dueDate": "2026-11-17",
+      "dueTime": "11:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: مستحقات السيارات.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1794887428535-fxoc3",
+      "status": "pending",
+      "createdAt": "2026-11-17T03:50:28.535Z"
     }
   ],
   "employees": [
@@ -1277,6 +1292,12 @@
             "t": "مستخقات الشركه",
             "d": false,
             "sourceTaskId": "task-1794887282519-zqse0"
+          },
+          {
+            "id": "imp_task-1794887428535-fxoc3_2026-11-17",
+            "t": "مستحقات السيارات",
+            "d": false,
+            "sourceTaskId": "task-1794887428535-fxoc3"
           }
         ],
         "dismissedTaskIds": [],
@@ -1319,7 +1340,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T03:48:37.281Z",
+  "updatedAt": "2026-11-17T03:50:29.517Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

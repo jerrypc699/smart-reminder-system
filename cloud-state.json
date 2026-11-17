@@ -1299,7 +1299,7 @@
         "notes": {
           "good": "",
           "block": "",
-          "tomorrow": "مراجعه حسا"
+          "tomorrow": "مراجعه حساب الشمالى"
         },
         "customValues": {},
         "customNotes": {}
@@ -1322,7 +1322,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T19:40:44.208Z",
+  "updatedAt": "2026-11-17T19:40:48.664Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -1236,7 +1236,86 @@
         "water": 0,
         "food": true,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-17",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794811505102-k7vk0_2026-11-17",
+            "t": "‏التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794811505102-k7vk0"
+          },
+          {
+            "id": "imp_task-1794813709909-tvr2b_2026-11-17",
+            "t": "محمد رضا",
+            "d": false,
+            "sourceTaskId": "task-1794813709909-tvr2b"
+          },
+          {
+            "id": "imp_task-1794483515605-7t2dt_2026-11-17",
+            "t": "اعمال السيستم",
+            "d": false,
+            "sourceTaskId": "task-1794483515605-7t2dt"
+          },
+          {
+            "id": "imp_task-1794478443115-vghdc_2026-11-17",
+            "t": "ملف التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794478443115-vghdc"
+          },
+          {
+            "id": "imp_task-1794431372819-0t1ik_2026-11-17",
+            "t": "البنك",
+            "d": false,
+            "sourceTaskId": "task-1794431372819-0t1ik"
+          },
+          {
+            "id": "imp_task-1794418596194-nd6mj_2026-11-17",
+            "t": "احمد اسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418596194-nd6mj"
+          },
+          {
+            "id": "imp_task-1794418554981-68qlo_2026-11-17",
+            "t": "أحمداسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418554981-68qlo"
+          },
+          {
+            "id": "imp_task-1794417698928-4sndw_2026-11-17",
+            "t": "مجدى الحدا د",
+            "d": false,
+            "sourceTaskId": "task-1794417698928-4sndw"
+          },
+          {
+            "id": "imp_task-1794369997570-sv128_2026-11-17",
+            "t": "محاضره الحقوق",
+            "d": false,
+            "sourceTaskId": "task-1794369997570-sv128"
+          },
+          {
+            "id": "imp_task-1794369844953-4cvfp_2026-11-17",
+            "t": "المهندس احمد حسن",
+            "d": false,
+            "sourceTaskId": "task-1794369844953-4cvfp"
+          },
+          {
+            "id": "imp_task-1794887282519-zqse0_2026-11-17",
+            "t": "مستخقات الشركه",
+            "d": false,
+            "sourceTaskId": "task-1794887282519-zqse0"
+          },
+          {
+            "id": "imp_task-1794887428535-fxoc3_2026-11-17",
+            "t": "مستحقات السيارات",
+            "d": false,
+            "sourceTaskId": "task-1794887428535-fxoc3"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -1264,7 +1343,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T14:43:44.284Z",
+  "updatedAt": "2026-11-17T14:43:46.446Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

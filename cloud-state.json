@@ -738,15 +738,17 @@
         "phoneNumber": "201022696509",
         "recipientName": "اسامه",
         "autoTriggerAtDueTime": true,
-        "includeAttachmentsLinks": true
+        "includeAttachmentsLinks": true,
+        "lastSentAt": "2026-11-17T15:11:04.937Z",
+        "lastSendStatus": "opened_app"
       },
       "employeeId": "emp-1794721519551-ctr9",
       "employeeName": "اسامه",
       "id": "task-1794928158919-8ovdz",
       "status": "pending",
       "createdAt": "2026-11-17T15:09:18.919Z",
-      "lastDueAlarmAt": "2026-11-17T15:11:03.234Z",
-      "lastRemindedAt": "2026-11-17T15:11:03.234Z"
+      "lastDueAlarmAt": "2026-11-17T15:11:04.422Z",
+      "lastRemindedAt": "2026-11-17T15:11:04.422Z"
     }
   ],
   "employees": [
@@ -1390,7 +1392,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T15:11:06.239Z",
+  "updatedAt": "2026-11-17T15:11:08.482Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

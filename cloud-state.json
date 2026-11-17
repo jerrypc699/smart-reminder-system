@@ -667,6 +667,24 @@
         "includeAttachmentsLinks": true
       },
       "completedAt": "2026-11-16T20:12:57.447Z"
+    },
+    {
+      "title": "مستخقات الشركه",
+      "description": "الفرع الجنوبى ، الشرقى",
+      "dueDate": "2026-11-17",
+      "dueTime": "09:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: مستخقات الشركه.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "custom",
+      "customAudioId": "media_1794370181506_urs62",
+      "customAudioName": "432369",
+      "cloudUrl": "",
+      "id": "task-1794887282519-zqse0",
+      "status": "pending",
+      "createdAt": "2026-11-17T03:48:02.519Z"
     }
   ],
   "employees": [
@@ -1186,7 +1204,80 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-17",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794811505102-k7vk0_2026-11-17",
+            "t": "‏التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794811505102-k7vk0"
+          },
+          {
+            "id": "imp_task-1794813709909-tvr2b_2026-11-17",
+            "t": "محمد رضا",
+            "d": false,
+            "sourceTaskId": "task-1794813709909-tvr2b"
+          },
+          {
+            "id": "imp_task-1794483515605-7t2dt_2026-11-17",
+            "t": "اعمال السيستم",
+            "d": false,
+            "sourceTaskId": "task-1794483515605-7t2dt"
+          },
+          {
+            "id": "imp_task-1794478443115-vghdc_2026-11-17",
+            "t": "ملف التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794478443115-vghdc"
+          },
+          {
+            "id": "imp_task-1794431372819-0t1ik_2026-11-17",
+            "t": "البنك",
+            "d": false,
+            "sourceTaskId": "task-1794431372819-0t1ik"
+          },
+          {
+            "id": "imp_task-1794418596194-nd6mj_2026-11-17",
+            "t": "احمد اسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418596194-nd6mj"
+          },
+          {
+            "id": "imp_task-1794418554981-68qlo_2026-11-17",
+            "t": "أحمداسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418554981-68qlo"
+          },
+          {
+            "id": "imp_task-1794417698928-4sndw_2026-11-17",
+            "t": "مجدى الحدا د",
+            "d": false,
+            "sourceTaskId": "task-1794417698928-4sndw"
+          },
+          {
+            "id": "imp_task-1794369997570-sv128_2026-11-17",
+            "t": "محاضره الحقوق",
+            "d": false,
+            "sourceTaskId": "task-1794369997570-sv128"
+          },
+          {
+            "id": "imp_task-1794369844953-4cvfp_2026-11-17",
+            "t": "المهندس احمد حسن",
+            "d": false,
+            "sourceTaskId": "task-1794369844953-4cvfp"
+          },
+          {
+            "id": "imp_task-1794887282519-zqse0_2026-11-17",
+            "t": "مستخقات الشركه",
+            "d": false,
+            "sourceTaskId": "task-1794887282519-zqse0"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -1236,7 +1327,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T03:47:42.805Z",
+  "updatedAt": "2026-11-17T03:48:07.071Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

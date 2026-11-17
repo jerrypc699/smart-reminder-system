@@ -706,6 +706,21 @@
       "createdAt": "2026-11-17T03:50:28.535Z",
       "lastRemindedAt": "2026-11-17T09:00:02.148Z",
       "lastDueAlarmAt": "2026-11-17T09:00:02.148Z"
+    },
+    {
+      "title": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
+      "description": "تمربر فواتير شهر  ٤ ، ٥ ) احمد شوقى\nتمرير فواتير شهر ( ٦،٧،٨ ) الشيخ جهاد \nوقف شهر ( ٩، ١٠ ) الشيخ جهاد\nاستلام الملاكى الجديدة يوم ٢٢/١٠/٢٠٢٦",
+      "dueDate": "2026-11-18",
+      "dueTime": "11:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: فواتير ( الملاكى ) جاسكو ( محمود بغدادى (.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1794926851089-6vtqg",
+      "status": "pending",
+      "createdAt": "2026-11-17T14:47:31.089Z"
     }
   ],
   "employees": [
@@ -1343,7 +1358,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T14:47:31.022Z",
+  "updatedAt": "2026-11-17T14:47:31.870Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

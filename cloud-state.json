@@ -1236,7 +1236,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-16T23:54:38.015Z",
+  "updatedAt": "2026-11-17T01:55:15.295Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1248,15 +1248,15 @@
     "preAzanReminderMinutes": 10,
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
-    "azanReciter": "abdulbasit",
+    "azanReciter": "mishary",
     "enableDuaaAfterAzan": true
   },
   "audioSettings": {
-    "masterVolume": 1,
+    "masterVolume": 0.85,
     "enableTts": true,
     "ttsVoiceURI": "",
-    "ttsRate": 1.3,
-    "ttsPitch": 1.2,
+    "ttsRate": 0.95,
+    "ttsPitch": 1,
     "chimeSound": "modern",
     "enableSoundEffects": true,
     "soundMuted": false
@@ -1299,5 +1299,5 @@
   "deletedHabitIds": [
     "ca_1794860540699_ocfw"
   ],
-  "sourceDevice": "Mobile"
+  "sourceDevice": "PC"
 }

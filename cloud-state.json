@@ -19,7 +19,8 @@
     ],
     "habitIds": [
       "ca_1794860540699_ocfw",
-      "ca_1794860692985_cv10"
+      "ca_1794860692985_cv10",
+      "ch_1794860163532_k3vu"
     ],
     "mediaIds": [
       "/audio/abdulbasit.mp3",
@@ -1322,25 +1323,12 @@
       "hiddenBuiltIns": [],
       "customPrayers": [],
       "customAdhkar": [],
-      "customHabits": [
-        {
-          "label": "بودكاست",
-          "kind": "toggle",
-          "target": 1,
-          "step": 1,
-          "unit": "",
-          "points": 5,
-          "scheduledTime": "22:17",
-          "enableVoiceAlert": true,
-          "voiceMessage": "يا دكتور عبد العزيز، حان الآن موعد بودكاست.",
-          "id": "ch_1794860163532_k3vu"
-        }
-      ],
+      "customHabits": [],
       "customNotePrompts": [],
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T03:51:21.775Z",
+  "updatedAt": "2026-11-17T03:51:29.655Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1402,7 +1390,8 @@
   ],
   "deletedHabitIds": [
     "ca_1794860540699_ocfw",
-    "ca_1794860692985_cv10"
+    "ca_1794860692985_cv10",
+    "ch_1794860163532_k3vu"
   ],
   "sourceDevice": "Mobile"
 }

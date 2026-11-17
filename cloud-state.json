@@ -686,7 +686,8 @@
       "cloudUrl": "",
       "id": "task-1794887282519-zqse0",
       "status": "pending",
-      "createdAt": "2026-11-17T03:48:02.519Z"
+      "createdAt": "2026-11-17T03:48:02.519Z",
+      "lastRemindedAt": "2026-11-17T06:55:02.149Z"
     },
     {
       "title": "مستحقات السيارات",
@@ -1328,7 +1329,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-17T04:31:05.373Z",
+  "updatedAt": "2026-11-17T06:55:04.899Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

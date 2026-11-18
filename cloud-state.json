@@ -792,7 +792,16 @@
       "employeeName": "رحمه عرام",
       "id": "task-1794991430396-ihp27",
       "status": "pending",
-      "createdAt": "2026-11-18T08:43:50.396Z"
+      "createdAt": "2026-11-18T08:43:50.396Z",
+      "attachments": [
+        {
+          "id": "att_1794991553959_5ctph",
+          "name": "‎⁨مستحقات الشمالى⁩.xlsx",
+          "size": 21148,
+          "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "createdAt": "2026-11-18T08:45:57.811Z"
+        }
+      ]
     }
   ],
   "employees": [
@@ -1491,7 +1500,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-18T08:45:57.392Z",
+  "updatedAt": "2026-11-18T08:45:59.232Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

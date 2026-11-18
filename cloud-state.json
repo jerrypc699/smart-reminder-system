@@ -1500,7 +1500,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-18T14:21:04.844Z",
+  "updatedAt": "2026-11-18T18:00:29.690Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1523,7 +1523,7 @@
     "ttsPitch": 1.2,
     "chimeSound": "modern",
     "enableSoundEffects": true,
-    "soundMuted": false
+    "soundMuted": true
   },
   "deletedTaskIds": [
     "task-2",

@@ -1374,6 +1374,12 @@
             "sourceTaskId": "task-1794805787590-1m88e"
           },
           {
+            "id": "imp_task-1794811505102-k7vk0_2026-11-18",
+            "t": "‏التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794811505102-k7vk0"
+          },
+          {
             "id": "imp_task-1794813709909-tvr2b_2026-11-18",
             "t": "محمد رضا",
             "d": false,
@@ -1491,7 +1497,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-18T08:44:03.997Z",
+  "updatedAt": "2026-11-18T08:44:04.902Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

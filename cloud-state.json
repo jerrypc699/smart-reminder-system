@@ -895,7 +895,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": true,
+      "enabled": false,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1479,7 +1479,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-19T07:36:08.022Z",
+  "updatedAt": "2026-11-19T08:32:08.020Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

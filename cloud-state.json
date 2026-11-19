@@ -816,6 +816,36 @@
       "id": "task-1794047274656-pjzg1",
       "status": "pending",
       "createdAt": "2026-11-07T10:27:54.656Z"
+    },
+    {
+      "title": "تقارير الخزنه",
+      "description": "مراجعتها",
+      "dueDate": "2026-11-19",
+      "dueTime": "09:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: تقارير الخزنه.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1795060939852-b0u6g",
+      "status": "pending",
+      "createdAt": "2026-11-19T04:02:19.852Z"
+    },
+    {
+      "title": "مكالمه لزميلي",
+      "description": "بخصوص فتح سوق عماله",
+      "dueDate": "2026-11-19",
+      "dueTime": "11:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: مكالمه لزميلي.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1795060797227-cmcdn",
+      "status": "pending",
+      "createdAt": "2026-11-19T03:59:57.227Z"
     }
   ],
   "employees": [
@@ -865,7 +895,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": false,
+      "enabled": true,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1449,7 +1479,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-19T04:15:58.819Z",
+  "updatedAt": "2026-11-19T06:14:06.310Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

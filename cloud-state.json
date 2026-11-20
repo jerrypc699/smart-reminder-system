@@ -528,8 +528,9 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794369997570-sv128",
-      "status": "pending",
-      "createdAt": "2026-11-11T04:06:37.570Z"
+      "status": "completed",
+      "createdAt": "2026-11-11T04:06:37.570Z",
+      "completedAt": "2026-11-20T16:15:58.686Z"
     },
     {
       "title": "محاضرة الحقوق",
@@ -1646,12 +1647,6 @@
             "sourceTaskId": "task-1794417698928-4sndw"
           },
           {
-            "id": "imp_task-1794369997570-sv128_2026-11-20",
-            "t": "محاضره الحقوق",
-            "d": false,
-            "sourceTaskId": "task-1794369997570-sv128"
-          },
-          {
             "id": "imp_task-1794369844953-4cvfp_2026-11-20",
             "t": "المهندس احمد حسن",
             "d": false,
@@ -1733,7 +1728,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-20T16:15:58.605Z",
+  "updatedAt": "2026-11-20T16:15:59.258Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

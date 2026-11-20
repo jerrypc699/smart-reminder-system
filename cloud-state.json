@@ -765,9 +765,9 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794944151057-wpc5s",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-17T19:35:51.057Z",
-      "completedAt": "2026-11-17T19:40:59.775Z"
+      "completedAt": "2026-11-20T16:16:21.905Z"
     },
     {
       "title": "مستحقات الشمالي",
@@ -1671,12 +1671,6 @@
             "sourceTaskId": "task-1794928158919-8ovdz"
           },
           {
-            "id": "imp_task-1794944151057-wpc5s_2026-11-20",
-            "t": "عرض لمهندس محمود جمال",
-            "d": false,
-            "sourceTaskId": "task-1794944151057-wpc5s"
-          },
-          {
             "id": "imp_task-1794991430396-ihp27_2026-11-20",
             "t": "مستحقات الشمالي",
             "d": false,
@@ -1728,7 +1722,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-20T16:16:20.867Z",
+  "updatedAt": "2026-11-20T16:16:22.424Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

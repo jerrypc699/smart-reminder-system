@@ -885,6 +885,31 @@
       "id": "task-1795198567339-oanxf",
       "status": "pending",
       "createdAt": "2026-11-20T18:16:07.339Z"
+    },
+    {
+      "title": "اجتماع الضبعه",
+      "description": "شغل الباصات\nشغل الشقق\nشكرا",
+      "dueDate": "2026-11-21",
+      "dueTime": "12:19",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع الضبعه.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "custom",
+      "customAudioId": "media_1794463154752_5ioaj",
+      "customAudioName": "448080",
+      "cloudUrl": "",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201018282280",
+        "recipientName": "احمد الجيار طاقه",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795256324176-r1k09",
+      "status": "pending",
+      "createdAt": "2026-11-21T10:18:44.176Z"
     }
   ],
   "employees": [
@@ -1866,6 +1891,12 @@
             "t": "بخصوص الامن",
             "d": false,
             "sourceTaskId": "task-1795198567339-oanxf"
+          },
+          {
+            "id": "imp_task-1795256324176-r1k09_2026-11-21",
+            "t": "اجتماع الضبعه",
+            "d": false,
+            "sourceTaskId": "task-1795256324176-r1k09"
           }
         ],
         "dismissedTaskIds": [],
@@ -1895,7 +1926,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:18:44.248Z",
+  "updatedAt": "2026-11-21T10:18:45.622Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

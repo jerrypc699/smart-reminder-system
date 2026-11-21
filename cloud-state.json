@@ -965,6 +965,28 @@
       "id": "task-1795277159064-c7rc2",
       "status": "pending",
       "createdAt": "2026-11-21T16:05:59.064Z"
+    },
+    {
+      "title": "رسالة واتساب لحبيبي",
+      "dueDate": "2026-11-21",
+      "dueTime": "18:20",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: رسالة واتساب لحبيبي.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201066613188",
+        "recipientName": "حبيبي",
+        "customMessage": "بحبك ❤\nيمكن الكلام ما بيعبّرش عن كل اللي جوايا، بس حبيت أقولك إنك أجمل حاجة في حياتي، ووجودك جنبي هو اللي مدّي أيامي معنى. ربنا يخليكي ليا وما يحرمنيش منك أبدًا.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795277678211-94y0a",
+      "status": "pending",
+      "createdAt": "2026-11-21T16:14:38.211Z"
     }
   ],
   "employees": [
@@ -1014,7 +1036,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": true,
+      "enabled": false,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1922,6 +1944,12 @@
             "t": "اجتماع الضبعه",
             "d": true,
             "sourceTaskId": "task-1795256324176-r1k09"
+          },
+          {
+            "id": "imp_task-1795277678211-94y0a_2026-11-21",
+            "t": "رسالة واتساب لحبيبي",
+            "d": false,
+            "sourceTaskId": "task-1795277678211-94y0a"
           }
         ],
         "dismissedTaskIds": [],
@@ -1951,7 +1979,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T16:14:39.744Z",
+  "updatedAt": "2026-11-21T16:14:40.093Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2017,17 +2045,9 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [
-      {
-        "category": "custom",
-        "title": "دخول المسجد",
-        "text": "اللهم تقبل",
-        "count": 1,
-        "id": "custom-dhikr-1795256896347-ial4",
-        "isCustom": true
-      },
       {
         "category": "custom",
         "title": "دخول",
@@ -2051,6 +2071,14 @@
         "count": 3,
         "reward": "عند دخول اجتماع هام",
         "id": "custom-dhikr-1794374575688-bs2r",
+        "isCustom": true
+      },
+      {
+        "category": "custom",
+        "title": "دخول المسجد",
+        "text": "اللهم تقبل",
+        "count": 1,
+        "id": "custom-dhikr-1795256896347-ial4",
         "isCustom": true
       }
     ],

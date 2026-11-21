@@ -833,8 +833,11 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794047274656-pjzg1",
-      "status": "pending",
-      "createdAt": "2026-11-07T10:27:54.656Z"
+      "status": "completed",
+      "createdAt": "2026-11-07T10:27:54.656Z",
+      "completedAt": "2026-11-21T10:50:05.508Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:50:05.508Z"
     },
     {
       "title": "تقارير الخزنه",
@@ -1866,12 +1869,6 @@
             "sourceTaskId": "task-1794991430396-ihp27"
           },
           {
-            "id": "imp_task-1794047274656-pjzg1_2026-11-21",
-            "t": "مقابلة الجيار",
-            "d": false,
-            "sourceTaskId": "task-1794047274656-pjzg1"
-          },
-          {
             "id": "imp_task-1795060939852-b0u6g_2026-11-21",
             "t": "تقارير الخزنه",
             "d": false,
@@ -1929,7 +1926,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:50:05.423Z",
+  "updatedAt": "2026-11-21T10:50:07.098Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1942,7 +1939,9 @@
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
     "azanReciter": "mishary",
-    "enableDuaaAfterAzan": true
+    "enableDuaaAfterAzan": true,
+    "qiyamTimeMode": "custom",
+    "qiyamCustomTime": "04:00"
   },
   "audioSettings": {
     "masterVolume": 0.85,

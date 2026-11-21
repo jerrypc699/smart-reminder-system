@@ -172,6 +172,9 @@ public class MediaAlarmHelper {
         receiverIntent.putExtra("cloudUrl", alarmObj.optString("cloudUrl", ""));
         receiverIntent.putExtra("isVideo", alarmObj.optBoolean("isVideo", true));
         receiverIntent.putExtra("isTestAlarm", alarmObj.optBoolean("isTestAlarm", false));
+        receiverIntent.putExtra("taskId", alarmObj.optString("taskId", ""));
+        receiverIntent.putExtra("attachmentId", alarmObj.optString("attachmentId", ""));
+        receiverIntent.putExtra("actionType", alarmObj.optString("actionType", ""));
 
         int piFlags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
         PendingIntent operationPI = PendingIntent.getBroadcast(context, alarmId, receiverIntent, piFlags);
@@ -226,6 +229,9 @@ public class MediaAlarmHelper {
             launchIntent.putExtra("cloudUrl", source.getStringExtra("cloudUrl"));
             launchIntent.putExtra("isVideo", source.getBooleanExtra("isVideo", true));
             launchIntent.putExtra("isTestAlarm", source.getBooleanExtra("isTestAlarm", false));
+            launchIntent.putExtra("taskId", source.getStringExtra("taskId"));
+            launchIntent.putExtra("attachmentId", source.getStringExtra("attachmentId"));
+            launchIntent.putExtra("actionType", source.getStringExtra("actionType"));
         }
         launchIntent.putExtra("autoLaunchTimestamp", System.currentTimeMillis());
         return launchIntent;

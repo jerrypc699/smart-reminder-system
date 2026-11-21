@@ -23,11 +23,18 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(VideoAlarmPlugin.class);
         super.onCreate(savedInstanceState);
+        applyLockscreenFlags(getIntent());
         configureWebViewForAutoplay();
         setupAlarmNotificationChannels();
         MediaAlarmHelper.ensureMediaLaunchChannel(this);
         TaskWhatsAppAlarmHelper.ensureChannel(this);
         requestAudioPermissions();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applyLockscreenFlags(getIntent());
     }
 
     @Override
@@ -38,15 +45,19 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void applyLockscreenFlags(Intent intent) {
-        boolean isMediaAlarm = intent != null &&
-                MediaAlarmHelper.ACTION_PLAY_SCHEDULED_MEDIA.equals(intent.getAction());
+        boolean isMediaAlarm = intent != null && (
+                MediaAlarmHelper.ACTION_PLAY_SCHEDULED_MEDIA.equals(intent.getAction()) ||
+                intent.hasExtra("scheduledId") ||
+                intent.hasExtra("taskId") ||
+                intent.hasExtra("mediaId")
+        );
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(isMediaAlarm);
             setTurnScreenOn(isMediaAlarm);
             if (isMediaAlarm) {
                 KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-                if (km != null && km.isKeyguardLocked() && !km.isKeyguardSecure()) {
+                if (km != null && km.isKeyguardLocked()) {
                     km.requestDismissKeyguard(this, null);
                 }
             }
@@ -56,7 +67,8 @@ public class MainActivity extends BridgeActivity {
             getWindow().addFlags(
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
             );
         }
     }

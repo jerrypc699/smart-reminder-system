@@ -48,29 +48,30 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.39.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.39.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.40.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.40.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.39.ipa
-          path: DrAbdelaziz-Reminder-v1.0.39.ipa
+          name: DrAbdelaziz-Reminder-v1.0.40.ipa
+          path: DrAbdelaziz-Reminder-v1.0.40.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.39
+      - name: Attach IPA to GitHub Release v1.0.40
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.39
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.39"
+          tag_name: v1.0.40
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.40"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.39
-            - إرسال تنبيهات وتكليفات الواتساب كصورة فقط بدون نصوص أو كلام.
-            - تحرير وإمكانية تعديل وتخصيص مواقيت صلاة الضحى وقيام الليل بكل سهولة من جدول مواقيت الصلاة.
-            - أرشفة المهام المكتملة تلقائياً وإزالتها من المهام اليومية النشطة مع إضافة قسم مخصص للأرشيف واستعادة المهام وتفريغه.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.40
+            - تشغيل مرفقات الفيديو الخاصة بالمهام تلقائياً وفوراً كمنبه هاردوير صريح في موعد المهمة المحدد.
+            - إيقاظ الجهاز وإضاءة الشاشة تلقائياً وعرض الفيديو وشاشة التنبيه فوق شاشة القفل حتى لو كان الموبايل مقفلاً (ShowWhenLocked / TurnScreenOn / AlarmClockInfo).
+            - رفع صوت تشغيل الفيديو ليعادل منبه الهاتف الصريح وتجاوز الوضع الصامت أو الصوت المنخفض.
+            - تشغيل الفيديو متكرراً (Loop) مع إمكانية التأجيل والإغلاق وإرسال صورة التنبيه عبر واتساب.
           files: |
-            DrAbdelaziz-Reminder-v1.0.39.ipa
+            DrAbdelaziz-Reminder-v1.0.40.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,7 +83,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.39.ipa
+            DrAbdelaziz-Reminder-v1.0.40.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

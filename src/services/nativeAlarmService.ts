@@ -19,6 +19,20 @@ export function getLocalDateStr(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+export function isVideoAttachment(att: any): boolean {
+  if (!att) return false;
+  if (typeof att.type === 'string' && att.type.toLowerCase().startsWith('video/')) return true;
+  if (typeof att.name === 'string' && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(att.name)) return true;
+  return false;
+}
+
+export function isTaskWithVideo(task: Task): boolean {
+  if (!task) return false;
+  if (task.customMediaType === 'video') return true;
+  if (task.attachments && task.attachments.some(isVideoAttachment)) return true;
+  return false;
+}
+
 export class NativeAlarmService {
   private static isInitialized = false;
 
@@ -182,9 +196,7 @@ export class NativeAlarmService {
       if (tasks && tasks.length > 0) {
         await this.scheduleTasks(tasks);
       }
-      if (mediaList && mediaList.length > 0) {
-        await this.scheduleMediaItems(mediaList);
-      }
+      await this.scheduleCombinedHardwareAlarms(tasks, mediaList);
       await this.scheduleDailyHabits();
       return true;
     } catch (err) {
@@ -430,6 +442,9 @@ export class NativeAlarmService {
         });
         console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} task alarms in AlarmManager.`);
       }
+
+      // Automatically sync any task with an attached video into the hardware AlarmManager
+      await this.scheduleCombinedHardwareAlarms(tasks);
     } catch (err) {
       console.error('[NativeAlarmService] scheduleTasks error:', err);
     }
@@ -437,19 +452,39 @@ export class NativeAlarmService {
 
   /**
    * Schedule all enabled media & video items into native hardware AlarmManager.
-   * On Android: uses VideoAlarmPlugin (AlarmManager.setAlarmClock + FullScreenIntent + StartActivity)
-   * so the app wakes up, opens automatically onto the screen, and plays the video immediately!
-   * On iOS: uses high-priority LocalNotifications.
+   * Delegates to scheduleCombinedHardwareAlarms so task video alarms are preserved!
    */
   public static async scheduleMediaItems(mediaList: ScheduledMedia[]): Promise<void> {
+    return this.scheduleCombinedHardwareAlarms(undefined, mediaList);
+  }
+
+  /**
+   * Combined Hardware Alarm Clock Synchronization:
+   * Merges all tasks with video attachments AND all scheduled media items into
+   * Android AlarmManager (AlarmClockInfo + FullScreenIntent + Wakelock + Audio Boost).
+   * Ensures the phone screen lights up and the video plays automatically at full volume
+   * even if the phone is locked or volume is set low!
+   */
+  public static async scheduleCombinedHardwareAlarms(
+    tasks?: Task[],
+    mediaList?: ScheduledMedia[]
+  ): Promise<void> {
     if (!this.isNative()) return;
     try {
-      // Clear any legacy/iOS 3000..3999 LocalNotifications so there is never duplicate ringing
+      const { taskService } = await import('./taskService');
+      const { audioStorageService } = await import('./audioStorageService');
+
+      const effectiveTasks = tasks || taskService.getTasks();
+      const effectiveMedia = mediaList || audioStorageService.getScheduledMedias();
+
+      // Clear any legacy/iOS 3000..3999 or 25000..29999 LocalNotifications
       const pending = await LocalNotifications.getPending();
-      const mediaNotifs = pending.notifications.filter(n => n.id >= 3000 && n.id < 4000);
+      const mediaNotifs = pending.notifications.filter(
+        (n) => (n.id >= 3000 && n.id < 4000) || (n.id >= 25000 && n.id < 30000)
+      );
       if (mediaNotifs.length > 0) {
         await LocalNotifications.cancel({
-          notifications: mediaNotifs.map(n => ({ id: n.id }))
+          notifications: mediaNotifs.map((n) => ({ id: n.id }))
         });
       }
 
@@ -457,7 +492,71 @@ export class NativeAlarmService {
       const nativeAlarms: NativeScheduledAlarmPayload[] = [];
       const iosNotifications: any[] = [];
 
-      for (const item of mediaList) {
+      // 1. Process Tasks with attached video files (or video media type)
+      for (const task of effectiveTasks) {
+        if (task.status === 'completed' || task.isArchived) continue;
+        if (!isTaskWithVideo(task)) continue;
+
+        const videoAtt = task.attachments?.find(isVideoAttachment);
+        const baseHash = Math.abs(NativeAlarmService.getNumericIdForTask(task.id));
+        const alarmId = 25000 + (baseHash % 4900);
+
+        let triggerAtMs = 0;
+        if (task.status === 'snoozed' && task.snoozeUntil) {
+          triggerAtMs = new Date(task.snoozeUntil).getTime();
+        } else if (task.dueDate && task.dueTime) {
+          const [year, month, day] = task.dueDate.split('-').map(Number);
+          const [hour, min] = task.dueTime.split(':').map(Number);
+          triggerAtMs = new Date(year, month - 1, day, hour, min, 0, 0).getTime();
+        }
+
+        if (triggerAtMs > now.getTime()) {
+          const mediaName = videoAtt?.name || task.customAudioName || 'مقطع فيديو المهمة';
+          const cloudUrl = videoAtt?.cloudUrl || task.cloudUrl || '';
+
+          nativeAlarms.push({
+            alarmId,
+            triggerAtMs,
+            scheduledId: `task_video_${task.id}`,
+            mediaId: videoAtt?.id || task.customAudioId || task.id,
+            mediaName,
+            mediaType: 'video',
+            title: task.title,
+            description: task.description || task.voiceMessage || 'منبه موعد مهمة عمل مع مقطع فيديو مرفق',
+            cloudUrl,
+            isVideo: true,
+            taskId: task.id,
+            attachmentId: videoAtt?.id,
+            actionType: 'task_video',
+          });
+
+          iosNotifications.push({
+            id: alarmId,
+            title: `🎬 منبه فيديو المهمة: ${task.title}`,
+            body: task.voiceMessage || task.description || `يا دكتور عبد العزيز: حان موعد المهمة وتشغيل فيديو ${mediaName}`,
+            schedule: {
+              at: new Date(triggerAtMs),
+              allowWhileIdle: true,
+            },
+            channelId: 'dr_abdelaziz_media_v9',
+            sound: 'dr_abdelaziz_task_alert.mp3',
+            actionTypeId: 'TASK_VIDEO_ACTION',
+            foreground: true,
+            extra: {
+              type: 'task_video',
+              taskId: task.id,
+              attachmentId: videoAtt?.id,
+              title: task.title,
+              mediaName,
+              cloudUrl,
+              isVideo: true,
+            },
+          });
+        }
+      }
+
+      // 2. Process Scheduled Media items
+      for (const item of effectiveMedia) {
         if (!item.enabled || !item.scheduledTime) continue;
 
         const [hour, min] = item.scheduledTime.split(':').map(Number);
@@ -468,9 +567,7 @@ export class NativeAlarmService {
         const androidBaseId = 30000 + (baseHash % 9000) * 10;
         const iosBaseId = 3000 + (baseHash % 90);
 
-        // Calculate local occurrence dates
         const targetDates: Date[] = [];
-
         if (item.repeat === 'none') {
           const dateStr = item.scheduledDate || getLocalDateStr(now);
           const [year, month, day] = dateStr.split('-').map(Number);
@@ -488,7 +585,6 @@ export class NativeAlarmService {
             }
           }
         } else if (item.repeat === 'workdays') {
-          // Sunday (0) to Thursday (4) in Egypt / Middle East
           for (let d = 0; d < 7; d++) {
             const candidate = new Date();
             candidate.setDate(candidate.getDate() + d);
@@ -529,6 +625,7 @@ export class NativeAlarmService {
             description: item.description || '',
             cloudUrl: item.cloudUrl || '',
             isVideo,
+            actionType: 'scheduled_media',
           });
 
           iosNotifications.push({
@@ -560,7 +657,7 @@ export class NativeAlarmService {
 
       if (this.isAndroidNative()) {
         const result = await VideoAlarm.syncVideoAlarms({ alarms: nativeAlarms });
-        console.log(`[NativeAlarmService] Synced ${result.scheduledCount} Android auto-launch video alarms.`);
+        console.log(`[NativeAlarmService] Synced ${result.scheduledCount} Android hardware alarms (tasks with video + scheduled media).`);
       } else if (iosNotifications.length > 0) {
         await LocalNotifications.schedule({
           notifications: iosNotifications
@@ -568,7 +665,7 @@ export class NativeAlarmService {
         console.log(`[NativeAlarmService] Scheduled ${iosNotifications.length} iOS media alerts.`);
       }
     } catch (err) {
-      console.error('[NativeAlarmService] scheduleMediaItems error:', err);
+      console.error('[NativeAlarmService] scheduleCombinedHardwareAlarms error:', err);
     }
   }
 

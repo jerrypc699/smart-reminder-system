@@ -12,6 +12,9 @@ export interface NativeScheduledAlarmPayload {
   cloudUrl: string;
   isVideo: boolean;
   isTestAlarm?: boolean;
+  taskId?: string;
+  attachmentId?: string;
+  actionType?: string;
 }
 
 export interface ScheduledMediaLaunchEvent {
@@ -25,6 +28,9 @@ export interface ScheduledMediaLaunchEvent {
   isVideo?: boolean;
   isTestAlarm?: boolean;
   autoLaunchTimestamp?: number;
+  taskId?: string;
+  attachmentId?: string;
+  actionType?: string;
 }
 
 export interface NativeWhatsAppTaskAlarmPayload {
@@ -67,6 +73,7 @@ export interface VideoAlarmPluginInterface {
     mimeType?: string;
     share?: boolean;
   }): Promise<{ success: boolean; savedToDownloads: boolean; fileName: string }>;
+  boostVolumeForAlarm?(): Promise<void>;
   pickContact(): Promise<{
     success: boolean;
     name?: string;

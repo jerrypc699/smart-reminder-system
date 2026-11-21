@@ -17,6 +17,8 @@ import { cloudSyncService } from './services/cloudSyncService';
 import { vercelCloudSync } from './services/vercelCloudSync';
 import { supabaseService } from './services/supabaseService';
 import { mobileBackgroundService } from './services/mobileBackgroundService';
+import { Capacitor } from '@capacitor/core';
+import { VideoAlarm } from './services/videoAlarmPlugin';
 import { NativeAlarmService, getLocalDateStr } from './services/nativeAlarmService';
 import { dailySystemService } from './services/dailySystemService';
 import { whatsappService, buildTaskWhatsAppMessage, formatWhatsAppDisplayPhone } from './services/whatsappService';
@@ -538,6 +540,30 @@ export function App() {
       const voiceMsg = params.voiceMessage || task?.voiceMessage;
       const taskTitle = params.title || task?.title || 'مهمة عمل';
 
+      // Detect if task has an attached video file or video media type
+      const videoAtt = task?.attachments?.find((a) =>
+        (a.type && a.type.toLowerCase().startsWith('video/')) ||
+        (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
+      );
+      const isVideo = !!videoAtt || task?.customMediaType === 'video';
+      let resolvedVideoUrl: string | undefined = undefined;
+
+      if (isVideo) {
+        resolvedVideoUrl = videoAtt?.cloudUrl || task?.cloudUrl;
+        if (!resolvedVideoUrl && videoAtt) {
+          const { taskAttachmentService } = await import('./services/taskAttachmentService');
+          resolvedVideoUrl = (await taskAttachmentService.getAttachmentUrl(videoAtt)) || undefined;
+        }
+        if (!resolvedVideoUrl && task?.customAudioId) {
+          resolvedVideoUrl = (await audioStorageService.getMediaObjectUrl(task.customAudioId, task.cloudUrl)) || undefined;
+        }
+
+        // Boost native volume on Android to guarantee loud alarm
+        if (Capacitor.isNativePlatform()) {
+          VideoAlarm.boostVolumeForAlarm?.().catch(() => {});
+        }
+      }
+
       // Switch to tasks tab so the user sees the active task
       setActiveTab('tasks');
 
@@ -551,8 +577,10 @@ export function App() {
         priority: task?.priority || 'medium',
         timestamp: new Date().toISOString(),
         taskId: params.taskId || task?.id,
-        audioName: task?.customAudioName,
-        isCustomAudio: !!(audioUrl || customAudioId),
+        mediaType: isVideo ? 'video' : undefined,
+        videoUrl: isVideo ? resolvedVideoUrl : undefined,
+        audioName: videoAtt?.name || task?.customAudioName,
+        isCustomAudio: !isVideo && !!(audioUrl || customAudioId),
         canSnooze: true,
         ...(waActive && task?.whatsapp
           ? {
@@ -570,6 +598,11 @@ export function App() {
             }
           : {}),
       });
+
+      // If it's a video alarm with a valid URL, the video plays automatically at full alarm volume in the modal!
+      if (isVideo && resolvedVideoUrl) {
+        return;
+      }
 
       // 1. If there is a cloud audio URL (uploaded recorded voice note), play it immediately!
       if (audioUrl) {
@@ -705,7 +738,7 @@ export function App() {
 
   const triggerScheduledMediaPlayback = async (params: {
     scheduledId?: string;
-    mediaId: string;
+    mediaId?: string;
     mediaName?: string;
     mediaType?: 'video' | 'audio';
     title?: string;
@@ -714,15 +747,79 @@ export function App() {
     isVideo?: boolean;
     isTestAlarm?: boolean;
     volume?: number;
+    taskId?: string;
+    attachmentId?: string;
+    actionType?: string;
   }) => {
     try {
-      const dedupeKey = `${params.scheduledId || params.mediaId}_${params.isTestAlarm ? 'test' : 'sched'}`;
+      const dedupeKey = `${params.taskId || params.scheduledId || params.mediaId}_${params.isTestAlarm ? 'test' : 'sched'}`;
       const nowMs = Date.now();
       const prevMs = recentMediaTriggersRef.current.get(dedupeKey) || 0;
       if (nowMs - prevMs < 55000) {
         return;
       }
       recentMediaTriggersRef.current.set(dedupeKey, nowMs);
+
+      // Handle Task with Attached Video
+      if (params.taskId || params.actionType === 'task_video') {
+        const taskId = params.taskId || params.scheduledId?.replace('task_video_', '');
+        const allTasks = taskService.getTasks();
+        const task = taskId ? allTasks.find((t) => t.id === taskId) : null;
+        const videoAtt = task?.attachments?.find((a) =>
+          (a.type && a.type.toLowerCase().startsWith('video/')) ||
+          (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
+        );
+
+        let resolvedVideoUrl = params.cloudUrl || videoAtt?.cloudUrl || task?.cloudUrl;
+        if (!resolvedVideoUrl && videoAtt) {
+          const { taskAttachmentService } = await import('./services/taskAttachmentService');
+          resolvedVideoUrl = (await taskAttachmentService.getAttachmentUrl(videoAtt)) || undefined;
+        }
+
+        // Boost native volume on Android to ensure loud alarm playback
+        if (Capacitor.isNativePlatform()) {
+          VideoAlarm.boostVolumeForAlarm?.().catch(() => {});
+        }
+
+        setActiveTab('tasks');
+        const waActive = !!(task?.whatsapp?.enabled && task.whatsapp.phoneNumber);
+        const displayName = videoAtt?.name || task?.customAudioName || 'مقطع فيديو المهمة';
+        const displayTitle = task?.title || params.title || 'مهمة عمل';
+
+        setActiveAlert({
+          id: `alert-task-video-${task?.id || taskId || Date.now()}-${nowMs}`,
+          type: 'task',
+          title: `يا دكتور عبد العزيز: ${displayTitle}`,
+          message:
+            task?.description ||
+            task?.voiceMessage ||
+            params.description ||
+            `حان الآن موعد المهمة وتشغيل مقطع الفيديو المرفق (${displayName}) كمنبه رسمي.`,
+          priority: task?.priority || 'high',
+          timestamp: new Date(nowMs).toISOString(),
+          taskId: task?.id || taskId,
+          mediaType: 'video',
+          videoUrl: resolvedVideoUrl || undefined,
+          audioName: displayName,
+          canSnooze: true,
+          ...(waActive && task?.whatsapp
+            ? {
+                whatsappPhone: task.whatsapp.phoneNumber,
+                whatsappRecipientName:
+                  task.whatsapp.recipientName ||
+                  formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber, whatsappSettings.defaultCountryCode),
+                whatsappMessage: buildTaskWhatsAppMessage(task),
+                whatsappAutoSentStatus:
+                  task.whatsapp.lastSendStatus === 'sent_api'
+                    ? 'sent_api'
+                    : task.whatsapp.lastSendStatus === 'opened_app'
+                      ? 'opened_app'
+                      : 'pending_open',
+              }
+            : {}),
+        });
+        return;
+      }
 
       const schedList = audioStorageService.getScheduledMedias();
       const matchedItem = params.scheduledId
@@ -1167,8 +1264,13 @@ export function App() {
             }
           }
 
-          // Play Audio chime & Speech or Custom Audio
-          if (!audioSettings.soundMuted) {
+          // Play Audio chime & Speech, Custom Audio, or Hardware Video Alarm
+          const hasVideoAttachment = (task.attachments && task.attachments.some((a) =>
+            (a.type && a.type.toLowerCase().startsWith('video/')) ||
+            (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
+          )) || task.customMediaType === 'video';
+
+          if (!audioSettings.soundMuted || hasVideoAttachment) {
             handleTriggerTaskVoiceAlert({
               taskId: task.id,
               title: task.title,

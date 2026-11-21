@@ -260,9 +260,9 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
                 {alert.type === 'azan' ? '🕌 حان الآن وقت الأذان' : '⏳ اقتراب موعد الصلاة'}
               </span>
             ) : isVideo ? (
-              <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 font-bold">
-                <Film className="w-3.5 h-3.5" />
-                عرض مقطع فيديو مجدول تلقائياً
+              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3.5 py-1 rounded-full flex items-center gap-1.5 font-bold shadow-sm">
+                <Film className="w-3.5 h-3.5 text-amber-400" />
+                {alert.type === 'task' ? 'منبه فيديو المهمة الرسمي (تشغيل تلقائي كمنبه هاردوير)' : 'عرض مقطع فيديو مجدول تلقائياً'}
               </span>
             ) : isScheduledMedia ? (
               <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-3 py-1 rounded-full flex items-center gap-1">
@@ -294,13 +294,14 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
 
           {/* Embedded Video Player if Video */}
           {alert.videoUrl && (
-            <div className="mb-5 rounded-2xl overflow-hidden border border-purple-500/40 bg-black shadow-2xl relative aspect-video ring-1 ring-purple-500/20 group">
+            <div className="mb-5 rounded-2xl overflow-hidden border border-amber-500/40 bg-black shadow-2xl relative aspect-video ring-1 ring-amber-500/20 group">
               <video
                 ref={videoRef}
                 src={alert.videoUrl}
                 controls
                 autoPlay
                 playsInline
+                loop
                 className="w-full h-full object-contain"
               />
               <button
@@ -315,10 +316,10 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
                 <button
                   type="button"
                   onClick={handleUnmuteVideo}
-                  className="absolute bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-purple-600/95 hover:bg-purple-500 text-white text-xs font-bold shadow-xl border border-purple-300/40 flex items-center gap-2 animate-bounce cursor-pointer z-20"
+                  className="absolute bottom-12 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-xs font-extrabold shadow-2xl border border-amber-300/40 flex items-center gap-2 animate-bounce cursor-pointer z-20"
                 >
                   <Volume2 className="w-4 h-4" />
-                  <span>اضغط لتشغيل الصوت</span>
+                  <span>اضغط هنا لتشغيل صوت المنبه بأعلى مستوى فوراً 🔊</span>
                 </button>
               )}
             </div>

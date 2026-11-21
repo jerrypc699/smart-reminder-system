@@ -36,7 +36,9 @@ import {
   Share2,
   FileCheck,
   Calendar as CalendarIcon,
-  Archive
+  Archive,
+  Film,
+  Video
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -592,7 +594,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
         added.push(meta);
       }
       const nextAtts = [...(task.attachments || []), ...added];
-      onUpdateTask(targetId, { attachments: nextAtts });
+      const hasVideo = nextAtts.some((a) =>
+        (a.type && a.type.toLowerCase().startsWith('video/')) ||
+        (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
+      );
+      onUpdateTask(targetId, {
+        attachments: nextAtts,
+        customMediaType: hasVideo ? 'video' : task.customMediaType,
+      });
     } catch (err: any) {
       alert('تعذر رفع الملف: ' + (err?.message || ''));
     } finally {
@@ -650,6 +659,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
         }
       : undefined;
 
+    const hasVideoAtt = attachments.some((a) =>
+      (a.type && a.type.toLowerCase().startsWith('video/')) ||
+      (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
+    );
+
     if (editingTask) {
       onUpdateTask(editingTask.id, {
         title: title.trim(),
@@ -663,6 +677,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         audioMode,
         customAudioId: audioMode === 'custom' ? customAudioId : undefined,
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
+        customMediaType: hasVideoAtt ? 'video' : (audioMode === 'custom' ? editingTask.customMediaType : undefined),
         cloudUrl: audioMode === 'custom' ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
         attachments,
         whatsapp: whatsappPayload,
@@ -683,6 +698,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         audioMode,
         customAudioId: audioMode === 'custom' ? customAudioId : undefined,
         customAudioName: audioMode === 'custom' ? customAudioName : undefined,
+        customMediaType: hasVideoAtt ? 'video' : undefined,
         cloudUrl: audioMode === 'custom' ? taskCloudUrl : undefined,
         attachments: attachments.length > 0 ? attachments : undefined,
         whatsapp: whatsappPayload,
@@ -1465,17 +1481,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
                             </div>
                           )}
 
-                          {/* Attached Work Files & Documents */}
+                          {/* Attached Work Files, Documents & Video Hardware Alarms */}
                           {task.attachments && task.attachments.length > 0 && (
                             <div className="flex flex-wrap items-center gap-2 pt-1.5">
                               {task.attachments.map((att) => {
+                                const isVid =
+                                  att.type?.startsWith('video/') ||
+                                  /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(att.name);
                                 const isImg =
-                                  att.type.startsWith('image/') ||
-                                  /\.(png|jpe?g|webp|gif)$/i.test(att.name);
+                                  !isVid && (
+                                    att.type?.startsWith('image/') ||
+                                    /\.(png|jpe?g|webp|gif)$/i.test(att.name)
+                                  );
                                 return (
                                   <div
                                     key={att.id}
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/35 text-indigo-200 text-[11px] font-semibold"
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold border ${
+                                      isVid
+                                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+                                        : 'bg-indigo-500/15 border-indigo-500/35 text-indigo-200'
+                                    }`}
                                   >
                                     <button
                                       type="button"
@@ -1485,14 +1510,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
                                         )
                                       }
                                       className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-                                      title="فتح / معاينة الملف"
+                                      title={isVid ? 'معاينة مقطع الفيديو (منبه هاردوير)' : 'فتح / معاينة الملف'}
                                     >
-                                      {isImg ? (
+                                      {isVid ? (
+                                        <Film className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                      ) : isImg ? (
                                         <ImageIcon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
                                       ) : (
                                         <Paperclip className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
                                       )}
                                       <span className="max-w-[140px] truncate">{att.name}</span>
+                                      {isVid && (
+                                        <span className="px-1.5 py-0.5 rounded bg-amber-400/25 text-amber-300 text-[9px] font-extrabold shrink-0 border border-amber-400/30">
+                                          منبه فيديو 🎬
+                                        </span>
+                                      )}
                                       <span className="text-[10px] text-indigo-300/70 font-mono">
                                         ({formatAttachmentSize(att.size)})
                                       </span>
@@ -2154,17 +2186,18 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 )}
               </div>
 
-              {/* Task File & Document Attachments Section */}
+              {/* Task File, Document & Video Attachments Section */}
               <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <label className="text-xs font-bold text-indigo-200 flex items-center gap-1.5">
                     <Paperclip className="w-4 h-4 text-indigo-400" />
-                    <span>مرفقات وملفات المهمة (PDF، صور، مستندات، تقارير)</span>
+                    <span>مرفقات المهمة (فيديو 🎬، مستندات، PDF، صور)</span>
                   </label>
                   <input
                     id="task-doc-attachments-input"
                     type="file"
                     multiple
+                    accept="video/*,image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                     onChange={handleUploadModalAttachments}
                     className="hidden"
                   />
@@ -2175,8 +2208,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     }`}
                   >
                     <UploadCloud className="w-3.5 h-3.5" />
-                    <span>{isUploadingAttachment ? 'جاري الرفع...' : 'رفع ملفات 📎'}</span>
+                    <span>{isUploadingAttachment ? 'جاري الرفع...' : 'إرفاق ملف أو فيديو 🎬'}</span>
                   </label>
+                </div>
+
+                <div className="text-[11px] text-amber-300/90 font-medium bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+                  <Film className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>💡 <strong>ميزة المنبه الهاردوير:</strong> عند إرفاق مقطع فيديو، سيعمل تلقائياً كمنبه صريح بالصوت وشاشة كاملة في موعد المهمة حتى لو كان الموبايل مقفلاً أو صامتاً!</span>
                 </div>
 
                 {attachmentStatusMsg && (
@@ -2187,42 +2225,58 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
                 {attachments.length > 0 ? (
                   <div className="space-y-1.5 pt-1">
-                    {attachments.map((att) => (
-                      <div
-                        key={att.id}
-                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs"
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            taskAttachmentService.openAttachment(att, (url, title) =>
-                              setPreviewImage({ url, title })
-                            )
-                          }
-                          className="flex items-center gap-2 min-w-0 flex-1 text-right hover:text-indigo-300 cursor-pointer"
+                    {attachments.map((att) => {
+                      const isVid =
+                        att.type?.startsWith('video/') ||
+                        /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(att.name);
+                      return (
+                        <div
+                          key={att.id}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/90 border text-xs ${
+                            isVid ? 'border-amber-500/50 bg-amber-950/20' : 'border-slate-700/80'
+                          }`}
                         >
-                          <Paperclip className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                          <span className="truncate font-semibold text-white">{att.name}</span>
-                          <span className="text-[10px] text-slate-400 shrink-0 font-mono">
-                            ({formatAttachmentSize(att.size)})
-                          </span>
-                          {att.cloudUrl && (
-                            <Cloud className="w-3 h-3 text-emerald-400 shrink-0" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveModalAttachment(att.id)}
-                          className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              taskAttachmentService.openAttachment(att, (url, title) =>
+                                setPreviewImage({ url, title })
+                              )
+                            }
+                            className="flex items-center gap-2 min-w-0 flex-1 text-right hover:text-indigo-300 cursor-pointer"
+                          >
+                            {isVid ? (
+                              <Film className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            ) : (
+                              <Paperclip className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            )}
+                            <span className="truncate font-semibold text-white">{att.name}</span>
+                            {isVid && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-400/25 text-amber-300 text-[9px] font-extrabold shrink-0 border border-amber-400/30">
+                                منبه فيديو 🎬
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                              ({formatAttachmentSize(att.size)})
+                            </span>
+                            {att.cloudUrl && (
+                              <Cloud className="w-3 h-3 text-emerald-400 shrink-0" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveModalAttachment(att.id)}
+                            className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-[11px] text-slate-400">
-                    يمكنك رفع أكثر من ملف (ملفات PDF، Word، Excel، صور أشعة أو تقارير...) لتظهر دائماً مع المهمة وفي التقارير.
+                    يمكنك رفع مقاطع فيديو أو ملفات (PDF، Word، صور تقارير...) لتظهر دائماً مع المهمة وفي التقارير، وتعمل كمنبه فيديو في موعدها.
                   </p>
                 )}
               </div>

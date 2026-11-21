@@ -7,6 +7,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -49,13 +50,23 @@ public class VideoAlarmPlugin extends Plugin {
     private static long lastHandledLaunchTs = -1L;
 
     @Override
-    protected void handleOnNewIntent(Intent intent) {
-        super.handleOnNewIntent(intent);
+    public void load() {
+        super.load();
+        if (getActivity() != null && getActivity().getIntent() != null) {
+            handleIncomingIntent(getActivity().getIntent());
+        }
+    }
+
+    private void handleIncomingIntent(Intent intent) {
         if (intent == null) return;
         if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) {
             return;
         }
-        if (!MediaAlarmHelper.ACTION_PLAY_SCHEDULED_MEDIA.equals(intent.getAction())) {
+        boolean isMediaAction = MediaAlarmHelper.ACTION_PLAY_SCHEDULED_MEDIA.equals(intent.getAction())
+                || intent.hasExtra("taskId")
+                || intent.hasExtra("scheduledId")
+                || intent.hasExtra("mediaId");
+        if (!isMediaAction) {
             return;
         }
 
@@ -64,7 +75,6 @@ public class VideoAlarmPlugin extends Plugin {
             return;
         }
         lastHandledLaunchTs = ts;
-        intent.setAction(Intent.ACTION_MAIN);
 
         int alarmId = intent.getIntExtra("alarmId", -1);
         if (alarmId > 0) {
@@ -84,10 +94,33 @@ public class VideoAlarmPlugin extends Plugin {
         payload.put("cloudUrl", intent.getStringExtra("cloudUrl"));
         payload.put("isVideo", intent.getBooleanExtra("isVideo", true));
         payload.put("isTestAlarm", intent.getBooleanExtra("isTestAlarm", false));
-        payload.put("autoLaunchTimestamp", ts);
+        payload.put("taskId", intent.getStringExtra("taskId"));
+        payload.put("attachmentId", intent.getStringExtra("attachmentId"));
+        payload.put("actionType", intent.getStringExtra("actionType"));
+        payload.put("autoLaunchTimestamp", ts > 0L ? ts : System.currentTimeMillis());
 
         pendingLaunchPayload = payload;
         notifyListeners("scheduledMediaLaunch", payload, true);
+    }
+
+    @Override
+    protected void handleOnNewIntent(Intent intent) {
+        super.handleOnNewIntent(intent);
+        handleIncomingIntent(intent);
+    }
+
+    @PluginMethod
+    public void boostVolumeForAlarm(PluginCall call) {
+        try {
+            AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                int maxMusic = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0);
+            }
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Failed to boost volume", e);
+        }
     }
 
     @PluginMethod

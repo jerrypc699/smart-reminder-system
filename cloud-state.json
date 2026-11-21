@@ -1885,7 +1885,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T07:02:22.830Z",
+  "updatedAt": "2026-11-21T07:02:23.853Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1954,7 +1954,7 @@
   "athkar": {
     "customAthkar": [],
     "favorites": [],
-    "totalTasbeeh": 2,
+    "totalTasbeeh": 210,
     "dailyTasbeeh": {
       "count": 0,
       "date": "2026-11-21"

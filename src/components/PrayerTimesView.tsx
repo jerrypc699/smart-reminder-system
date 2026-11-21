@@ -22,7 +22,8 @@ import {
   Calendar as CalendarIcon,
   X,
   Radio,
-  Settings2
+  Settings2,
+  Edit3
 } from 'lucide-react';
 import { PrayerInfo, PrayerSettings, PrayerId, CityPreset } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
@@ -99,6 +100,10 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
   const [isAzanModalOpen, setIsAzanModalOpen] = useState(false);
   const [isQiblaModalOpen, setIsQiblaModalOpen] = useState(false);
   const [citySearchQuery, setCitySearchQuery] = useState('');
+
+  // Custom Time Editing for Duha & Qiyam Al-Layl
+  const [editingPrayerTarget, setEditingPrayerTarget] = useState<'duha' | 'qiyam' | null>(null);
+  const [customTimeInput, setCustomTimeInput] = useState<string>('');
 
   // Push Notifications State
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -681,6 +686,9 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
               {canonicalPrayers.map((cp) => {
                 const info = prayerTimes.find((p) => p.id === cp.id);
                 const isCurrent = nextPrayer.id === cp.id;
+                const isCustomized =
+                  (cp.id === 'duha' && prayerSettings.duhaTimeMode === 'custom') ||
+                  (cp.id === 'qiyam' && prayerSettings.qiyamTimeMode === 'custom');
 
                 return (
                   <div
@@ -691,24 +699,58 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
                         : 'bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/20 text-white'
                     }`}
                   >
-                    {/* Time Left aligned */}
-                    <div className="font-mono text-xs sm:text-sm font-bold tracking-tight">
-                      {info?.formatted12h || '--:--'}
+                    {/* Time Left aligned with Customization Button for Duha & Qiyam */}
+                    <div className="flex items-center gap-2 font-mono text-xs sm:text-sm font-bold tracking-tight">
+                      <span>{info?.formatted12h || '--:--'}</span>
+
+                      {(cp.id === 'duha' || cp.id === 'qiyam') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const currentVal =
+                              cp.id === 'duha'
+                                ? prayerSettings.duhaCustomTime || info?.timeString || '07:00'
+                                : prayerSettings.qiyamCustomTime || info?.timeString || '02:30';
+                            setCustomTimeInput(currentVal);
+                            setEditingPrayerTarget(cp.id as 'duha' | 'qiyam');
+                          }}
+                          className={`p-1 rounded-lg border transition-all cursor-pointer ${
+                            isCustomized
+                              ? (isCurrent
+                                  ? 'bg-slate-950/20 text-slate-900 border-slate-950/30 hover:bg-slate-950/30'
+                                  : 'bg-amber-400/25 text-amber-300 border-amber-400/40 hover:bg-amber-400/35')
+                              : (isCurrent
+                                  ? 'bg-slate-950/10 text-slate-800 border-slate-950/20 hover:bg-slate-950/20'
+                                  : 'bg-white/10 text-emerald-200 border-white/15 hover:bg-white/20')
+                          }`}
+                          title={`تعديل وقت ${cp.name} للدكتور عبد العزيز ✏️`}
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
 
                     {/* Prayer Name & Sublabel & Icon Right aligned */}
                     <div className="flex items-center gap-2">
                       <div className="flex flex-col text-right">
-                        <span className={`text-xs sm:text-sm leading-tight ${isCurrent ? 'font-black' : 'font-bold'}`}>
-                          {cp.name}
-                        </span>
+                        <div className="flex items-center gap-1.5 justify-end">
+                          {isCustomized && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                              مخصص ⏱️
+                            </span>
+                          )}
+                          <span className={`text-xs sm:text-sm leading-tight ${isCurrent ? 'font-black' : 'font-bold'}`}>
+                            {cp.name}
+                          </span>
+                        </div>
                         {cp.sublabel && (
                           <span
                             className={`text-[9px] sm:text-[10px] leading-tight ${
                               isCurrent ? 'text-amber-950/90 font-bold' : 'text-emerald-300/80 font-medium'
                             }`}
                           >
-                            {cp.sublabel}
+                            {isCustomized ? 'توقيت مخصص للدكتور عبد العزيز' : cp.sublabel}
                           </span>
                         )}
                       </div>
@@ -1040,6 +1082,120 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
             <div className="space-y-1">
               <span className="text-xs text-slate-400 block">درجة زاوية القبلة من الشمال:</span>
               <span className="font-mono text-xl font-black text-amber-300">{qiblaDirection}°</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 4: EDIT DUHA & QIYAM TIME MODAL */}
+      {/* ======================================================== */}
+      {editingPrayerTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="lux-card w-full max-w-sm rounded-3xl p-6 text-right space-y-4 border border-emerald-500/40 shadow-2xl" dir="rtl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-extrabold text-white">
+                  {editingPrayerTarget === 'duha' ? 'تعديل توقيت صلاة الضحى' : 'تعديل توقيت قيام الليل'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPrayerTarget(null)}
+                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {editingPrayerTarget === 'duha'
+                ? 'يمكن لسعادة الدكتور عبد العزيز تحديد موعد مخصص لصلاة الضحى (صلاة الأوابين) أو الإبقاء على التوقيت الشرعي التلقائي (20 دقيقة بعد الشروق).'
+                : 'يمكن لسعادة الدكتور عبد العزيز تحديد موعد مخصص لقيام الليل والوتر أو الإبقاء على الحساب الفلكي الشرعي (الثلث الأخير من الليل).'}
+            </p>
+
+            <div className="space-y-3 pt-1">
+              <label className="block text-xs font-bold text-white">اختر وقت الصلاة المخصص:</label>
+              <input
+                type="time"
+                value={customTimeInput}
+                onChange={(e) => setCustomTimeInput(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-emerald-500/40 text-amber-300 font-mono text-xl text-center focus:outline-none focus:border-amber-400 cursor-pointer shadow-inner"
+              />
+
+              {/* Quick Presets */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-slate-400 block font-bold">أوقات شائعة مقترحة:</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {(editingPrayerTarget === 'duha'
+                    ? ['07:00', '07:30', '08:00', '08:30', '09:00', '10:00']
+                    : ['01:30', '02:00', '02:30', '03:00', '03:30', '04:00']
+                  ).map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setCustomTimeInput(preset)}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-mono font-bold border cursor-pointer transition-all ${
+                        customTimeInput === preset
+                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/50'
+                          : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (editingPrayerTarget === 'duha') {
+                    setPrayerSettings((prev) => ({
+                      ...prev,
+                      duhaTimeMode: 'auto',
+                      duhaCustomTime: undefined,
+                    }));
+                  } else {
+                    setPrayerSettings((prev) => ({
+                      ...prev,
+                      qiyamTimeMode: 'auto',
+                      qiyamCustomTime: undefined,
+                    }));
+                  }
+                  setEditingPrayerTarget(null);
+                }}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+              >
+                تلقائي شرعي 🔄
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customTimeInput) return;
+                  if (editingPrayerTarget === 'duha') {
+                    setPrayerSettings((prev) => ({
+                      ...prev,
+                      duhaTimeMode: 'custom',
+                      duhaCustomTime: customTimeInput,
+                    }));
+                  } else {
+                    setPrayerSettings((prev) => ({
+                      ...prev,
+                      qiyamTimeMode: 'custom',
+                      qiyamCustomTime: customTimeInput,
+                    }));
+                  }
+                  setEditingPrayerTarget(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+              >
+                حفظ التوقيت المخصص ✅
+              </button>
             </div>
           </div>
         </div>

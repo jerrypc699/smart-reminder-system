@@ -112,8 +112,15 @@ export class PrayerService {
 
     const now = new Date();
 
-    // 1. Calculate Duha time (~20 minutes after Sunrise)
-    const duhaTime = new Date(prayerTimes.sunrise.getTime() + 20 * 60 * 1000);
+    // 1. Calculate Duha time: custom time if set by user, otherwise ~20 minutes after Sunrise
+    let duhaTime: Date;
+    if (settings.duhaTimeMode === 'custom' && settings.duhaCustomTime) {
+      const [dhH, dhM] = settings.duhaCustomTime.split(':').map((n) => parseInt(n, 10));
+      duhaTime = new Date(date);
+      duhaTime.setHours(isNaN(dhH) ? 7 : dhH, isNaN(dhM) ? 0 : dhM, 0, 0);
+    } else {
+      duhaTime = new Date(prayerTimes.sunrise.getTime() + 20 * 60 * 1000);
+    }
 
     // 2. Calculate Tomorrow's Fajr for tonight's Qiyam Al-Layl (last third of the night)
     const tomorrow = new Date(date);
@@ -121,15 +128,30 @@ export class PrayerService {
     const tomorrowPrayerTimes = new PrayerTimes(coordinates, tomorrow, params);
     const tomorrowFajr = tomorrowPrayerTimes.fajr;
 
-    const tonightDuration = tomorrowFajr.getTime() - prayerTimes.maghrib.getTime();
-    const tonightQiyam = new Date(prayerTimes.maghrib.getTime() + Math.round(tonightDuration * (2 / 3)));
+    let tonightQiyam: Date;
+    let todayEarlyQiyam: Date;
+    if (settings.qiyamTimeMode === 'custom' && settings.qiyamCustomTime) {
+      const [qhH, qhM] = settings.qiyamCustomTime.split(':').map((n) => parseInt(n, 10));
+      const hours = isNaN(qhH) ? 2 : qhH;
+      const mins = isNaN(qhM) ? 30 : qhM;
 
-    // 3. Calculate Yesterday's Maghrib for early-morning Qiyam Al-Layl check
-    const yesterday = new Date(date);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayPrayerTimes = new PrayerTimes(coordinates, yesterday, params);
-    const lastNightDuration = prayerTimes.fajr.getTime() - yesterdayPrayerTimes.maghrib.getTime();
-    const todayEarlyQiyam = new Date(yesterdayPrayerTimes.maghrib.getTime() + Math.round(lastNightDuration * (2 / 3)));
+      tonightQiyam = new Date(hours < 12 ? tomorrow : date);
+      tonightQiyam.setHours(hours, mins, 0, 0);
+
+      todayEarlyQiyam = new Date(date);
+      todayEarlyQiyam.setHours(hours, mins, 0, 0);
+    } else {
+      const tonightDuration = tomorrowFajr.getTime() - prayerTimes.maghrib.getTime();
+      tonightQiyam = new Date(prayerTimes.maghrib.getTime() + Math.round(tonightDuration * (2 / 3)));
+
+      const yesterday = new Date(date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayPrayerTimes = new PrayerTimes(coordinates, yesterday, params);
+      const lastNightDuration = prayerTimes.fajr.getTime() - yesterdayPrayerTimes.maghrib.getTime();
+      todayEarlyQiyam = new Date(yesterdayPrayerTimes.maghrib.getTime() + Math.round(lastNightDuration * (2 / 3)));
+    }
+
+
 
     const prayers: { id: PrayerId; arabicName: string; time: Date }[] = [
       { id: 'fajr', arabicName: 'الفجر', time: prayerTimes.fajr },

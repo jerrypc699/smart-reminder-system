@@ -89,6 +89,8 @@ export interface Task {
   lastRemindedAt?: string;
   lastDueAlarmAt?: string;
   cloudUrl?: string;
+  isArchived?: boolean;
+  archivedAt?: string;
   // Employee dossier link
   employeeId?: string;
   employeeName?: string;
@@ -170,6 +172,10 @@ export interface PrayerSettings {
   customAzanAudioId?: string;
   customAzanName?: string;
   enableDuaaAfterAzan: boolean;
+  duhaTimeMode?: 'auto' | 'custom';
+  duhaCustomTime?: string;
+  qiyamTimeMode?: 'auto' | 'custom';
+  qiyamCustomTime?: string;
 }
 
 export interface AudioSettings {

@@ -322,10 +322,10 @@ class WhatsAppService {
     return next;
   }
 
-  public buildWhatsAppWebUrl(rawPhone: string, message: string): string {
+  public buildWhatsAppWebUrl(rawPhone: string, message: string = ''): string {
     const phone = normalizeWhatsAppPhone(rawPhone);
-    const encoded = encodeURIComponent(message || '');
-    return `https://api.whatsapp.com/send?phone=${phone}&text=${encoded}`;
+    const query = message && message.trim() ? `&text=${encodeURIComponent(message.trim())}` : '';
+    return `https://api.whatsapp.com/send?phone=${phone}${query}`;
   }
 
   /**

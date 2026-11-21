@@ -35,7 +35,8 @@ import {
   Smartphone,
   Share2,
   FileCheck,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Archive
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -89,7 +90,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   onPreviewTaskAudio,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'today' | 'urgent' | 'pending' | 'completed'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'today' | 'urgent' | 'pending' | 'completed' | 'archive'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -849,8 +850,22 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
   };
 
+  // Helper to distinguish archived (completed) vs active tasks
+  const isTaskArchived = (t: Task) => t.status === 'completed' || Boolean(t.isArchived);
+  const activeTasks = useMemo(() => tasks.filter((t) => !isTaskArchived(t)), [tasks]);
+  const archivedTasks = useMemo(() => tasks.filter((t) => isTaskArchived(t)), [tasks]);
+
   // Filter tasks
   const filteredTasks = tasks.filter((t) => {
+    const isDone = isTaskArchived(t);
+
+    // Archive isolation: in archive view show only completed, in active views remove completed!
+    if (selectedFilter === 'archive' || selectedFilter === 'completed') {
+      if (!isDone) return false;
+    } else {
+      if (isDone) return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = t.title.toLowerCase().includes(q);
@@ -870,13 +885,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
       return t.dueDate === todayStr;
     }
     if (selectedFilter === 'urgent') {
-      return t.priority === 'urgent' && t.status !== 'completed';
+      return t.priority === 'urgent';
     }
     if (selectedFilter === 'pending') {
-      return t.status !== 'completed';
-    }
-    if (selectedFilter === 'completed') {
-      return t.status === 'completed';
+      return true;
     }
     return true;
   });
@@ -983,20 +995,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
         </div>
       )}
 
-      {/* View Mode Switcher: Tasks Board vs Employee Dossiers */}
+      {/* View Mode Switcher: Tasks Board vs Employee Dossiers vs Archive */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-[var(--lux-card-bg)] border border-[var(--lux-card-border)] shadow-sm">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setViewMode('tasks')}
+            onClick={() => {
+              setViewMode('tasks');
+              if (selectedFilter === 'archive' || selectedFilter === 'completed') {
+                setSelectedFilter('all');
+              }
+            }}
             className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-              viewMode === 'tasks'
+              viewMode === 'tasks' && selectedFilter !== 'archive' && selectedFilter !== 'completed'
                 ? 'btn-lux-primary shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             <CheckSquare className="w-4 h-4" />
-            <span>كافة مهام العمل ({tasks.length})</span>
+            <span>كافة مهام العمل ({activeTasks.length})</span>
           </button>
 
           <button
@@ -1010,6 +1027,22 @@ export const TasksView: React.FC<TasksViewProps> = ({
           >
             <Users className="w-4 h-4" />
             <span>ملفات الموظفين وفريق العمل ({employees.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode('tasks');
+              setSelectedFilter('archive');
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer border ${
+              viewMode === 'tasks' && (selectedFilter === 'archive' || selectedFilter === 'completed')
+                ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm'
+                : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.04]'
+            }`}
+          >
+            <Archive className="w-4 h-4 text-amber-400" />
+            <span>قسم الأرشيف 📦 ({archivedTasks.length})</span>
           </button>
         </div>
 
@@ -1183,26 +1216,26 @@ export const TasksView: React.FC<TasksViewProps> = ({
               {/* Status Filters */}
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
                 {[
-                  { id: 'all', label: 'الكل', count: tasks.length },
+                  { id: 'all', label: 'الكل (النشطة)', count: activeTasks.length },
                   {
                     id: 'today',
                     label: 'مهام اليوم',
-                    count: tasks.filter((t) => t.dueDate === todayStr).length,
+                    count: activeTasks.filter((t) => t.dueDate === todayStr).length,
                   },
                   {
                     id: 'urgent',
                     label: 'عاجلة',
-                    count: tasks.filter((t) => t.priority === 'urgent' && t.status !== 'completed').length,
+                    count: activeTasks.filter((t) => t.priority === 'urgent').length,
                   },
                   {
                     id: 'pending',
                     label: 'قيد الانتظار',
-                    count: tasks.filter((t) => t.status !== 'completed').length,
+                    count: activeTasks.length,
                   },
                   {
-                    id: 'completed',
-                    label: 'مكتملة',
-                    count: tasks.filter((t) => t.status === 'completed').length,
+                    id: 'archive',
+                    label: 'قسم الأرشيف 📦',
+                    count: archivedTasks.length,
                   },
                 ].map((f) => (
                   <button
@@ -1224,17 +1257,62 @@ export const TasksView: React.FC<TasksViewProps> = ({
             </div>
           </div>
 
+          {/* Archive View Top Banner */}
+          {(selectedFilter === 'archive' || selectedFilter === 'completed') && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/30 border border-amber-500/35 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/35 flex items-center justify-center text-amber-300 shrink-0">
+                  <Archive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm sm:text-base">
+                    قسم أرشيف المهام المكتملة 📦
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    المهام التي تم إنجازها تُحفظ وتُؤرشف هنا تلقائياً، وتُزال من القائمة النشطة لتظل المهام اليومية منظمة وواضحة.
+                  </p>
+                </div>
+              </div>
+
+              {archivedTasks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('هل أنت متأكد من تفريغ وحذف جميع المهام المؤرشفة نهائياً؟')) {
+                      archivedTasks.forEach((t) => onDeleteTask(t.id));
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                  title="حذف كافة المهام المؤرشفة"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>تفريغ الأرشيف نهائياً 🧹</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ======================================================== */}
           {/* 3. TASK LIST CARDS (MATCHING SCREENSHOT + ISLAMIC LUXURY) */}
           {/* ======================================================== */}
           {filteredTasks.length === 0 ? (
             <div className="lux-card text-center py-16 px-4 rounded-3xl">
               <div className="icon-squircle w-14 h-14 mx-auto mb-3 text-slate-500">
-                <CheckSquare className="w-7 h-7" strokeWidth={1.5} />
+                {selectedFilter === 'archive' || selectedFilter === 'completed' ? (
+                  <Archive className="w-7 h-7 text-amber-400" strokeWidth={1.5} />
+                ) : (
+                  <CheckSquare className="w-7 h-7" strokeWidth={1.5} />
+                )}
               </div>
-              <h3 className="text-base font-bold text-white mb-1">لا توجد مهام مطابقة</h3>
+              <h3 className="text-base font-bold text-white mb-1">
+                {selectedFilter === 'archive' || selectedFilter === 'completed'
+                  ? 'لا توجد مهام مؤرشفة حالياً'
+                  : 'لا توجد مهام مطابقة'}
+              </h3>
               <p className="text-xs text-slate-400 mb-6">
-                يمكنك إضافة مهمة جديدة وتحديد موعد تذكير صوتي لها أو إرسالها عبر واتساب.
+                {selectedFilter === 'archive' || selectedFilter === 'completed'
+                  ? 'أي مهمة يتم إنجازها ستنتقل وتُؤرشف هنا تلقائياً، ويمكنك استعادتها للمهام النشطة في أي وقت.'
+                  : 'يمكنك إضافة مهمة جديدة وتحديد موعد تذكير صوتي لها أو إرسالها عبر واتساب.'}
               </p>
               <button
                 onClick={() => {
@@ -1452,9 +1530,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
                     {/* Action Buttons Toolbar */}
                     <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-emerald-500/15 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono font-bold">
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-mono font-bold">
                         <CalendarIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400/80" />
                         <span>{task.dueDate}</span>
+                        {isCompleted && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-sans">
+                            مؤرشفة ومكتملة 📦
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1.5">
@@ -1500,6 +1583,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         >
                           <Volume2 className="w-4 h-4" />
                         </button>
+
+                        {/* Restore Button for Archived Tasks */}
+                        {isCompleted && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggle(task.id)}
+                            title="استعادة المهمة إلى قائمة المهام النشطة 🔄"
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>استعادة للنشطة 🔄</span>
+                          </button>
+                        )}
 
                         {/* Snooze 10 mins */}
                         {!isCompleted && (

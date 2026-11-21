@@ -1429,6 +1429,8 @@ export function App() {
             ...t,
             status: nextStatus,
             completedAt: isCompleted ? new Date().toISOString() : undefined,
+            isArchived: isCompleted,
+            archivedAt: isCompleted ? new Date().toISOString() : undefined,
           };
         }
         return t;

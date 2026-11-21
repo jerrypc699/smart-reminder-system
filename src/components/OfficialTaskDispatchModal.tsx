@@ -207,13 +207,11 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
           });
 
           await Share.share({
-            title: `أمر تكليف بمهمة رسمية - ${taskTitle}`,
-            text: `أمر تكليف بمهمة رسمية من مكتب د/ عبد العزيز شطا\n📌 المهمة: ${taskTitle}\n🎯 المطلوب: ${taskRequired}`,
             files: [writeRes.uri],
-            dialogTitle: 'إرسال بطاقة التكليف كصورة عبر واتساب'
+            dialogTitle: 'إرسال بطاقة التكليف كصورة عبر واتساب (صورة فقط)'
           });
 
-          displayToast('✅ تم فتح مشاركة الصورة بنجاح!');
+          displayToast('✅ تم فتح مشاركة الصورة بنجاح (صورة فقط بدون كلام)!');
           setIsSharingImage(false);
           return;
         } catch (nativeErr: any) {
@@ -235,10 +233,8 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
         try {
           await navigator.share({
             files: [img.file],
-            title: `أمر تكليف بمهمة رسمية - ${taskTitle}`,
-            text: `أمر تكليف بمهمة رسمية من مكتب د/ عبد العزيز شطا\n📌 المهمة: ${taskTitle}\n🎯 المطلوب: ${taskRequired}`
           });
-          displayToast('✅ تم فتح مشاركة الصورة بنجاح!');
+          displayToast('✅ تم فتح مشاركة الصورة بنجاح (صورة فقط بدون كلام)!');
           setIsSharingImage(false);
           return;
         } catch (shareErr: any) {
@@ -271,18 +267,17 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
       link.href = downloadUrl;
       link.click();
 
-      // 3. Open WhatsApp chat with recipient
+      // 3. Open WhatsApp chat with recipient (image only, no words/text)
       const phone = task.whatsapp?.phoneNumber || '';
-      const caption = `مرفق صورة أمر تكليف بمهمة رسمية من مكتب د/ عبد العزيز شطا:\n📌 المهمة: *${taskTitle}*\n🎯 المطلوب: *${taskRequired}*`;
-      whatsappService.openWhatsAppChat(phone, caption);
+      whatsappService.openWhatsAppChat(phone, '');
 
       if (didCopy) {
         displayToast(
-          '✅ تم نسخ صورة التكليف للحافظة وحفظها! الصق الصورة فوراً (Ctrl+V أو لصق) في محادثة الواتساب.'
+          '✅ تم نسخ صورة التكليف للحافظة وتنزيلها! الصق الصورة فوراً (Ctrl+V) في محادثة الواتساب (صورة فقط بدون كلام).'
         );
       } else {
         displayToast(
-          '✅ تم تنزيل صورة التكليف في جهازك! أرفق الصورة الآن في محادثة الواتساب المفتوحة.'
+          '✅ تم تنزيل صورة التكليف في جهازك! أرفق الصورة الآن في محادثة الواتساب المفتوحة (صورة فقط بدون كلام).'
         );
       }
     } catch (e) {
@@ -529,7 +524,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             ) : (
               <>
                 <Share2 className="w-5 h-5 text-white" />
-                <span>إرسال كصورة على واتساب فوراً 📸</span>
+                <span>إرسال كصورة على واتساب فوراً 📸 (صورة فقط)</span>
               </>
             )}
           </button>

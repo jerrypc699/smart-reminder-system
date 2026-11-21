@@ -112,7 +112,7 @@ class AthkarStorageService {
     }
     try {
       localStorage.setItem(this.FAVORITES_KEY, JSON.stringify(favs));
-    } catch {}
+    } catch { }
     return isNowFav;
   }
 
@@ -130,7 +130,7 @@ class AthkarStorageService {
     const next = current + amount;
     try {
       localStorage.setItem(this.TOTAL_TASBEEH_KEY, next.toString());
-    } catch {}
+    } catch { }
     return next;
   }
 
@@ -142,7 +142,7 @@ class AthkarStorageService {
         const parsed = JSON.parse(raw);
         if (parsed.date === today) return parsed;
       }
-    } catch {}
+    } catch { }
     return { count: 0, date: today };
   }
 
@@ -152,7 +152,7 @@ class AthkarStorageService {
     const newCount = (daily.date === today ? daily.count : 0) + amount;
     try {
       localStorage.setItem(this.DAILY_TASBEEH_KEY, JSON.stringify({ count: newCount, date: today }));
-    } catch {}
+    } catch { }
     return newCount;
   }
 
@@ -171,7 +171,7 @@ class AthkarStorageService {
       presets.push(text.trim());
       try {
         localStorage.setItem(this.CUSTOM_PRESETS_KEY, JSON.stringify(presets));
-      } catch {}
+      } catch { }
     }
     return presets;
   }
@@ -189,7 +189,7 @@ class AthkarStorageService {
   public saveProgress(progress: Record<string, number>): void {
     try {
       localStorage.setItem(this.PROGRESS_KEY, JSON.stringify(progress));
-    } catch {}
+    } catch { }
   }
 
   public resetProgressForCategory(category: string, items: AthkarItem[]): Record<string, number> {
@@ -218,7 +218,7 @@ class AthkarStorageService {
     const updated = { ...current, ...settings };
     try {
       localStorage.setItem(this.FLOATING_SETTINGS_KEY, JSON.stringify(updated));
-    } catch {}
+    } catch { }
     this.triggerCloudSync();
     return updated;
   }

@@ -15,8 +15,14 @@ import {
   Film,
   Maximize2,
   MessageCircle,
-  ExternalLink
+  ExternalLink,
+  Share2,
+  Loader2
 } from 'lucide-react';
+import html2canvas from 'html2canvas-pro';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import { ActiveAlert } from '../types';
 import { whatsappService } from '../services/whatsappService';
 
@@ -36,7 +42,114 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
   isSpeaking,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const alertCardRef = useRef<HTMLDivElement | null>(null);
   const [needsUnmuteTap, setNeedsUnmuteTap] = useState(false);
+  const [isSharingAlertImage, setIsSharingAlertImage] = useState(false);
+  const [alertToast, setAlertToast] = useState<string | null>(null);
+
+  const displayAlertToast = (msg: string) => {
+    setAlertToast(msg);
+    setTimeout(() => setAlertToast(null), 5000);
+  };
+
+  const handleSendAlertAsImage = async () => {
+    if (!alertCardRef.current || !alert) return;
+    setIsSharingAlertImage(true);
+
+    try {
+      if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
+        try {
+          await (document as any).fonts.ready;
+        } catch {}
+      }
+
+      const canvas = await html2canvas(alertCardRef.current, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: '#0a1420',
+        logging: false,
+      });
+
+      const dataUrl = canvas.toDataURL('image/png', 0.95);
+      const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png', 0.95));
+      if (!blob) throw new Error('Blob conversion failed');
+
+      const fileName = `تنبيه_${Date.now()}.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      // Native Capacitor
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const writeRes = await Filesystem.writeFile({
+            path: fileName,
+            data: base64,
+            directory: Directory.Cache,
+          });
+
+          await Share.share({
+            files: [writeRes.uri],
+            dialogTitle: 'إرسال صورة التنبيه عبر واتساب (صورة فقط)',
+          });
+
+          displayAlertToast('✅ تم فتح مشاركة صورة التنبيه بنجاح (صورة فقط)!');
+          setIsSharingAlertImage(false);
+          return;
+        } catch (nativeErr: any) {
+          if (nativeErr?.message?.includes('canceled') || nativeErr?.name === 'AbortError') {
+            setIsSharingAlertImage(false);
+            return;
+          }
+        }
+      }
+
+      // Web Navigator Share
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+          });
+          displayAlertToast('✅ تم فتح مشاركة صورة التنبيه بنجاح (صورة فقط)!');
+          setIsSharingAlertImage(false);
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            setIsSharingAlertImage(false);
+            return;
+          }
+        }
+      }
+
+      // Clipboard / Download Fallback
+      let didCopy = false;
+      try {
+        if (navigator.clipboard && 'write' in navigator.clipboard) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          didCopy = true;
+        }
+      } catch {}
+
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = downloadUrl;
+      link.click();
+
+      const phone = alert.whatsappPhone || '';
+      whatsappService.openWhatsAppChat(phone, '');
+
+      if (didCopy) {
+        displayAlertToast('✅ تم نسخ صورة التنبيه للحافظة وتنزيلها! الصق الصورة فوراً (Ctrl+V) في محادثة الواتساب (صورة فقط بدون كلام).');
+      } else {
+        displayAlertToast('✅ تم تنزيل صورة التنبيه! أرفق الصورة الآن في محادثة الواتساب (صورة فقط بدون كلام).');
+      }
+    } catch (err) {
+      console.warn('Error sharing alert image:', err);
+      displayAlertToast('⚠️ تعذر إرسال صورة التنبيه؛ يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsSharingAlertImage(false);
+    }
+  };
 
   useEffect(() => {
     if (!alert?.videoUrl) return;
@@ -92,6 +205,7 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/82 backdrop-blur-lg animate-fade-in">
       <div 
+        ref={alertCardRef}
         className={`relative w-full ${isVideo ? 'max-w-2xl' : 'max-w-lg'} p-5 sm:p-8 rounded-3xl lux-modal transition-all duration-300 ${
           isPrayer
             ? 'border-emerald-500/45 glow-emerald'
@@ -251,23 +365,30 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
                 </p>
               )}
 
+              {alertToast && (
+                <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-bold text-center">
+                  {alertToast}
+                </div>
+              )}
+
               <button
                 type="button"
-                onClick={() => {
-                  whatsappService.openWhatsAppChat(
-                    alert.whatsappPhone!,
-                    alert.whatsappMessage || alert.message
-                  );
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
+                onClick={handleSendAlertAsImage}
+                disabled={isSharingAlertImage}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer disabled:opacity-50"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>
-                  {alert.whatsappAutoSentStatus === 'sent_api'
-                    ? 'إعادة إرسال / فتح المحادثة في واتساب'
-                    : `إرسال الآن على واتساب إلى ${alert.whatsappRecipientName || alert.whatsappPhone}`}
-                </span>
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                {isSharingAlertImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>جاري إعداد صورة التنبيه...</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-4 h-4" />
+                    <span>إرسال صورة التنبيه على واتساب 📸 (صورة فقط)</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                  </>
+                )}
               </button>
             </div>
           )}

@@ -48,27 +48,29 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.38.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.38.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.39.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.39.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.38.ipa
-          path: DrAbdelaziz-Reminder-v1.0.38.ipa
+          name: DrAbdelaziz-Reminder-v1.0.39.ipa
+          path: DrAbdelaziz-Reminder-v1.0.39.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.38
+      - name: Attach IPA to GitHub Release v1.0.39
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.38
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.38"
+          tag_name: v1.0.39
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.39"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.38
-            - إضافة قسم وبند "أذكار مخصصة" في أبواب وأقسام الأذكار مع إمكانية إضافة وتعديل وحذف الأذكار والأدعية الخاصة لسعادة الدكتور عبد العزيز، متضمنة العداد التفاعلي والقراءة الصوتية والمزامنة السحابية الدائمة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.39
+            - إرسال تنبيهات وتكليفات الواتساب كصورة فقط بدون نصوص أو كلام.
+            - تحرير وإمكانية تعديل وتخصيص مواقيت صلاة الضحى وقيام الليل بكل سهولة من جدول مواقيت الصلاة.
+            - أرشفة المهام المكتملة تلقائياً وإزالتها من المهام اليومية النشطة مع إضافة قسم مخصص للأرشيف واستعادة المهام وتفريغه.
           files: |
-            DrAbdelaziz-Reminder-v1.0.38.ipa
+            DrAbdelaziz-Reminder-v1.0.39.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,7 +82,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.38.ipa
+            DrAbdelaziz-Reminder-v1.0.39.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -193,7 +193,8 @@ export function buildTaskWhatsAppMessage(task: {
   // Top Bar
   lines.push('📬 *البريد المرسل*');
   lines.push('');
-  lines.push(`📋 *تكليف مهمة رسمية - ${title}*`);
+  lines.push('📋 *أمر تكليف بمهمة رسمية*');
+  lines.push(`📌 *الموضوع:* ${title}`);
   lines.push('────────────────────────────');
   lines.push('• *من:* مكتب د/ عبد العزيز شطا');
   lines.push(`• *التاريخ:* ${formattedDate}`);

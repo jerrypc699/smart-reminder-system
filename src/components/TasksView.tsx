@@ -2327,13 +2327,31 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         </div>
 
                         <div
-                          className="w-full bg-white text-slate-900 rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-200 space-y-3 font-['Cairo',sans-serif] text-right"
+                          className="w-full bg-white text-slate-900 rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-200 space-y-3 text-right"
                           dir="rtl"
-                          style={{ backgroundColor: '#ffffff' }}
+                          style={{
+                            backgroundColor: '#ffffff',
+                            letterSpacing: '0px',
+                            wordSpacing: 'normal',
+                            fontFamily: "'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                          }}
                         >
-                          <h4 className="text-base sm:text-lg font-black text-[#17375E] text-center leading-snug">
-                            تكليف مهمة رسمية - {title.trim() || 'عنوان المهمة'}
-                          </h4>
+                          <div className="text-center space-y-1 pb-1">
+                            <h4
+                              style={{ letterSpacing: '0px', wordSpacing: 'normal' }}
+                              className="text-base sm:text-lg font-black text-[#17375E] text-center leading-snug"
+                            >
+                              أمر تكليف بمهمة رسمية
+                            </h4>
+                            {title.trim() && (
+                              <p
+                                style={{ letterSpacing: '0px', wordSpacing: 'normal' }}
+                                className="text-xs sm:text-sm font-extrabold text-[#0d4a41] text-center"
+                              >
+                                الموضوع: {title.trim()}
+                              </p>
+                            )}
+                          </div>
 
                           <div className="border border-slate-200/90 rounded-xl p-3 bg-[#fcfdfe] text-xs space-y-1.5">
                             <div className="flex items-center justify-start text-right">

@@ -48,28 +48,27 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.36.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.36.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.37.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.37.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.36.ipa
-          path: DrAbdelaziz-Reminder-v1.0.36.ipa
+          name: DrAbdelaziz-Reminder-v1.0.37.ipa
+          path: DrAbdelaziz-Reminder-v1.0.37.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.36
+      - name: Attach IPA to GitHub Release v1.0.37
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.36
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.36"
+          tag_name: v1.0.37
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.37"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.36
-            - تحسين ألوان وقراءة قائمة المهام اليومية وأزرار التصنيفات والشريط الأسبوعي بأعلى تباين ووضوح فائق في الوضع الفاتح والداكن.
-            - ميزة الإملاء الصوتي المستمر للمهام (Push-to-Talk): يستمر الميكروفون بالتسجيل بدون توقف طالما ضاغط على الزر حتى رفع اليد.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.37
+            - إصلاح وضبط عنوان بطاقة التكليف الرسمية على واتساب (أمر تكليف بمهمة رسمية) بدقة، والتخلص من أي تداخل أو تقطع للأحرف والكلمات.
           files: |
-            DrAbdelaziz-Reminder-v1.0.36.ipa
+            DrAbdelaziz-Reminder-v1.0.37.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,7 +80,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.36.ipa
+            DrAbdelaziz-Reminder-v1.0.37.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -82,7 +82,12 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
 
     const renderCard = async () => {
       // Allow browser to render DOM node and web fonts cleanly
-      await new Promise((res) => setTimeout(res, 200));
+      if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
+        try {
+          await (document as any).fonts.ready;
+        } catch {}
+      }
+      await new Promise((res) => setTimeout(res, 250));
       if (isCancelled || !cardRef.current) return;
 
       try {
@@ -147,6 +152,11 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     if (!cardRef.current) return null;
 
     try {
+      if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
+        try {
+          await (document as any).fonts.ready;
+        } catch {}
+      }
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
         useCORS: true,
@@ -197,8 +207,8 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
           });
 
           await Share.share({
-            title: `تكليف مهمة رسمية - ${taskTitle}`,
-            text: `تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا\nالمهمة: ${taskTitle}\nالمطلوب: ${taskRequired}`,
+            title: `أمر تكليف بمهمة رسمية - ${taskTitle}`,
+            text: `أمر تكليف بمهمة رسمية من مكتب د/ عبد العزيز شطا\n📌 المهمة: ${taskTitle}\n🎯 المطلوب: ${taskRequired}`,
             files: [writeRes.uri],
             dialogTitle: 'إرسال بطاقة التكليف كصورة عبر واتساب'
           });
@@ -225,8 +235,8 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
         try {
           await navigator.share({
             files: [img.file],
-            title: `تكليف مهمة رسمية - ${taskTitle}`,
-            text: `تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا\nالمهمة: ${taskTitle}\nالمطلوب: ${taskRequired}`
+            title: `أمر تكليف بمهمة رسمية - ${taskTitle}`,
+            text: `أمر تكليف بمهمة رسمية من مكتب د/ عبد العزيز شطا\n📌 المهمة: ${taskTitle}\n🎯 المطلوب: ${taskRequired}`
           });
           displayToast('✅ تم فتح مشاركة الصورة بنجاح!');
           setIsSharingImage(false);
@@ -263,7 +273,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
 
       // 3. Open WhatsApp chat with recipient
       const phone = task.whatsapp?.phoneNumber || '';
-      const caption = `مرفق صورة تكليف مهمة رسمية من مكتب د/ عبد العزيز شطا:\n📌 المهمة: *${taskTitle}*\n🎯 المطلوب: *${taskRequired}*`;
+      const caption = `مرفق صورة أمر تكليف بمهمة رسمية من مكتب د/ عبد العزيز شطا:\n📌 المهمة: *${taskTitle}*\n🎯 المطلوب: *${taskRequired}*`;
       whatsappService.openWhatsAppChat(phone, caption);
 
       if (didCopy) {
@@ -402,14 +412,32 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
           {/* THE OFFICIAL CARD: Exactly matches reference image media_1794766965447_a21d570e.jpg */}
           <div
             ref={cardRef}
-            className="w-full min-w-[340px] max-w-[460px] bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 select-text font-['Cairo',sans-serif] p-6 sm:p-8 space-y-4"
+            className="w-full min-w-[340px] max-w-[460px] bg-white text-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 select-text p-6 sm:p-8 space-y-4"
             dir="rtl"
-            style={{ backgroundColor: '#ffffff' }}
+            style={{
+              backgroundColor: '#ffffff',
+              letterSpacing: '0px',
+              wordSpacing: 'normal',
+              fontFamily: "'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }}
           >
-            {/* 1. Document Title: تكليف مهمة رسمية - [اسم المهمة] */}
-            <h2 className="text-xl sm:text-2xl font-black text-[#17375E] text-center leading-snug tracking-tight">
-              تكليف مهمة رسمية - {taskTitle}
-            </h2>
+            {/* 1. Document Title: أمر تكليف بمهمة رسمية */}
+            <div className="text-center space-y-1 pb-1">
+              <h2
+                style={{ letterSpacing: '0px', wordSpacing: 'normal' }}
+                className="text-xl sm:text-2xl font-black text-[#17375E] text-center leading-snug"
+              >
+                أمر تكليف بمهمة رسمية
+              </h2>
+              {taskTitle && (
+                <p
+                  style={{ letterSpacing: '0px', wordSpacing: 'normal' }}
+                  className="text-sm sm:text-base font-extrabold text-[#0d4a41] text-center"
+                >
+                  الموضوع: {taskTitle}
+                </p>
+              )}
+            </div>
 
             {/* 2. Sender & Date Box (White/off-white rounded box with thin border) */}
             <div className="border border-slate-200/90 rounded-xl p-4 bg-[#fcfdfe] text-xs sm:text-sm space-y-2.5">

@@ -15,6 +15,7 @@ import {
   Search,
   Plus,
   Trash2,
+  Edit3,
   Copy,
   CheckCheck,
   Smartphone,
@@ -84,11 +85,16 @@ export const AthkarView: React.FC = () => {
 
   // Custom Dhikr Modal State
   const [isCustomModalOpen, setIsCustomModalOpen] = useState<boolean>(false);
+  const [editingCustomId, setEditingCustomId] = useState<string | null>(null);
   const [customTitle, setCustomTitle] = useState<string>('');
   const [customText, setCustomText] = useState<string>('');
   const [customCount, setCustomCount] = useState<number>(1);
   const [customReward, setCustomReward] = useState<string>('');
   const [newPresetText, setNewPresetText] = useState<string>('');
+
+  const customAthkarCount = useMemo(() => {
+    return allAthkar.filter((item) => item.category === 'custom' || item.isCustom).length;
+  }, [allAthkar]);
 
   // Initial Load
   useEffect(() => {
@@ -146,6 +152,10 @@ export const AthkarView: React.FC = () => {
 
     if (selectedCategory === 'all') {
       return list;
+    }
+
+    if (selectedCategory === 'custom') {
+      return list.filter((item) => item.category === 'custom' || item.isCustom);
     }
 
     return list.filter((item) => item.category === selectedCategory);
@@ -305,26 +315,66 @@ export const AthkarView: React.FC = () => {
     setTasbeehCount(0);
   };
 
-  // Save new custom dhikr
+  // Open modal to add custom dhikr
+  const handleOpenAddCustom = () => {
+    setEditingCustomId(null);
+    setCustomTitle('');
+    setCustomText('');
+    setCustomCount(1);
+    setCustomReward('');
+    setIsCustomModalOpen(true);
+  };
+
+  // Open modal to edit existing custom dhikr
+  const handleOpenEditCustom = (item: AthkarItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCustomId(item.id);
+    setCustomTitle(item.title || '');
+    setCustomText(item.text || '');
+    setCustomCount(item.count || 1);
+    setCustomReward(item.reward || '');
+    setIsCustomModalOpen(true);
+  };
+
+  // Delete custom dhikr
+  const handleDeleteCustomDhikr = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('هل أنت متأكد من حذف هذا الذكر المخصص نهائياً؟')) {
+      athkarStorageService.deleteCustomDhikr(id);
+      loadData();
+    }
+  };
+
+  // Save new or edited custom dhikr
   const handleSaveCustomDhikr = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customText.trim()) return;
 
-    athkarStorageService.saveCustomDhikr({
-      category: 'custom',
-      title: customTitle.trim() || 'دعاء خاص',
-      text: customText.trim(),
-      count: customCount || 1,
-      reward: customReward.trim() || undefined,
-    });
+    if (editingCustomId) {
+      athkarStorageService.updateCustomDhikr(editingCustomId, {
+        title: customTitle.trim() || 'دعاء خاص',
+        text: customText.trim(),
+        count: customCount || 1,
+        reward: customReward.trim() || undefined,
+      });
+    } else {
+      athkarStorageService.saveCustomDhikr({
+        category: 'custom',
+        title: customTitle.trim() || 'دعاء خاص',
+        text: customText.trim(),
+        count: customCount || 1,
+        reward: customReward.trim() || undefined,
+      });
+    }
 
     setIsCustomModalOpen(false);
+    setEditingCustomId(null);
     setCustomTitle('');
     setCustomText('');
     setCustomCount(1);
     setCustomReward('');
     loadData();
-    setSelectedCategory('all');
+    setSelectedCategory('custom');
   };
 
   // Update floating settings
@@ -373,7 +423,7 @@ export const AthkarView: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setIsCustomModalOpen(true)}
+              onClick={handleOpenAddCustom}
               className="btn-lux-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2} />
@@ -607,6 +657,7 @@ export const AthkarView: React.FC = () => {
             { id: 'distress', label: 'تفريج الكرب والهم 🤲', icon: ShieldCheck },
             { id: 'ruqyah', label: 'الرقية الشرعية 🌿', icon: Sparkles },
             { id: 'quranic', label: 'أدعية قرآنية 📖', icon: BookOpen },
+            { id: 'custom', label: `أذكار مخصصة (${customAthkarCount}) ✍️`, icon: Sparkles },
             { id: 'favorites', label: `المفضلة (${favoriteIds.length}) ⭐`, icon: Heart },
             { id: 'all', label: 'كافة الأذكار 📋', icon: Sparkles },
           ].map((tab) => {
@@ -668,6 +719,33 @@ export const AthkarView: React.FC = () => {
         </div>
       </div>
 
+      {/* Custom Category Top CTA Banner */}
+      {selectedCategory === 'custom' && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/30 shadow-lg animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white text-sm sm:text-base">
+                أبواب وأقسام أذكارك وأدعيتك المخصصة ✍️
+              </h4>
+              <p className="text-xs text-slate-400">
+                أضف أذكارك وأدعيتك الخاصة لسعادة الدكتور عبد العزيز وحدد عدد التسبيحات والفضل ليتم حفظها ومزامنتها سحابياً.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenAddCustom}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-105 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة ذكر مخصص جديد</span>
+          </button>
+        </div>
+      )}
+
       {/* 5. Athkar Cards Grid (نظام بطاقات أذكاري التفاعلية) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {filteredAthkar.map((item, index) => {
@@ -699,9 +777,36 @@ export const AthkarView: React.FC = () => {
                   <h4 className="font-bold text-white text-xs sm:text-sm">
                     {item.title || 'ذكر نبوي شريف'}
                   </h4>
+                  {(item.category === 'custom' || item.isCustom) && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      مخصص ✨
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  {/* Edit Custom Dhikr */}
+                  {(item.category === 'custom' || item.isCustom) && (
+                    <button
+                      onClick={(e) => handleOpenEditCustom(item, e)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="تعديل هذا الذكر المخصص"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Delete Custom Dhikr */}
+                  {(item.category === 'custom' || item.isCustom) && (
+                    <button
+                      onClick={(e) => handleDeleteCustomDhikr(item.id, e)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="حذف هذا الذكر المخصص"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
                   {/* Favorite Toggle */}
                   <button
                     onClick={(e) => handleToggleFavorite(item.id, e)}
@@ -786,10 +891,28 @@ export const AthkarView: React.FC = () => {
 
       {/* Empty State */}
       {filteredAthkar.length === 0 && (
-        <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
-          <Sparkles className="w-10 h-10 text-slate-600 mx-auto" />
-          <h4 className="text-base font-bold text-white">لا توجد أذكار في هذا القسم</h4>
-          <p className="text-xs text-slate-400">جرّب تغيير خيارات البحث أو استعراض أبواب أخرى من الأذكار.</p>
+        <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+          <Sparkles className="w-10 h-10 text-emerald-400 mx-auto" />
+          <h4 className="text-base font-bold text-white">
+            {selectedCategory === 'custom'
+              ? 'لا توجد أذكار مخصصة مضافة بعد'
+              : 'لا توجد أذكار في هذا القسم'}
+          </h4>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            {selectedCategory === 'custom'
+              ? 'يمكن لسعادة الدكتور عبد العزيز إضافة أذكاره وأدعيته الخاصة هنا، مع تحديد عدد التكرار والفضل ليتم حفظها ومزامنتها سحابياً.'
+              : 'جرّب تغيير خيارات البحث أو استعراض أبواب أخرى من الأذكار.'}
+          </p>
+          {selectedCategory === 'custom' && (
+            <button
+              type="button"
+              onClick={handleOpenAddCustom}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 inline-flex items-center gap-2 cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة أول ذكر مخصص للدكتور عبد العزيز ✍️</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -896,14 +1019,18 @@ export const AthkarView: React.FC = () => {
           <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-4 text-right" dir="rtl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Plus className="w-5 h-5 text-emerald-400" />
+                {editingCustomId ? (
+                  <Edit3 className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Plus className="w-5 h-5 text-emerald-400" />
+                )}
                 <h3 className="text-base font-bold text-white">
-                  إضافة ذكر أو دعاء مخصص للدكتور عبد العزيز
+                  {editingCustomId ? 'تعديل الذكر أو الدعاء المخصص' : 'إضافة ذكر أو دعاء مخصص للدكتور عبد العزيز'}
                 </h3>
               </div>
               <button
                 onClick={() => setIsCustomModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -962,15 +1089,15 @@ export const AthkarView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCustomModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30 cursor-pointer"
                 >
-                  حفظ في أذكاري ✅
+                  {editingCustomId ? 'حفظ التعديلات ✅' : 'حفظ في أذكاري ✅'}
                 </button>
               </div>
             </form>

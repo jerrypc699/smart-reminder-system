@@ -56,6 +56,7 @@ class AthkarStorageService {
     } catch (e) {
       console.warn('Failed saving custom dhikr:', e);
     }
+    this.triggerCloudSync();
     return newItem;
   }
 
@@ -65,6 +66,22 @@ class AthkarStorageService {
       localStorage.setItem(this.CUSTOM_ATHKAR_KEY, JSON.stringify(list));
     } catch (e) {
       console.warn('Failed deleting custom dhikr:', e);
+    }
+    this.triggerCloudSync();
+  }
+
+  public updateCustomDhikr(id: string, updates: Partial<AthkarItem>): boolean {
+    const list = this.getCustomAthkar();
+    const index = list.findIndex((item) => item.id === id);
+    if (index === -1) return false;
+    list[index] = { ...list[index], ...updates };
+    try {
+      localStorage.setItem(this.CUSTOM_ATHKAR_KEY, JSON.stringify(list));
+      this.triggerCloudSync();
+      return true;
+    } catch (e) {
+      console.warn('Failed updating custom dhikr:', e);
+      return false;
     }
   }
 
@@ -178,7 +195,7 @@ class AthkarStorageService {
   public resetProgressForCategory(category: string, items: AthkarItem[]): Record<string, number> {
     const progress = this.getProgress();
     items.forEach((item) => {
-      if (category === 'all' || item.category === category) {
+      if (category === 'all' || item.category === category || (category === 'custom' && item.isCustom)) {
         progress[item.id] = item.count;
       }
     });

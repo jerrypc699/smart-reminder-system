@@ -1944,6 +1944,12 @@
             "t": "اجتماع الضبعه",
             "d": true,
             "sourceTaskId": "task-1795256324176-r1k09"
+          },
+          {
+            "id": "imp_task-1795277678211-94y0a_2026-11-21",
+            "t": "رسالة واتساب لحبيبي",
+            "d": false,
+            "sourceTaskId": "task-1795277678211-94y0a"
           }
         ],
         "dismissedTaskIds": [],
@@ -1973,7 +1979,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T16:14:43.339Z",
+  "updatedAt": "2026-11-21T16:14:44.898Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

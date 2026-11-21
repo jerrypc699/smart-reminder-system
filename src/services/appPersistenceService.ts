@@ -386,3 +386,4 @@ class AppPersistenceService {
 }
 
 export const appPersistenceService = new AppPersistenceService();
+

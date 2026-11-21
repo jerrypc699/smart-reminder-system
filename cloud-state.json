@@ -1150,7 +1150,7 @@
     }
   ],
   "whatsappSettings": {
-    "provider": "greenapi",
+    "provider": "none",
     "defaultCountryCode": "20",
     "greenApiInstanceId": "",
     "greenApiToken": "",
@@ -1951,7 +1951,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T16:11:52.851Z",
+  "updatedAt": "2026-11-21T16:11:53.941Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

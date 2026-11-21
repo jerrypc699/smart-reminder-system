@@ -1730,7 +1730,7 @@
           "isha": 0
         },
         "adhkar": {
-          "sabah": true,
+          "sabah": false,
           "masaa": false,
           "nawm": false,
           "dua": false
@@ -1885,7 +1885,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T07:04:40.884Z",
+  "updatedAt": "2026-11-21T07:04:41.712Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

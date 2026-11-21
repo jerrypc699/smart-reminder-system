@@ -36,6 +36,12 @@ import {
   Volume2,
   Bell,
   Settings2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  ListFilter,
 } from 'lucide-react';
 import { Task } from '../types';
 import {
@@ -182,6 +188,160 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   // Score computation
   const scoreResult = calculateScore(dayRecord, settings);
   const minDayAchieved = isMinDay(dayRecord, settings);
+
+  // Vertical Menu State & Active Section Focus
+  const [selectedSection, setSelectedSection] = useState<string>('all');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  // Live Section Stats for Vertical Menu Badges
+  const sectionStats = useMemo(() => {
+    // 1. Prayers
+    const visiblePrayers = PRAYERS_LIST.filter(([k]) => !hiddenSet.has(`prayer_${k}`));
+    const completedPrayers = visiblePrayers.filter(([k]) => (dayRecord.prayers[k] || 0) > 0).length;
+    const prayerPts = scoreResult.c?.prayer || 0;
+    const prayerMax = scoreResult.maxByCat?.prayer || 25;
+
+    // 2. Adhkar
+    const visibleAdhkar = ADHKAR_LIST.filter(([k]) => !hiddenSet.has(`adhkar_${k}`));
+    const completedAdhkar = visibleAdhkar.filter(([k]) => Boolean(dayRecord.adhkar[k])).length;
+    const adhkarPts = scoreResult.c?.adhkar || 0;
+    const adhkarMax = scoreResult.maxByCat?.adhkar || 20;
+
+    // 3. QSS (Quran, Sport, Study)
+    let qssTotal = 0;
+    let qssDone = 0;
+    if (!hiddenSet.has('item_quran')) { qssTotal++; if ((dayRecord.quran || 0) >= (settings.quran || 5)) qssDone++; }
+    if (!hiddenSet.has('item_sport')) { qssTotal++; if ((dayRecord.sport || 0) >= (settings.sport || 30)) qssDone++; }
+    if (!hiddenSet.has('item_study')) { qssTotal++; if ((dayRecord.study || 0) >= (settings.study || 60)) qssDone++; }
+    const qssPts = scoreResult.c?.qss || 0;
+    const qssMax = scoreResult.maxByCat?.qss || 20;
+
+    // 4. Health
+    let healthTotal = 0;
+    let healthDone = 0;
+    if (!hiddenSet.has('item_sleep')) { healthTotal++; if ((dayRecord.sleep || 0) >= (settings.sleep || 7)) healthDone++; }
+    if (!hiddenSet.has('item_water')) { healthTotal++; if ((dayRecord.water || 0) >= (settings.water || 8)) healthDone++; }
+    if (!hiddenSet.has('item_food')) { healthTotal++; if (dayRecord.food) healthDone++; }
+    if (!hiddenSet.has('item_weight')) { healthTotal++; if (Boolean(dayRecord.weight && dayRecord.weight.trim())) healthDone++; }
+    const healthPts = scoreResult.c?.health || 0;
+    const healthMax = scoreResult.maxByCat?.health || 15;
+
+    // 5. Work (Today's tasks)
+    const todayTasks = dayRecord.tasks || [];
+    const completedWork = todayTasks.filter((t) => t.d).length;
+    const workTotal = todayTasks.length;
+
+    // 6. All Work Tasks
+    const allTasksCount = tasks.length;
+    const allCompletedTasks = tasks.filter((t) => t.status === 'completed').length;
+
+    // 7. Evening Notes
+    const notesFilled = Boolean(dayRecord.notes?.good?.trim() || dayRecord.notes?.tomorrow?.trim() || dayRecord.notes?.block?.trim());
+
+    return {
+      prayer: { done: completedPrayers, total: visiblePrayers.length, pts: prayerPts, max: prayerMax },
+      adhkar: { done: completedAdhkar, total: visibleAdhkar.length, pts: adhkarPts, max: adhkarMax },
+      qss: { done: qssDone, total: qssTotal, pts: qssPts, max: qssMax },
+      health: { done: healthDone, total: healthTotal, pts: healthPts, max: healthMax },
+      work: { done: completedWork, total: workTotal },
+      all_tasks: { done: allCompletedTasks, total: allTasksCount },
+      notes: { filled: notesFilled },
+    };
+  }, [dayRecord, hiddenSet, scoreResult, settings, tasks]);
+
+  // System Sections List for the Vertical Navigation Menu
+  const systemSections = useMemo(() => [
+    {
+      id: 'all',
+      label: 'كافة أقسام النظام (شامل)',
+      shortLabel: 'كل النظام',
+      icon: Sparkles,
+      badge: `${scoreResult.total}%`,
+      badgeColor: 'emerald',
+      desc: 'عرض كافة الأقسام والصلوات والمهام معاً في صفحة واحدة متكاملة',
+    },
+    {
+      id: 'card_prayer',
+      label: 'الصلاة والعبادات',
+      shortLabel: 'الصلوات',
+      icon: Compass,
+      badge: `${sectionStats.prayer.done}/${sectionStats.prayer.total}`,
+      badgeColor: sectionStats.prayer.done === sectionStats.prayer.total && sectionStats.prayer.total > 0 ? 'emerald' : 'amber',
+      desc: 'الصلوات الخمس في وقتها، السنن، والعبادات المخصصة',
+    },
+    {
+      id: 'card_adhkar',
+      label: 'الأذكار والدعاء',
+      shortLabel: 'الأذكار',
+      icon: BookOpen,
+      badge: `${sectionStats.adhkar.done}/${sectionStats.adhkar.total}`,
+      badgeColor: sectionStats.adhkar.done === sectionStats.adhkar.total && sectionStats.adhkar.total > 0 ? 'emerald' : 'sky',
+      desc: 'أذكار الصباح، المساء، النوم، وأوراد الأدعية اليومية',
+    },
+    {
+      id: 'card_qss',
+      label: 'القرآن والرياضة والتعلّم',
+      shortLabel: 'القرآن والرياضة',
+      icon: Award,
+      badge: `${sectionStats.qss.done}/${sectionStats.qss.total}`,
+      badgeColor: sectionStats.qss.done === sectionStats.qss.total && sectionStats.qss.total > 0 ? 'emerald' : 'indigo',
+      desc: 'ورد التلاوة القرآني، الرياضة والحركة، وتطوير الذات',
+    },
+    {
+      id: 'card_health',
+      label: 'الصحة والراحة',
+      shortLabel: 'الصحة',
+      icon: Activity,
+      badge: `${sectionStats.health.pts} نقطة`,
+      badgeColor: 'teal',
+      desc: 'ساعات النوم، شرب الماء بانتظام، الأكل الصحي والوزن',
+    },
+    {
+      id: 'card_work',
+      label: 'مهام اليوم التنفيذية',
+      shortLabel: 'مهام اليوم',
+      icon: Briefcase,
+      badge: `${sectionStats.work.done}/${sectionStats.work.total}`,
+      badgeColor: sectionStats.work.done === sectionStats.work.total && sectionStats.work.total > 0 ? 'emerald' : 'amber',
+      desc: 'قائمة مهام العمل الخاصة باليوم ومواعيد التنبيه',
+    },
+    {
+      id: 'card_all_tasks',
+      label: 'سجل مهام العمل الشامل',
+      shortLabel: 'سجل المهام',
+      icon: CheckSquare,
+      badge: `${sectionStats.all_tasks.total} مهمة`,
+      badgeColor: 'blue',
+      desc: 'كافة مهام العمل والمواعيد والموظفين والمرفقات',
+    },
+    {
+      id: 'card_notes',
+      label: 'مراجعة وتأملات آخر اليوم',
+      shortLabel: 'المراجعة',
+      icon: Edit3,
+      badge: sectionStats.notes.filled ? 'مكتملة ✓' : 'في الانتظار',
+      badgeColor: sectionStats.notes.filled ? 'emerald' : 'slate',
+      desc: 'إنجازات اليوم، المعوقات والمشتتات، وأولويات الغد',
+    },
+  ].filter((s) => s.id === 'all' || !hiddenSet.has(s.id)), [hiddenSet, scoreResult.total, sectionStats]);
+
+  const shouldShowSection = (cardKey: string) => {
+    if (hiddenSet.has(cardKey)) return false;
+    if (selectedSection === 'all') return true;
+    return selectedSection === cardKey;
+  };
+
+  const handleNextSection = () => {
+    const currentIndex = systemSections.findIndex((s) => s.id === selectedSection);
+    const nextIndex = (currentIndex + 1) % systemSections.length;
+    setSelectedSection(systemSections[nextIndex].id);
+  };
+
+  const handlePrevSection = () => {
+    const currentIndex = systemSections.findIndex((s) => s.id === selectedSection);
+    const prevIndex = (currentIndex - 1 + systemSections.length) % systemSections.length;
+    setSelectedSection(systemSections[prevIndex].id);
+  };
 
   const handleAddDailyTask = (
     titleText: string,
@@ -586,7 +746,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12 max-w-4xl mx-auto" dir="rtl">
+    <div className="space-y-6 animate-fadeIn pb-12 max-w-6xl mx-auto" dir="rtl">
       {/* Toast */}
       {toastMsg && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-xl border border-emerald-400 animate-bounce">
@@ -853,8 +1013,207 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               </div>
             </div>
 
-            {/* CARD 1: PRAYERS & CUSTOM WORSHIP */}
-            {!hiddenSet.has('card_prayer') && (
+            {/* ======================================================== */}
+            {/* VERTICAL SECTIONS MENU (MOBILE & DESKTOP) + CARDS LAYOUT */}
+            {/* ======================================================== */}
+            <div className="flex flex-col lg:flex-row items-start gap-6 pt-2">
+              {/* DESKTOP STICKY VERTICAL SIDEBAR + MOBILE VERTICAL ACCORDION */}
+              <aside className="w-full lg:w-72 shrink-0 space-y-3 lg:sticky lg:top-20 z-20">
+                {/* Mobile Toggle Button */}
+                <div className="lg:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-emerald-500/30 flex items-center justify-between text-right shadow-lg cursor-pointer transition-all hover:border-emerald-500/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <Layers className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black text-white flex items-center gap-2">
+                          <span>قائمة أقسام النظام ({systemSections.length})</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                            {systemSections.find((s) => s.id === selectedSection)?.shortLabel || 'الكل'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">اضغط للاختيار والفتح المباشر كالأذكار</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                      {isMobileMenuOpen ? <ChevronUp className="w-5 h-5 text-emerald-400" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
+                  </button>
+
+                  {/* Mobile Quick Horizontal Pills for 1-tap navigation */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-2 scrollbar-none">
+                    {systemSections.map((sec) => {
+                      const Icon = sec.icon;
+                      const isActive = selectedSection === sec.id;
+                      return (
+                        <button
+                          key={sec.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSection(sec.id);
+                            setIsMobileMenuOpen(false);
+                            document.getElementById('daily-system-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                            isActive
+                              ? 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20'
+                              : 'bg-slate-900/90 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>{sec.shortLabel}</span>
+                          <span className="text-[10px] opacity-80">({sec.badge})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Vertical Sections List (Always visible on Desktop, collapsible on Mobile) */}
+                <div
+                  className={`p-3.5 rounded-3xl bg-slate-900/90 backdrop-blur-md border border-slate-800 space-y-2 shadow-xl ${
+                    isMobileMenuOpen ? 'block' : 'hidden lg:block'
+                  }`}
+                >
+                  <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-800/80">
+                    <div className="flex items-center gap-2 text-xs font-black text-white">
+                      <ListFilter className="w-4 h-4 text-emerald-400" />
+                      <span>أقسام النظام اليومي</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                      {systemSections.length} أقسام
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-[70vh] lg:max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 pr-0.5">
+                    {systemSections.map((sec) => {
+                      const Icon = sec.icon;
+                      const isActive = selectedSection === sec.id;
+                      return (
+                        <button
+                          key={sec.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSection(sec.id);
+                            setIsMobileMenuOpen(false);
+                            document.getElementById('daily-system-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className={`w-full text-right p-2.5 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 border ${
+                            isActive
+                              ? 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent border-emerald-500/40 text-white font-black shadow-md shadow-emerald-500/10 ring-1 ring-emerald-500/30'
+                              : 'bg-slate-950/40 hover:bg-slate-800/60 border-slate-800/60 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                                isActive
+                                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm'
+                                  : 'bg-slate-800/80 text-slate-300 border-slate-700'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold block truncate">{sec.label}</span>
+                              <span className="text-[10px] text-slate-400 block truncate">{sec.desc}</span>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0">
+                            <span
+                              className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                                isActive
+                                  ? 'bg-emerald-500/30 text-emerald-200 border-emerald-500/50'
+                                  : 'bg-slate-800/80 text-slate-400 border-slate-700/60'
+                              }`}
+                            >
+                              {sec.badge}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedSection !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSection('all')}
+                      className="w-full mt-2 py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>عرض كافة الأقسام معاً</span>
+                    </button>
+                  )}
+                </div>
+              </aside>
+
+              {/* MAIN CONTENT AREA CONTAINING FOCUSED SECTION OR ALL CARDS */}
+              <div id="daily-system-content" className="flex-1 w-full space-y-5 min-w-0">
+                {/* Active Section Focus Banner when a single section is selected */}
+                {selectedSection !== 'all' && (
+                  <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner">
+                        {React.createElement(systemSections.find((s) => s.id === selectedSection)?.icon || Award, {
+                          className: 'w-5 h-5',
+                        })}
+                      </div>
+                      <div>
+                        <div className="text-sm font-black text-white flex items-center gap-2">
+                          <span>{systemSections.find((s) => s.id === selectedSection)?.label}</span>
+                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            {systemSections.find((s) => s.id === selectedSection)?.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          {systemSections.find((s) => s.id === selectedSection)?.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handlePrevSection}
+                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="القسم السابق"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                        <span className="hidden sm:inline">السابق</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSection('all')}
+                        className="px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                        title="عرض كافة الأقسام معاً"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>عرض الكل</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleNextSection}
+                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="القسم التالي"
+                      >
+                        <span className="hidden sm:inline">التالي</span>
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* CARD 1: PRAYERS & CUSTOM WORSHIP */}
+                {shouldShowSection('card_prayer') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -995,7 +1354,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             )}
 
             {/* CARD 2: ADHKAR & DUA */}
-            {!hiddenSet.has('card_adhkar') && (
+            {shouldShowSection('card_adhkar') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -1174,7 +1533,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             )}
 
             {/* CARD 3: QURAN, SPORT, STUDY */}
-            {!hiddenSet.has('card_qss') && (
+            {shouldShowSection('card_qss') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -1438,7 +1797,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             )}
 
             {/* CARD 4: HEALTH */}
-            {!hiddenSet.has('card_health') && (
+            {shouldShowSection('card_health') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -1860,7 +2219,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             )}
 
             {/* CARD 5: WORK - UNLIMITED AUTO-IMPORTED & CUSTOM TASKS */}
-            {!hiddenSet.has('card_work') && (
+            {shouldShowSection('card_work') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -2035,7 +2394,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             )}
 
             {/* CARD 5B: ALL WORK TASKS & ATTACHMENTS IN DAILY SYSTEM */}
-            {!hiddenSet.has('card_all_tasks') && (
+            {shouldShowSection('card_all_tasks') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -2105,7 +2464,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             )}
 
             {/* CARD 6: EVENING REVIEW / JOURNAL */}
-            {!hiddenSet.has('card_notes') && (
+            {shouldShowSection('card_notes') && (
               <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -2247,8 +2606,42 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Footer Navigation Bar when viewing a single section */}
+            {selectedSection !== 'all' && (
+              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2 shadow-lg">
+                <button
+                  type="button"
+                  onClick={handlePrevSection}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 text-emerald-400" />
+                  <span>القسم السابق</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedSection('all')}
+                  className="px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>عرض كامل النظام</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNextSection}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <span>القسم التالي</span>
+                  <ChevronLeft className="w-4 h-4 text-emerald-400" />
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      </div>
+    )}
 
         {/* ======================================================== */}
         {/* VIEW 2: MONTH VIEW (HEATMAP & STATS) */}

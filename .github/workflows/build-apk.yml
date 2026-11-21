@@ -53,30 +53,31 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.30.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.31.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.30.apk
-          path: DrAbdelaziz-Reminder-v1.0.30.apk
+          name: DrAbdelaziz-Reminder-v1.0.31.apk
+          path: DrAbdelaziz-Reminder-v1.0.31.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.30
+      - name: Create or Update GitHub Release v1.0.31
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.30
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.30"
+          tag_name: v1.0.31
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.31"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.30
-            - إصلاح شامل وجذري لمزامنة البيانات بين الأجهزة (الكمبيوتر والويب والموبايل أندرويد وآيفون) عبر محرك سحابي فائق الموثوقية دائم التخزين.
-            - توحيد وسيمترية رقم الإصدار في كامل أجزاء التطبيق (الإعدادات، شريط المهام، شاشة التثبيت، أندرويد Gradle، آيفون Xcode).
-            - تفعيل التحديث التلقائي الفوري لبيانات المهام والموظفين والجداول والصلوات عند التعديل على أي جهاز.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.31
+            - إضافة القائمة الرأسية الشاملة لأقسام نظامي اليومي (شامل، الصلوات، الأذكار، القرآن والرياضة، الصحة، مهام اليوم، سجل المهام الشامل، مراجعة آخر اليوم) مع إمكانية فتح أي قسم والتركيز عليه مباشرة كالأذكار.
+            - إضافة شريط تنقل علوي وسفلي بين أقسام النظام (السابق، التالي، وعرض كافة الأقسام معاً).
+            - شريط جانبي مخصص وثابت على الكمبيوتر والتابلت وقائمة منسدلة أنيقة وسريعة على الموبايل مع شرائح تنقل بلمسة واحدة.
+            - إظهار شارات الإنجاز والعدادات والنقاط الحية لكل قسم في القائمة الرأسية.
           files: |
-            DrAbdelaziz-Reminder-v1.0.30.apk
+            DrAbdelaziz-Reminder-v1.0.31.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -89,7 +90,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.30.apk
+            DrAbdelaziz-Reminder-v1.0.31.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

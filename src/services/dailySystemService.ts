@@ -680,6 +680,9 @@ class DailySystemService {
           settings: this.settings,
         })
       );
+      import('./appPersistenceService').then(({ appPersistenceService }) => {
+        appPersistenceService.triggerSave('daily_system');
+      }).catch(() => {});
     } catch (e) {
       console.warn('Failed to save daily system to storage:', e);
     }

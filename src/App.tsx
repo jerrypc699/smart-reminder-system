@@ -42,6 +42,8 @@ import {
 import { audioService } from './services/audioService';
 import { audioStorageService } from './services/audioStorageService';
 import { notificationService } from './services/notificationService';
+import { appPersistenceService } from './services/appPersistenceService';
+import { athkarStorageService } from './services/athkarStorageService';
 
 const PRAYER_SETTINGS_KEY = 'smart_reminder_prayer_settings_v1';
 const AUDIO_SETTINGS_KEY = 'smart_reminder_audio_settings_v1';
@@ -176,9 +178,13 @@ export function App() {
 
   // Automatic Zero-Config Central Cloud Sync (Any phone/PC instantly sees the database)
   useEffect(() => {
+    // 0. Initialize indestructible persistence vault & request persistent storage
+    appPersistenceService.init().catch(console.warn);
+
     // 1. Subscribe to local task changes to update state
     const unsubTaskService = taskService.subscribeTasks((updatedTasks) => {
       setTasks(updatedTasks);
+      appPersistenceService.triggerSave('tasks_changed');
     });
 
     // 2. Initial background scan & upload of any un-uploaded local media
@@ -226,6 +232,9 @@ export function App() {
       if (cloudData.dailySystem) {
         dailySystemService.mergeFromCloud(cloudData.dailySystem);
       }
+      if (cloudData.athkar) {
+        athkarStorageService.importState(cloudData.athkar);
+      }
       if (cloudData.whatsappSettings) {
         whatsappService.saveSettings(cloudData.whatsappSettings);
         setWhatsappSettings(cloudData.whatsappSettings);
@@ -243,6 +252,9 @@ export function App() {
           localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify(cloudData.audioSettings));
         } catch {}
       }
+
+      // Persist to Native Device Filesystem & Master Vault
+      appPersistenceService.triggerSave('cloud_update');
     });
 
     return () => {

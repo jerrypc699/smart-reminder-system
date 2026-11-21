@@ -326,6 +326,9 @@ export class TaskService {
       if (!skipCloudSync) {
         this.triggerCloudSync();
       }
+      import('./appPersistenceService').then(({ appPersistenceService }) => {
+        appPersistenceService.triggerSave('tasks');
+      }).catch(() => {});
     } catch (e) {
       console.error('Failed to save tasks', e);
     }
@@ -494,6 +497,9 @@ export class TaskService {
       if (!skipCloudSync) {
         this.triggerCloudSync();
       }
+      import('./appPersistenceService').then(({ appPersistenceService }) => {
+        appPersistenceService.triggerSave('tasks');
+      }).catch(() => {});
     } catch (e) {
       console.error('Failed to save employees', e);
     }

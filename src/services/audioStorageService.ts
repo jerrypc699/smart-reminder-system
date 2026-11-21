@@ -789,6 +789,9 @@ class AudioStorageService {
       localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(filtered));
       localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(filtered));
       this.notifyScheduledChange(filtered);
+      import('./appPersistenceService').then(({ appPersistenceService }) => {
+        appPersistenceService.triggerSave('scheduled_media');
+      }).catch(() => {});
     } catch (e) {
       console.error('Failed to save scheduled medias', e);
     }

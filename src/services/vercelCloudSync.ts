@@ -11,6 +11,7 @@ export interface CloudSyncPayload {
   audioSettings?: AudioSettings;
   whatsappSettings?: WhatsAppGlobalSettings;
   dailySystem?: any;
+  athkar?: any;
   updatedAt?: string;
   sourceDevice?: string;
   deletedTaskIds?: string[];
@@ -147,6 +148,22 @@ class VercelCloudSyncService {
         }
       }
 
+      // Sync Athkar State
+      if (data && data.athkar) {
+        try {
+          const { athkarStorageService } = await import('./athkarStorageService');
+          athkarStorageService.importState(data.athkar);
+        } catch (athkarErr) {
+          console.warn('Failed to apply cloud athkar:', athkarErr);
+        }
+      }
+
+      // Update Native Filesystem Vault for offline survival across updates
+      try {
+        const { appPersistenceService } = await import('./appPersistenceService');
+        appPersistenceService.triggerSave('cloud_fetch');
+      } catch {}
+
       if (data && data.updatedAt && data.updatedAt !== this.lastKnownUpdate) {
         this.lastKnownUpdate = data.updatedAt;
         this.listeners.forEach((cb) => {
@@ -178,6 +195,20 @@ class VercelCloudSyncService {
       }
     }
 
+    // Ultra-Safety Guard: Prevent accidental wipe if client has empty data but cloud has data
+    if (!payload.forceWipe && this.lastPayload) {
+      if ((this.lastPayload.tasks?.length || 0) > 0 && (!payload.tasks || payload.tasks.length === 0)) {
+        console.warn('[CloudSync] Guarded push: Retaining existing cloud tasks.');
+        payload.tasks = this.lastPayload.tasks;
+      }
+      if (this.lastPayload.dailySystem?.days && Object.keys(this.lastPayload.dailySystem.days).length > 0) {
+        if (!payload.dailySystem || !payload.dailySystem.days || Object.keys(payload.dailySystem.days).length === 0) {
+          console.warn('[CloudSync] Guarded push: Retaining existing cloud daily system.');
+          payload.dailySystem = this.lastPayload.dailySystem;
+        }
+      }
+    }
+
     this.isPushing = true;
     try {
       const res = await fetch(getApiUrl('/api/sync'), {
@@ -198,6 +229,12 @@ class VercelCloudSyncService {
       if (result.updatedAt) {
         this.lastKnownUpdate = result.updatedAt;
       }
+
+      // Automatically mirror state to permanent native filesystem and master vault
+      try {
+        const { appPersistenceService } = await import('./appPersistenceService');
+        appPersistenceService.triggerSave('cloud_pushed');
+      } catch {}
 
       return true;
     } catch (err) {
@@ -223,6 +260,7 @@ class VercelCloudSyncService {
       const { taskService } = await import('./taskService');
       const { audioStorageService } = await import('./audioStorageService');
       const { dailySystemService } = await import('./dailySystemService');
+      const { athkarStorageService } = await import('./athkarStorageService');
       const { whatsappService } = await import('./whatsappService');
 
       const tasks = partial?.tasks || taskService.getTasks();
@@ -230,6 +268,7 @@ class VercelCloudSyncService {
       const scheduledMedia = partial?.scheduledMedia || audioStorageService.getScheduledMedias();
       const mediaLibrary = partial?.mediaLibrary || audioStorageService.getMetaRegistry();
       const dailySystem = partial?.dailySystem || dailySystemService.exportForCloud();
+      const athkar = partial?.athkar || athkarStorageService.exportState();
       const whatsappSettings = partial?.whatsappSettings || whatsappService.getSettings();
 
       const deletedTaskIds = Array.from(
@@ -254,6 +293,7 @@ class VercelCloudSyncService {
         scheduledMedia,
         mediaLibrary,
         dailySystem,
+        athkar,
         whatsappSettings,
         prayerSettings: partial?.prayerSettings,
         audioSettings: partial?.audioSettings,
@@ -404,6 +444,7 @@ class VercelCloudSyncService {
       const mediaLibrary = audioStorageService.getMetaRegistry();
       const { whatsappService } = await import('./whatsappService');
       const { dailySystemService } = await import('./dailySystemService');
+      const { athkarStorageService } = await import('./athkarStorageService');
 
       const deletedTaskIds = taskService.getDeletedTaskIds();
       const deletedEmployeeIds = taskService.getDeletedEmployeeIds();
@@ -418,6 +459,7 @@ class VercelCloudSyncService {
         mediaLibrary: mediaLibrary.filter((m) => !audioStorageService.isMediaDeleted(m.id)),
         whatsappSettings: whatsappService.getSettings(),
         dailySystem: dailySystemService.exportForCloud(),
+        athkar: athkarStorageService.exportState(),
         deletedTaskIds,
         deletedEmployeeIds,
         deletedScheduledIds,

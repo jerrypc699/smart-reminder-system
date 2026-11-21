@@ -22,7 +22,10 @@ import {
   Plus,
   Trash2,
   Sun,
-  Moon
+  Moon,
+  ShieldCheck,
+  Database,
+  Save
 } from 'lucide-react';
 import { PrayerSettings, AudioSettings, CityPreset, StoredAudioMeta, WhatsAppGlobalSettings, WhatsAppGatewayProvider } from '../types';
 import { CITY_PRESETS } from '../services/prayerService';
@@ -31,6 +34,7 @@ import { audioStorageService } from '../services/audioStorageService';
 import { notificationService } from '../services/notificationService';
 import { mobileBackgroundService } from '../services/mobileBackgroundService';
 import { whatsappService, normalizeWhatsAppPhone } from '../services/whatsappService';
+import { appPersistenceService } from '../services/appPersistenceService';
 import { APP_VERSION_LABEL } from '../constants/version';
 
 interface SettingsViewProps {
@@ -84,6 +88,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
   const [savedAlert, setSavedAlert] = useState(false);
+  const [isStoragePersisted, setIsStoragePersisted] = useState<boolean>(true);
+  const [isSavingVault, setIsSavingVault] = useState<boolean>(false);
+  const [vaultSaveSuccess, setVaultSaveSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    appPersistenceService.isStoragePersisted().then((val) => {
+      setIsStoragePersisted(val);
+    });
+  }, []);
 
   // WhatsApp Settings & Contacts State
   const [waSettings, setWaSettings] = useState<WhatsAppGlobalSettings>(() => whatsappService.getSettings());
@@ -1087,58 +1100,99 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         )}
       </div>
 
-      {/* Data Backup & Device Sync (PC & Mobile) */}
-      <div className="lux-card rounded-3xl p-5 sm:p-7 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="icon-squircle-gold w-10 h-10 shrink-0">
-            <UploadCloud className="w-5 h-5" strokeWidth={1.75} />
+      {/* Data Backup & Permanent Storage Protection (PC & Mobile) */}
+      <div className="lux-card rounded-3xl p-5 sm:p-7 space-y-5 border border-emerald-500/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+              <ShieldCheck className="w-6 h-6" strokeWidth={1.85} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-base font-extrabold text-white">
+                  حماية البيانات ضد التحديثات والحفظ الدائم
+                </h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  {isStoragePersisted ? 'محمي ودائم ✓' : 'حفظ مشفر'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                نظام الحماية الثلاثي: حفظ دائم في ذاكرة الجهاز (Persistent Storage) + نسخ احتياطي محلي في ملفات الهاتف (Native Vault) + مزامنة سحابية فورية.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-base font-bold text-white">
-              النسخ الاحتياطي وتصدير البيانات
-            </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
-              تصدير واستيراد نسخة احتياطية كاملة للمهام والمواعيد والإعدادات بملف JSON مشترك.
-            </p>
+
+          <button
+            type="button"
+            disabled={isSavingVault}
+            onClick={async () => {
+              setIsSavingVault(true);
+              setVaultSaveSuccess(false);
+              try {
+                await appPersistenceService.saveMasterVault('manual_settings');
+                setVaultSaveSuccess(true);
+                setTimeout(() => setVaultSaveSuccess(false), 3000);
+              } catch (err: any) {
+                alert('حدث خطأ أثناء حفظ النسخة: ' + err.message);
+              } finally {
+                setIsSavingVault(false);
+              }
+            }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shrink-0 ${
+              vaultSaveSuccess
+                ? 'bg-emerald-500 text-slate-950 font-bold'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+            }`}
+          >
+            {vaultSaveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            <span>{vaultSaveSuccess ? 'تم الحفظ والتثبيت بنجاح ✓' : isSavingVault ? 'جاري الحفظ...' : 'حفظ نسخة آمنة بالجهاز الآن'}</span>
+          </button>
+        </div>
+
+        {/* Feature Highlights Pills */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
+            <div>
+              <span className="font-bold text-white block">حفظ دائم في الذاكرة</span>
+              <span className="text-[10px] text-slate-400">محمي ضد مسح الكاش والترقيات</span>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0" />
+            <div>
+              <span className="font-bold text-white block">خزينة ملفات الهاتف (Vault)</span>
+              <span className="text-[10px] text-slate-400">ملف دائم في مستندات الجهاز</span>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold text-white block">مزامنة سحابية فورية</span>
+              <span className="text-[10px] text-slate-400">نقل وتحديث تلقائي بين الأجهزة</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-2">
-          {/* Export Backup */}
+        {/* Manual Export & Import Actions */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/80">
+          {/* Export Full Master Backup */}
           <button
-            onClick={() => {
+            type="button"
+            onClick={async () => {
               try {
-                const tasks = localStorage.getItem('smart_reminder_tasks_v2') || '[]';
-                const scheduledMedia = localStorage.getItem('smart_reminder_scheduled_media_v2') || '[]';
-                const prayer = localStorage.getItem('smart_reminder_prayer_settings_v1') || '{}';
-                const audio = localStorage.getItem('smart_reminder_audio_settings_v1') || '{}';
-
-                const backupData = {
-                  version: '2.0',
-                  doctor: 'د. عبد العزيز',
-                  exportDate: new Date().toISOString(),
-                  tasks: JSON.parse(tasks),
-                  scheduledMedia: JSON.parse(scheduledMedia),
-                  prayerSettings: JSON.parse(prayer),
-                  audioSettings: JSON.parse(audio),
-                };
-
-                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute('href', dataStr);
-                downloadAnchor.setAttribute('download', `dr-abdelaziz-backup-${new Date().toISOString().split('T')[0]}.json`);
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
-                alert('✓ تم تصدير النسخة الاحتياطية بنجاح! يمكنك الآن إرسال هذا الملف لهاتفك واستيراده هناك.');
+                await appPersistenceService.exportBackupFile();
+                alert('✓ تم تصدير النسخة الاحتياطية الشاملة بنجاح! تشمل المهام، السجلات اليومية، الموظفين، الأذكار، وكافة الإعدادات.');
               } catch (err: any) {
                 alert('فشل تصدير النسخة الاحتياطية: ' + err.message);
               }
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 hover:border-emerald-500/40 transition-all cursor-pointer shadow-md"
           >
-            <Download className="w-4 h-4" />
-            <span>تصدير نسخة احتياطية من الكمبيوتر</span>
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>تصدير نسخة احتياطية كاملة (JSON)</span>
           </button>
 
           {/* Import Backup */}
@@ -1152,27 +1206,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 if (!file) return;
 
                 const reader = new FileReader();
-                reader.onload = (event) => {
+                reader.onload = async (event) => {
                   try {
                     const content = event.target?.result as string;
-                    const data = JSON.parse(content);
-
-                    if (data.tasks) {
-                      localStorage.setItem('smart_reminder_tasks_v2', JSON.stringify(data.tasks));
-                    }
-                    if (data.scheduledMedia) {
-                      localStorage.setItem('smart_reminder_scheduled_media_v2', JSON.stringify(data.scheduledMedia));
-                    }
-                    if (data.prayerSettings) {
-                      localStorage.setItem('smart_reminder_prayer_settings_v1', JSON.stringify(data.prayerSettings));
-                      setPrayerSettings(data.prayerSettings);
-                    }
-                    if (data.audioSettings) {
-                      localStorage.setItem('smart_reminder_audio_settings_v1', JSON.stringify(data.audioSettings));
-                      setAudioSettings(data.audioSettings);
-                    }
-
-                    alert('✓ تم استيراد وتحديث كافة البيانات والمهام بنجاح! سيتم تحديث الصفحة الآن.');
+                    await appPersistenceService.importBackupFile(content);
+                    alert('✓ تم استيراد وتثبيت كافة بياناتك وسجلاتك بنجاح! سيتم تحديث الصفحة الآن.');
                     window.location.reload();
                   } catch (err: any) {
                     alert('الملف غير صالح أو تالف: ' + err.message);
@@ -1185,10 +1223,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             />
             <label
               htmlFor="import-backup-input"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 hover:border-emerald-500/40 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 hover:border-emerald-500/40 transition-all cursor-pointer shadow-md"
             >
               <Upload className="w-4 h-4 text-emerald-400" />
-              <span>استيراد نسخة احتياطية على الموبايل</span>
+              <span>استيراد واسترجاع نسخة احتياطية</span>
             </label>
           </div>
         </div>

@@ -202,7 +202,86 @@ class AthkarStorageService {
     try {
       localStorage.setItem(this.FLOATING_SETTINGS_KEY, JSON.stringify(updated));
     } catch {}
+    this.triggerCloudSync();
     return updated;
+  }
+
+  private syncTimer: any = null;
+  public triggerCloudSync(): void {
+    if (typeof window === 'undefined') return;
+    clearTimeout(this.syncTimer);
+    this.syncTimer = setTimeout(async () => {
+      try {
+        const { vercelCloudSync } = await import('./vercelCloudSync');
+        vercelCloudSync.pushCurrentState({ athkar: this.exportState() }).catch(console.warn);
+        const { appPersistenceService } = await import('./appPersistenceService');
+        appPersistenceService.triggerSave('athkar_change');
+      } catch (err) {
+        console.warn('Athkar sync error:', err);
+      }
+    }, 1000);
+  }
+
+  public exportState(): {
+    customAthkar: AthkarItem[];
+    favorites: string[];
+    totalTasbeeh: number;
+    dailyTasbeeh: { count: number; date: string };
+    customPresets: string[];
+    progress: Record<string, number>;
+    floatingSettings: FloatingDhikrSettings;
+  } {
+    return {
+      customAthkar: this.getCustomAthkar(),
+      favorites: this.getFavorites(),
+      totalTasbeeh: this.getTotalTasbeeh(),
+      dailyTasbeeh: this.getDailyTasbeeh(),
+      customPresets: this.getCustomTasbeehPresets(),
+      progress: this.getProgress(),
+      floatingSettings: this.getFloatingSettings(),
+    };
+  }
+
+  public importState(data: any): void {
+    if (!data) return;
+    try {
+      if (Array.isArray(data.customAthkar)) {
+        const existing = this.getCustomAthkar();
+        const map = new Map<string, AthkarItem>();
+        existing.forEach((item) => map.set(item.id, item));
+        data.customAthkar.forEach((item: AthkarItem) => {
+          if (item && item.id) map.set(item.id, item);
+        });
+        localStorage.setItem(this.CUSTOM_ATHKAR_KEY, JSON.stringify(Array.from(map.values())));
+      }
+      if (Array.isArray(data.favorites)) {
+        const mergedFavs = Array.from(new Set([...this.getFavorites(), ...data.favorites]));
+        localStorage.setItem(this.FAVORITES_KEY, JSON.stringify(mergedFavs));
+      }
+      if (typeof data.totalTasbeeh === 'number' && data.totalTasbeeh > this.getTotalTasbeeh()) {
+        localStorage.setItem(this.TOTAL_TASBEEH_KEY, data.totalTasbeeh.toString());
+      }
+      if (data.dailyTasbeeh && typeof data.dailyTasbeeh.count === 'number') {
+        const currentDaily = this.getDailyTasbeeh();
+        if (data.dailyTasbeeh.date === currentDaily.date && data.dailyTasbeeh.count > currentDaily.count) {
+          localStorage.setItem(this.DAILY_TASBEEH_KEY, JSON.stringify(data.dailyTasbeeh));
+        }
+      }
+      if (Array.isArray(data.customPresets)) {
+        const mergedPresets = Array.from(new Set([...this.getCustomTasbeehPresets(), ...data.customPresets]));
+        localStorage.setItem(this.CUSTOM_PRESETS_KEY, JSON.stringify(mergedPresets));
+      }
+      if (data.progress && typeof data.progress === 'object') {
+        const currentProgress = this.getProgress();
+        const mergedProgress = { ...currentProgress, ...data.progress };
+        this.saveProgress(mergedProgress);
+      }
+      if (data.floatingSettings) {
+        this.saveFloatingSettings(data.floatingSettings);
+      }
+    } catch (e) {
+      console.warn('Failed importing athkar state:', e);
+    }
   }
 }
 

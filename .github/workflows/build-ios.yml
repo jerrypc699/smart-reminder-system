@@ -48,28 +48,28 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.31.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.31.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.32.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.32.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.31.ipa
-          path: DrAbdelaziz-Reminder-v1.0.31.ipa
+          name: DrAbdelaziz-Reminder-v1.0.32.ipa
+          path: DrAbdelaziz-Reminder-v1.0.32.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.31
+      - name: Attach IPA to GitHub Release v1.0.32
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.31
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.31"
+          tag_name: v1.0.32
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.32"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.31
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.32
             - متاح بصيغة Android APK لأجهزة الأندرويد.
             - متاح بصيغة iOS IPA لأجهزة الآيفون والآيباد (تثبيت عبر Sideloadly أو AltStore أو Scarlet).
           files: |
-            DrAbdelaziz-Reminder-v1.0.31.ipa
+            DrAbdelaziz-Reminder-v1.0.32.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,7 +81,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.31.ipa
+            DrAbdelaziz-Reminder-v1.0.32.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

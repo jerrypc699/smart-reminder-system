@@ -270,6 +270,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           mediaLibrary: [],
           whatsappSettings: {},
           dailySystem: null,
+          athkar: null,
           updatedAt: new Date().toISOString(),
           seeded: true,
         };
@@ -466,6 +467,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         scheduledMedia: mergedScheduledMedia,
         mediaLibrary: mergedMediaLibrary,
         dailySystem: mergedDailySystem,
+        athkar: body.athkar ? { ...(existingData.athkar || {}), ...body.athkar } : (existingData.athkar ?? null),
         whatsappSettings: body.whatsappSettings ?? existingData.whatsappSettings ?? null,
         prayerSettings: body.prayerSettings ?? existingData.prayerSettings ?? null,
         audioSettings: body.audioSettings ?? existingData.audioSettings ?? null,

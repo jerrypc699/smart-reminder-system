@@ -1929,7 +1929,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:49:55.351Z",
+  "updatedAt": "2026-11-21T10:49:56.403Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1942,9 +1942,7 @@
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
     "azanReciter": "mishary",
-    "enableDuaaAfterAzan": true,
-    "qiyamTimeMode": "custom",
-    "qiyamCustomTime": "04:00"
+    "enableDuaaAfterAzan": true
   },
   "audioSettings": {
     "masterVolume": 0.85,

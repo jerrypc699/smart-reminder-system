@@ -204,7 +204,7 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1794478443115-vghdc",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-12T10:14:03.115Z",
       "attachments": [
         {
@@ -215,7 +215,10 @@
           "createdAt": "2026-11-12T11:16:59.313Z",
           "cloudUrl": "https://qv1kbb4vykxcxp9h.public.blob.vercel-storage.com/dr-abdelaziz/attachments/1794482185049_984b6519dd31171b8a43e49a21a327ca.mp4"
         }
-      ]
+      ],
+      "completedAt": "2026-11-21T10:49:38.899Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:49:38.899Z"
     },
     {
       "title": "م / أحمدالجيار",
@@ -1806,12 +1809,6 @@
             "sourceTaskId": "task-1794483515605-7t2dt"
           },
           {
-            "id": "imp_task-1794478443115-vghdc_2026-11-21",
-            "t": "ملف التامينات",
-            "d": false,
-            "sourceTaskId": "task-1794478443115-vghdc"
-          },
-          {
             "id": "imp_task-1794431372819-0t1ik_2026-11-21",
             "t": "البنك",
             "d": false,
@@ -1935,7 +1932,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:49:39.607Z",
+  "updatedAt": "2026-11-21T10:49:40.307Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -881,6 +881,27 @@
       "id": "task-1795198567339-oanxf",
       "status": "pending",
       "createdAt": "2026-11-20T18:16:07.339Z"
+    },
+    {
+      "title": "الدكترة",
+      "dueDate": "2026-11-21",
+      "dueTime": "11:10",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 0,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: الدكترة.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201060957780",
+        "recipientName": "Alwala Transport",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795251916452-xx79w",
+      "status": "pending",
+      "createdAt": "2026-11-21T09:05:16.452Z"
     }
   ],
   "employees": [
@@ -1868,6 +1889,12 @@
             "t": "بخصوص الامن",
             "d": false,
             "sourceTaskId": "task-1795198567339-oanxf"
+          },
+          {
+            "id": "imp_task-1795251916452-xx79w_2026-11-21",
+            "t": "الدكترة",
+            "d": false,
+            "sourceTaskId": "task-1795251916452-xx79w"
           }
         ],
         "dismissedTaskIds": [],
@@ -1897,7 +1924,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T09:05:16.662Z",
+  "updatedAt": "2026-11-21T09:05:17.465Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

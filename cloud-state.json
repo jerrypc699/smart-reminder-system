@@ -911,7 +911,17 @@
       "audioMode": "tts",
       "id": "task-1795198567339-oanxf",
       "status": "pending",
-      "createdAt": "2026-11-20T18:16:07.339Z"
+      "createdAt": "2026-11-20T18:16:07.339Z",
+      "attachments": [
+        {
+          "id": "att_1795258274126_sevy4",
+          "name": "90e62009cd3c936e1d816e1fddf3f6cc.mp4",
+          "size": 7694255,
+          "type": "video/mp4",
+          "createdAt": "2026-11-21T10:51:27.925Z"
+        }
+      ],
+      "customMediaType": "video"
     },
     {
       "title": "اجتماع الضبعه",
@@ -1926,7 +1936,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:51:28.685Z",
+  "updatedAt": "2026-11-21T10:51:29.398Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

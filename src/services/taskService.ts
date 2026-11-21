@@ -207,6 +207,12 @@ export class TaskService {
         if (supabaseService.isConfigured()) {
           supabaseService.syncAllLocalToSupabase().catch(console.warn);
         }
+
+        const { cloudSyncService } = await import('./cloudSyncService');
+        if (cloudSyncService.isAvailable()) {
+          const currentTasks = this.getTasks();
+          currentTasks.forEach((t) => cloudSyncService.syncTask(t).catch(() => {}));
+        }
       } catch (e) {
         console.warn('Auto cloud sync failed:', e);
       }
@@ -290,7 +296,8 @@ export class TaskService {
   }
 
   /**
-   * Load tasks from LocalStorage, always filtering out tombstoned deletions
+   * Load tasks from LocalStorage, always filtering out tombstoned deletions.
+   * Includes automatic recovery fallback from Master Vault to guarantee zero data loss.
    */
   public getTasks(): Task[] {
     if (typeof window === 'undefined') return INITIAL_TASKS;
@@ -298,9 +305,39 @@ export class TaskService {
       const deletedIds = new Set(this.getDeletedTaskIds());
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
+        // Fallback: check master vault in localStorage before falling back to INITIAL_TASKS
+        const vaultRaw = localStorage.getItem('dr_abdelaziz_master_vault_v1');
+        if (vaultRaw) {
+          try {
+            const vault = JSON.parse(vaultRaw);
+            if (Array.isArray(vault.tasks) && vault.tasks.length > 0) {
+              const fromVault = vault.tasks.filter((t: any) => t && t.id && !deletedIds.has(t.id));
+              if (fromVault.length > 0) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(fromVault));
+                return fromVault;
+              }
+            }
+          } catch {}
+        }
         return INITIAL_TASKS.filter((t) => !deletedIds.has(t.id));
       }
       const parsed: Task[] = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length === 0) {
+        // Safety recovery: If storage array was unexpectedly zeroed, check master vault
+        const vaultRaw = localStorage.getItem('dr_abdelaziz_master_vault_v1');
+        if (vaultRaw) {
+          try {
+            const vault = JSON.parse(vaultRaw);
+            if (Array.isArray(vault.tasks) && vault.tasks.length > 0) {
+              const fromVault = vault.tasks.filter((t: any) => t && t.id && !deletedIds.has(t.id));
+              if (fromVault.length > 0) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(fromVault));
+                return fromVault;
+              }
+            }
+          } catch {}
+        }
+      }
       return Array.isArray(parsed) ? parsed.filter((t) => t && t.id && !deletedIds.has(t.id)) : [];
     } catch {
       return INITIAL_TASKS;
@@ -308,13 +345,26 @@ export class TaskService {
   }
 
   /**
-   * Save tasks to LocalStorage and optionally push to central cloud
+   * Save tasks to LocalStorage and optionally push to central cloud.
+   * Includes Anti-Data-Loss Shield to prevent empty array wipes.
    */
-  public saveTasks(tasks: Task[], skipCloudSync = false): void {
+  public saveTasks(tasks: Task[], skipCloudSync = false, allowEmpty = false): void {
     if (typeof window === 'undefined') return;
     try {
       const deletedIds = new Set(this.getDeletedTaskIds());
       const filtered = Array.isArray(tasks) ? tasks.filter((t) => t && t.id && !deletedIds.has(t.id)) : [];
+
+      // CRITICAL ANTI-DATA-LOSS SHIELD:
+      // Never allow an empty array from network/background glitches to wipe out existing tasks
+      // unless allowEmpty is explicitly set to true.
+      if (filtered.length === 0 && !allowEmpty) {
+        const existing = this.getTasks();
+        if (existing.length > 0) {
+          console.warn('[TaskService Shield] Blocked attempt to wipe all tasks with empty array');
+          return;
+        }
+      }
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
       this.taskListeners.forEach((cb) => {
         try {

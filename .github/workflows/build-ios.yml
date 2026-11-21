@@ -48,30 +48,30 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.41.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.41.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.42.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.42.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.41.ipa
-          path: DrAbdelaziz-Reminder-v1.0.41.ipa
+          name: DrAbdelaziz-Reminder-v1.0.42.ipa
+          path: DrAbdelaziz-Reminder-v1.0.42.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.41
+      - name: Attach IPA to GitHub Release v1.0.42
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.41
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.41"
+          tag_name: v1.0.42
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.42"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.41
-            - فتح محادثة الواتساب المحددة في موعد المهمة مباشرة وبدون إظهار شاشة اختيار الرقم من جديد (Direct JID & WhatsApp Package Intent).
-            - إرسال صور بطاقات المهام والتنبيهات للرقم المحدد في واتساب مباشرة دون فتح نافذة المشاركة العامة.
-            - معالجة تلقائية وتنسيق أرقام الهواتف المصرية والدولية والأرقام بالأرقام العربية لضمان فتح المحادثة للرقم المطلوب مباشرة.
-            - تشغيل مرفقات الفيديو الخاصة بالمهام تلقائياً وفوراً كمنبه هاردوير صريح في موعد المهمة المحدد فوق شاشة القفل وتجاوز الوضع الصامت.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.42
+            - حماية كاملة ومطلقة للبيانات والمهام المسجلة (Anti-Data-Loss Shield) تمنع تصفير المهام أو اختفاءها أثناء استخدام التطبيق.
+            - إيقاف الاستبدال التلقائي الخاطئ من مجموعات السحابة الفارغة واستبداله بنظام دمج ذكي وغير هدام (Non-Destructive Smart Merge).
+            - استعادة تلقائية فورية للمهام من الخزنة المركزية الدائمة (Master Vault) في حال حدوث أي خلل في الذاكرة المؤقتة.
+            - مزامنة خلفية متزامنة بين السحابة وقواعد البيانات وقنوات المزامنة دون أي فقدان لأي مهمة نشطة أو مؤرشفة.
           files: |
-            DrAbdelaziz-Reminder-v1.0.41.ipa
+            DrAbdelaziz-Reminder-v1.0.42.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,7 +83,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.41.ipa
+            DrAbdelaziz-Reminder-v1.0.42.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

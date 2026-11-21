@@ -156,15 +156,15 @@ export function App() {
     if (!isCloudConnected) return;
 
     const unsubTasks = cloudSyncService.subscribeTasks((cloudTasks) => {
-      if (cloudTasks && Array.isArray(cloudTasks)) {
-        const cleanTasks = cloudTasks.filter((t) => !taskService.isTaskDeleted(t.id));
-        setTasks(cleanTasks);
-        taskService.saveTasks(cleanTasks);
+      // ANTI-DATA-LOSS: Only merge when valid tasks are returned, NEVER wipe out with empty arrays
+      if (cloudTasks && Array.isArray(cloudTasks) && cloudTasks.length > 0) {
+        const mergedTasks = taskService.mergeTasksWithCloud(cloudTasks);
+        setTasks(mergedTasks);
       }
     });
 
     const unsubMedia = cloudSyncService.subscribeScheduledMedia((cloudMedia) => {
-      if (cloudMedia && Array.isArray(cloudMedia)) {
+      if (cloudMedia && Array.isArray(cloudMedia) && cloudMedia.length > 0) {
         const merged = audioStorageService.mergeScheduledWithCloud(cloudMedia);
         setScheduledAudios(merged);
       }
@@ -185,7 +185,14 @@ export function App() {
 
     // 1. Subscribe to local task changes to update state
     const unsubTaskService = taskService.subscribeTasks((updatedTasks) => {
-      setTasks(updatedTasks);
+      if (Array.isArray(updatedTasks) && updatedTasks.length > 0) {
+        setTasks(updatedTasks);
+      } else {
+        const fallback = taskService.getTasks();
+        if (fallback.length > 0) {
+          setTasks(fallback);
+        }
+      }
       appPersistenceService.triggerSave('tasks_changed');
     });
 
@@ -215,7 +222,7 @@ export function App() {
         }
       }
 
-      if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
+      if (cloudData.tasks && Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
         const mergedTasks = taskService.mergeTasksWithCloud(cloudData.tasks);
         setTasks(mergedTasks);
         NativeAlarmService.scheduleTasks(mergedTasks).catch(console.warn);

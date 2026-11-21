@@ -47,11 +47,21 @@ class CloudSyncService {
       this.unsubscribeTasks = onSnapshot(
         q,
         (snapshot) => {
+          // ANTI-DATA-LOSS: If remote collection is empty, do NOT dispatch empty array to avoid wiping local tasks!
+          if (snapshot.empty) {
+            console.log('[Firestore] Tasks snapshot is empty, ignoring to protect local device data');
+            return;
+          }
           const tasks: Task[] = [];
           snapshot.forEach((docSnap) => {
-            tasks.push(docSnap.data() as Task);
+            const data = docSnap.data() as Task;
+            if (data && data.id) {
+              tasks.push(data);
+            }
           });
-          onTasksUpdated(tasks);
+          if (tasks.length > 0) {
+            onTasksUpdated(tasks);
+          }
         },
         (error) => {
           console.warn('Firestore tasks subscription error:', error);
@@ -116,11 +126,20 @@ class CloudSyncService {
       this.unsubscribeMedia = onSnapshot(
         q,
         (snapshot) => {
+          if (snapshot.empty) {
+            console.log('[Firestore] Scheduled media snapshot is empty, ignoring to protect local data');
+            return;
+          }
           const items: ScheduledMedia[] = [];
           snapshot.forEach((docSnap) => {
-            items.push(docSnap.data() as ScheduledMedia);
+            const data = docSnap.data() as ScheduledMedia;
+            if (data && data.id) {
+              items.push(data);
+            }
           });
-          onMediaUpdated(items);
+          if (items.length > 0) {
+            onMediaUpdated(items);
+          }
         },
         (error) => {
           console.warn('Firestore media subscription error:', error);

@@ -1014,7 +1014,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": false,
+      "enabled": true,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1951,7 +1951,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T16:09:58.822Z",
+  "updatedAt": "2026-11-21T16:09:59.505Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2017,9 +2017,17 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "PC",
+  "sourceDevice": "Mobile",
   "athkar": {
     "customAthkar": [
+      {
+        "category": "custom",
+        "title": "دخول المسجد",
+        "text": "اللهم تقبل",
+        "count": 1,
+        "id": "custom-dhikr-1795256896347-ial4",
+        "isCustom": true
+      },
       {
         "category": "custom",
         "title": "دخول",
@@ -2043,14 +2051,6 @@
         "count": 3,
         "reward": "عند دخول اجتماع هام",
         "id": "custom-dhikr-1794374575688-bs2r",
-        "isCustom": true
-      },
-      {
-        "category": "custom",
-        "title": "دخول المسجد",
-        "text": "اللهم تقبل",
-        "count": 1,
-        "id": "custom-dhikr-1795256896347-ial4",
         "isCustom": true
       }
     ],

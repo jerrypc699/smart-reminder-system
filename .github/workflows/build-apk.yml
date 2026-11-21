@@ -53,33 +53,30 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.33.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.34.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.33.apk
-          path: DrAbdelaziz-Reminder-v1.0.33.apk
+          name: DrAbdelaziz-Reminder-v1.0.34.apk
+          path: DrAbdelaziz-Reminder-v1.0.34.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.33
+      - name: Create or Update GitHub Release v1.0.34
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.33
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.33"
+          tag_name: v1.0.34
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.34"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.33
-            - إعادة تصميم واجهة مواقيت الصلاة بالكامل بأسلوب إسلامي ملكي فاخر مطابق للصورة:
-              1. ساعة حائط ذهبية واقعية ثلاثية الأبعاد بعقارب متحركة وتاريخ اليوم.
-              2. بطاقة الطقس الأنيقة بالسماء الزرقاء وشمس مشعة ثلاثية الأبعاد وسحب ودرجات الحرارة والرطوبة والرياح وتوقعات 6 أيام.
-              3. بطاقة الصلاة الزمردية مع مسجد مضيء ليلاً وعد تنازلي دقيق وتحديد الصلاة الحالية بشريط ذهبي براق.
-              4. تقويم هجري وميلادي شهري كامل بتنقل سهل وبدء أيام الأسبوع من السبت (RTL) وتحديد اليوم تلقائياً.
-            - الحفاظ التام والمستمر على البيانات وضمان عدم مسحها عند التحديثات.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.34
+            - ضبط وتثبيت ساعة الحائط الملكية الذهبية بدقة فيكتور SVG كاملة مع عقارب فاخرة (ساعات، دقائق، ثواني) مستحيلة التأثر بوضع الدارك مود مع محاذاة دائرية وحساب مثلثي فائق الدقة.
+            - إضافة كبسولة الوقت الرقمي الحي المباشر (ساعة : دقيقة : ثانية مع ص/م) أسفل ساعة الحائط مباشرة لضمان الدقة المطلقة.
+            - إضافة صلاة الضحى (سنة مؤكدة) وقيام الليل (الثلث الأخير) بجدول مواقيت الصلاة بتوقيتها الفلكي الدقيق وتمييزها في العد التنازلي.
           files: |
-            DrAbdelaziz-Reminder-v1.0.33.apk
+            DrAbdelaziz-Reminder-v1.0.34.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -92,7 +89,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.33.apk
+            DrAbdelaziz-Reminder-v1.0.34.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

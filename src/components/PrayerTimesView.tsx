@@ -214,14 +214,21 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
     );
   }, [citySearchQuery]);
 
-  // The 6 main canonical prayer rows
-  const canonicalPrayers: { id: PrayerId; name: string; icon: React.ReactNode }[] = [
+  // The 8 prayers list including canonical + Duha & Qiyam Al-Layl
+  const canonicalPrayers: {
+    id: PrayerId;
+    name: string;
+    sublabel?: string;
+    icon: React.ReactNode;
+  }[] = [
     { id: 'fajr', name: 'الفجر', icon: <Sunrise className="w-4 h-4 text-amber-300" /> },
     { id: 'sunrise', name: 'الشروق', icon: <Sun className="w-4 h-4 text-[#F5D77F]" /> },
+    { id: 'duha', name: 'صلاة الضحى', sublabel: 'سنة مؤكدة', icon: <Sparkles className="w-4 h-4 text-amber-300" /> },
     { id: 'dhuhr', name: 'الظهر', icon: <Sun className="w-4 h-4 text-amber-400" /> },
     { id: 'asr', name: 'العصر', icon: <Sun className="w-4 h-4 text-amber-300" /> },
     { id: 'maghrib', name: 'المغرب', icon: <Sunset className="w-4 h-4 text-rose-300" /> },
     { id: 'isha', name: 'العشاء', icon: <Moon className="w-4 h-4 text-emerald-300" /> },
+    { id: 'qiyam', name: 'قيام الليل', sublabel: 'الثلث الأخير', icon: <Moon className="w-4 h-4 text-indigo-300" /> },
   ];
 
   return (
@@ -242,112 +249,202 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
           </div>
         </div>
 
-        {/* The Golden Clock Dial */}
-        <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full shadow-[0_20px_50px_rgba(180,130,40,0.35)] p-2.5 bg-gradient-to-tr from-[#996515] via-[#E5B25D] via-[#FFEBB2] to-[#B88928] border-2 border-[#FFE8A3]">
-          {/* Inner Inset Bezel */}
-          <div className="w-full h-full rounded-full p-2 bg-gradient-to-br from-[#734A10] via-[#D4AF37] to-[#8C5D14] shadow-inner flex items-center justify-center">
-            {/* Clock Face Dial */}
-            <div className="relative w-full h-full rounded-full bg-[radial-gradient(ellipse_at_center,_#FFFFFF_0%,_#FDF8EE_55%,_#EFE1C3_100%)] shadow-[inset_0_4px_12px_rgba(0,0,0,0.25)] flex items-center justify-center overflow-hidden">
-              {/* Minute & Hour Tick Marks (60 ticks) */}
-              {Array.from({ length: 60 }).map((_, i) => {
-                const isHour = i % 5 === 0;
-                const angle = i * 6;
-                return (
-                  <div
-                    key={i}
-                    className="absolute top-0 left-1/2 -translate-x-1/2 origin-bottom"
-                    style={{
-                      height: '50%',
-                      transform: `rotate(${angle}deg)`,
-                    }}
-                  >
-                    <div
-                      className={`mx-auto ${
-                        isHour
-                          ? 'w-[2.5px] h-[7px] bg-[#3A2A14]'
-                          : 'w-[1px] h-[3.5px] bg-[#8C7654]/60'
-                      }`}
-                    />
-                  </div>
-                );
-              })}
+        {/* Vector Luxury Golden Wall Clock (Impervious to Dark Mode Inversion & Subpixel Glitches) */}
+        <svg
+          viewBox="0 0 200 200"
+          className="w-48 h-48 sm:w-56 sm:h-56 select-none drop-shadow-[0_18px_40px_rgba(180,130,40,0.45)]"
+        >
+          <defs>
+            {/* Outer 3D Gold Rim Gradient */}
+            <linearGradient id="goldRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FFF4C2" />
+              <stop offset="25%" stopColor="#D4AF37" />
+              <stop offset="50%" stopColor="#8C5D14" />
+              <stop offset="75%" stopColor="#E5B25D" />
+              <stop offset="100%" stopColor="#734A10" />
+            </linearGradient>
 
-              {/* 12 Hour Numbers (1 - 12) positioned precisely */}
-              {[
-                { n: 12, top: '6%', left: '50%', x: '-50%', y: '0' },
-                { n: 1, top: '12%', left: '72%', x: '-50%', y: '0' },
-                { n: 2, top: '26%', left: '87%', x: '-50%', y: '0' },
-                { n: 3, top: '50%', left: '92%', x: '-100%', y: '-50%' },
-                { n: 4, top: '71%', left: '87%', x: '-50%', y: '0' },
-                { n: 5, top: '83%', left: '72%', x: '-50%', y: '0' },
-                { n: 6, top: '88%', left: '50%', x: '-50%', y: '0' },
-                { n: 7, top: '83%', left: '28%', x: '-50%', y: '0' },
-                { n: 8, top: '71%', left: '13%', x: '-50%', y: '0' },
-                { n: 9, top: '50%', left: '8%', x: '0', y: '-50%' },
-                { n: 10, top: '26%', left: '13%', x: '-50%', y: '0' },
-                { n: 11, top: '12%', left: '28%', x: '-50%', y: '0' },
-              ].map((item) => (
-                <span
-                  key={item.n}
-                  className="absolute text-slate-900 font-serif font-black text-xs sm:text-sm select-none"
-                  style={{
-                    top: item.top,
-                    left: item.left,
-                    transform: `translate(${item.x}, ${item.y})`,
-                  }}
-                >
-                  {item.n}
-                </span>
-              ))}
+            {/* Inner Bezel Groove */}
+            <linearGradient id="bezelGroove" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#5A3A0A" />
+              <stop offset="50%" stopColor="#D4AF37" />
+              <stop offset="100%" stopColor="#3D2605" />
+            </linearGradient>
 
-              {/* Hour Hand */}
-              <div
-                className="absolute w-1.5 h-12 sm:h-14 bg-gradient-to-t from-slate-950 via-slate-900 to-slate-800 rounded-full origin-bottom shadow-md z-10"
-                style={{
-                  top: 'calc(50% - 48px)',
-                  left: 'calc(50% - 3px)',
-                  transformOrigin: '50% 100%',
-                  transform: `rotate(${hourAngle}deg)`,
-                }}
+            {/* Cream / Ivory Dial Face Radial Gradient */}
+            <radialGradient id="clockDialFace" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="65%" stopColor="#FCF8F0" />
+              <stop offset="90%" stopColor="#EFE1C3" />
+              <stop offset="100%" stopColor="#D8C49B" />
+            </radialGradient>
+
+            {/* Sword Hand Obsidian Body */}
+            <linearGradient id="handObsidian" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#2A2A2E" />
+              <stop offset="50%" stopColor="#0B0C0E" />
+              <stop offset="100%" stopColor="#1E2024" />
+            </linearGradient>
+
+            {/* Hand Gold Border & Spine */}
+            <linearGradient id="handGoldTrim" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FFF4C2" />
+              <stop offset="50%" stopColor="#D4AF37" />
+              <stop offset="100%" stopColor="#8C5D14" />
+            </linearGradient>
+
+            {/* Center Cap Gold Rosette */}
+            <radialGradient id="centerPinionGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#FFF4C2" />
+              <stop offset="45%" stopColor="#D4AF37" />
+              <stop offset="85%" stopColor="#734A10" />
+              <stop offset="100%" stopColor="#3D2605" />
+            </radialGradient>
+
+            {/* Center Ruby Jewel */}
+            <radialGradient id="rubyJewelGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#FF7A7A" />
+              <stop offset="60%" stopColor="#DC2626" />
+              <stop offset="100%" stopColor="#7F1D1D" />
+            </radialGradient>
+          </defs>
+
+          {/* Outer Multi-Layered Gold Bezel */}
+          <circle cx="100" cy="100" r="98" fill="url(#goldRimGrad)" stroke="#FFE8A3" strokeWidth="1.5" />
+          <circle cx="100" cy="100" r="91" fill="url(#bezelGroove)" stroke="#A67C1E" strokeWidth="1" />
+
+          {/* Ivory Porcelain Dial Face */}
+          <circle cx="100" cy="100" r="85" fill="url(#clockDialFace)" stroke="#734A10" strokeWidth="0.8" />
+
+          {/* Concentric Decorative Rings */}
+          <circle cx="100" cy="100" r="81" fill="none" stroke="#D4AF37" strokeWidth="0.6" opacity="0.6" />
+          <circle cx="100" cy="100" r="54" fill="none" stroke="#D4AF37" strokeWidth="0.5" opacity="0.3" strokeDasharray="1,2" />
+
+          {/* 60 Minute / Second Ticks */}
+          {Array.from({ length: 60 }).map((_, i) => {
+            const isHour = i % 5 === 0;
+            const angle = i * 6;
+            const rad = (angle - 90) * (Math.PI / 180);
+            const rOuter = 81;
+            const rInner = isHour ? 74 : 78;
+            const x1 = 100 + rOuter * Math.cos(rad);
+            const y1 = 100 + rOuter * Math.sin(rad);
+            const x2 = 100 + rInner * Math.cos(rad);
+            const y2 = 100 + rInner * Math.sin(rad);
+            return (
+              <line
+                key={i}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={isHour ? '#2A1C08' : '#8C7654'}
+                strokeWidth={isHour ? 1.8 : 0.8}
+                strokeLinecap="round"
               />
+            );
+          })}
 
-              {/* Minute Hand */}
-              <div
-                className="absolute w-1 h-16 sm:h-20 bg-gradient-to-t from-slate-950 via-slate-800 to-slate-700 rounded-full origin-bottom shadow-md z-10"
-                style={{
-                  top: 'calc(50% - 64px)',
-                  left: 'calc(50% - 2px)',
-                  transformOrigin: '50% 100%',
-                  transform: `rotate(${minuteAngle}deg)`,
-                }}
-              />
-
-              {/* Second Hand (Vibrant Red Needle with Tail) */}
-              <div
-                className="absolute w-[1.5px] h-20 sm:h-24 bg-rose-600 rounded-full origin-bottom z-20 shadow-sm"
-                style={{
-                  top: 'calc(50% - 76px)',
-                  left: 'calc(50% - 0.75px)',
-                  transformOrigin: '50% 100%',
-                  transform: `rotate(${secondAngle}deg)`,
-                }}
+          {/* 12 Hour Numerals (Trigonometrically Placed) */}
+          {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num) => {
+            const angle = (num * 30 - 90) * (Math.PI / 180);
+            const r = 66;
+            const x = 100 + r * Math.cos(angle);
+            const y = 100 + r * Math.sin(angle);
+            return (
+              <text
+                key={num}
+                x={x}
+                y={y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#111827"
+                fontSize={num === 12 || num === 3 || num === 6 || num === 9 ? '13' : '11.5'}
+                fontWeight="900"
+                fontFamily="Georgia, Times New Roman, serif"
+                style={{ userSelect: 'none' }}
               >
-                {/* Counterweight circle */}
-                <div className="w-2.5 h-2.5 -bottom-2 -left-[3.5px] absolute rounded-full bg-rose-600 border border-amber-300" />
-              </div>
+                {num}
+              </text>
+            );
+          })}
 
-              {/* Center Jewel / Cap */}
-              <div className="relative w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-600 via-amber-300 to-amber-700 shadow-md border border-amber-200 z-30 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-              </div>
-            </div>
+          {/* Hour Hand (Bold, Distinct, Tapered Sword with Gold Trim) */}
+          <g transform={`rotate(${hourAngle} 100 100)`}>
+            {/* Shadow */}
+            <polygon
+              points="96.5,107 103.5,107 102.5,56 100,49 97.5,56"
+              fill="rgba(0,0,0,0.28)"
+              transform="translate(1, 2)"
+            />
+            {/* Hand Body */}
+            <polygon
+              points="96.5,107 103.5,107 102.5,56 100,49 97.5,56"
+              fill="url(#handObsidian)"
+              stroke="url(#handGoldTrim)"
+              strokeWidth="0.9"
+              strokeLinejoin="round"
+            />
+            {/* Center Spine Ridge */}
+            <line x1="100" y1="104" x2="100" y2="52" stroke="#FFF4C2" strokeWidth="0.7" opacity="0.9" />
+          </g>
+
+          {/* Minute Hand (Long, Sleek Tapered Sword with Gold Trim) */}
+          <g transform={`rotate(${minuteAngle} 100 100)`}>
+            {/* Shadow */}
+            <polygon
+              points="97.5,110 102.5,110 101.8,33 100,25 98.2,33"
+              fill="rgba(0,0,0,0.22)"
+              transform="translate(1.5, 2.5)"
+            />
+            {/* Hand Body */}
+            <polygon
+              points="97.5,110 102.5,110 101.8,33 100,25 98.2,33"
+              fill="url(#handObsidian)"
+              stroke="url(#handGoldTrim)"
+              strokeWidth="0.8"
+              strokeLinejoin="round"
+            />
+            {/* Center Spine Ridge */}
+            <line x1="100" y1="107" x2="100" y2="28" stroke="#FFF4C2" strokeWidth="0.5" opacity="0.9" />
+          </g>
+
+          {/* Second Hand (Vibrant Crimson Red Needle with Counterbalance) */}
+          <g transform={`rotate(${secondAngle} 100 100)`}>
+            {/* Shadow */}
+            <line x1="101" y1="121" x2="101" y2="18" stroke="rgba(0,0,0,0.25)" strokeWidth="1" />
+            {/* Tail Counterbalance Ring */}
+            <circle cx="100" cy="116" r="3.5" fill="none" stroke="#DC2626" strokeWidth="1.2" />
+            {/* Needle Hand */}
+            <line x1="100" y1="122" x2="100" y2="17" stroke="#DC2626" strokeWidth="1.4" strokeLinecap="round" />
+            <polygon points="98.5,21 100,15 101.5,21" fill="#DC2626" />
+          </g>
+
+          {/* Center Cap Pinion (Gold Rosette with Ruby Core) */}
+          <circle cx="100" cy="100" r="5.2" fill="url(#centerPinionGrad)" stroke="#FFE8A3" strokeWidth="0.8" />
+          <circle cx="100" cy="100" r="2.4" fill="url(#rubyJewelGrad)" />
+        </svg>
+
+        {/* Digital Time & Date Badges (Crystal Clear Live Synchronization) */}
+        <div className="mt-3 flex flex-col items-center gap-1.5">
+          {/* Live Digital Clock Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/40 text-amber-300 font-mono text-sm sm:text-base font-bold shadow-lg shadow-black/20">
+            <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span dir="ltr">
+              {now.toLocaleTimeString('ar-EG', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+              })}
+            </span>
           </div>
-        </div>
 
-        {/* Date Pill Badge (e.g. 📅 الثلاثاء، 17 نوفمبر) */}
-        <div className="mt-3.5 inline-flex items-center gap-2 px-5 py-2 rounded-2xl bg-gradient-to-r from-[#0d4a41] via-[#09352e] to-[#0d4a41] border border-[#d4af37]/60 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-950/30">
-          <CalendarIcon className="w-4 h-4 text-[#F5D77F]" />
-          <span>{formattedDayAndMonth}</span>
+          {/* Date Pill Badge (e.g. 📅 السبت، 21 نوفمبر) */}
+          <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-2xl bg-gradient-to-r from-[#0d4a41] via-[#09352e] to-[#0d4a41] border border-[#d4af37]/60 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-950/30">
+            <CalendarIcon className="w-4 h-4 text-[#F5D77F]" />
+            <span>{formattedDayAndMonth}</span>
+          </div>
         </div>
       </div>
 
@@ -599,11 +696,22 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
                       {info?.formatted12h || '--:--'}
                     </div>
 
-                    {/* Prayer Name & Icon Right aligned */}
+                    {/* Prayer Name & Sublabel & Icon Right aligned */}
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs sm:text-sm ${isCurrent ? 'font-black' : 'font-bold'}`}>
-                        {cp.name}
-                      </span>
+                      <div className="flex flex-col text-right">
+                        <span className={`text-xs sm:text-sm leading-tight ${isCurrent ? 'font-black' : 'font-bold'}`}>
+                          {cp.name}
+                        </span>
+                        {cp.sublabel && (
+                          <span
+                            className={`text-[9px] sm:text-[10px] leading-tight ${
+                              isCurrent ? 'text-amber-950/90 font-bold' : 'text-emerald-300/80 font-medium'
+                            }`}
+                          >
+                            {cp.sublabel}
+                          </span>
+                        )}
+                      </div>
                       <div className="w-5 h-5 flex items-center justify-center">
                         {cp.icon}
                       </div>

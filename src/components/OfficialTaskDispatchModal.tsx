@@ -197,7 +197,24 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
       const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
       const fileName = `تكليف_رسمي_${safeTitle}_${Date.now()}.png`;
 
-      // Branch A: Native Android or iOS Capacitor App
+      const targetPhone = task.whatsapp?.phoneNumber || '';
+
+      // 1. Direct WhatsApp Dispatch to the specific contact (bypasses app chooser & contact picker)
+      if (targetPhone) {
+        const directRes = await whatsappService.shareImageToWhatsAppDirect({
+          base64: img.base64,
+          fileName,
+          phone: targetPhone,
+          caption: '',
+        });
+        if (directRes.success && directRes.method === 'native_direct') {
+          displayToast('✅ تم فتح محادثة الرقم مباشرة في واتساب مع إرفاق بطاقة التكليف!');
+          setIsSharingImage(false);
+          return;
+        }
+      }
+
+      // Branch A: Native Android or iOS Capacitor App Fallback
       if (Capacitor.isNativePlatform()) {
         try {
           const writeRes = await Filesystem.writeFile({

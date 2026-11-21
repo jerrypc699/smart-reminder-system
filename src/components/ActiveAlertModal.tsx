@@ -78,7 +78,24 @@ export const ActiveAlertModal: React.FC<ActiveAlertModalProps> = ({
       const fileName = `تنبيه_${Date.now()}.png`;
       const file = new File([blob], fileName, { type: 'image/png' });
 
-      // Native Capacitor
+      const targetPhone = alert.whatsappPhone || '';
+
+      // 1. Direct WhatsApp Dispatch to the specific contact (bypasses app chooser & contact picker)
+      if (targetPhone) {
+        const directRes = await whatsappService.shareImageToWhatsAppDirect({
+          base64,
+          fileName,
+          phone: targetPhone,
+          caption: '',
+        });
+        if (directRes.success && directRes.method === 'native_direct') {
+          displayAlertToast('✅ تم فتح محادثة الرقم مباشرة في واتساب مع إرفاق الصورة!');
+          setIsSharingAlertImage(false);
+          return;
+        }
+      }
+
+      // 2. Native Capacitor Fallback (if no specific phone was found)
       if (Capacitor.isNativePlatform()) {
         try {
           const writeRes = await Filesystem.writeFile({

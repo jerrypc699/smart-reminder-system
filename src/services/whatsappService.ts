@@ -36,8 +36,13 @@ export function normalizeWhatsAppPhone(raw: string, defaultCountryCode?: string)
   if (digits.startsWith('00')) {
     digits = digits.slice(2);
   }
-  if (cc === '20' && digits.startsWith('01') && digits.length === 11) {
+  // Egyptian mobile numbers with leading 0 (010, 011, 012, 015) - 11 digits
+  if (digits.startsWith('01') && digits.length === 11) {
     return `20${digits.slice(1)}`;
+  }
+  // Egyptian mobile numbers without leading 0 (10, 11, 12, 15) - 10 digits
+  if (cc === '20' && digits.length === 10 && /^(10|11|12|15)/.test(digits)) {
+    return `20${digits}`;
   }
   if (digits.startsWith('0') && digits.length >= 9 && digits.length <= 12) {
     return `${cc}${digits.slice(1)}`;
@@ -427,6 +432,41 @@ class WhatsAppService {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Share an image directly to a specific WhatsApp contact chat WITHOUT opening the contact picker!
+   * On Native Android: uses explicit intent with target jid (<phone>@s.whatsapp.net) and package com.whatsapp.
+   * On Web/Desktop: opens WhatsApp Web chat directly with recipient and copies image to clipboard.
+   */
+  public async shareImageToWhatsAppDirect(params: {
+    base64: string;
+    fileName?: string;
+    phone: string;
+    caption?: string;
+  }): Promise<{ success: boolean; method: 'native_direct' | 'chat_url' | 'fallback' }> {
+    const phone = normalizeWhatsAppPhone(params.phone);
+    if (!phone) return { success: false, method: 'fallback' };
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const res = await VideoAlarm.shareImageToWhatsApp({
+          base64: params.base64,
+          fileName: params.fileName || `alert_${Date.now()}.png`,
+          phone,
+          caption: params.caption || '',
+        });
+        if (res && res.success) {
+          return { success: true, method: 'native_direct' };
+        }
+      } catch (err) {
+        console.warn('[WhatsAppService] shareImageToWhatsApp error, falling back to chat URL:', err);
+      }
+    }
+
+    // Web / iOS / Fallback: open WhatsApp chat with recipient directly
+    await this.openWhatsAppChat(phone, params.caption || '');
+    return { success: true, method: 'chat_url' };
   }
 
   public async sendViaApiGateway(params: {

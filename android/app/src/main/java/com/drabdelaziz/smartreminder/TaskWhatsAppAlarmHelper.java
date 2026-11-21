@@ -9,6 +9,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
@@ -55,18 +56,60 @@ public class TaskWhatsAppAlarmHelper {
         }
     }
 
-    public static Intent buildWhatsAppIntent(String phone, String text) {
-        String cleanPhone = phone != null ? phone.replaceAll("[^0-9]", "") : "";
-        if (cleanPhone.startsWith("00")) {
-            cleanPhone = cleanPhone.substring(2);
-        } else if (cleanPhone.startsWith("01") && cleanPhone.length() == 11) {
-            cleanPhone = "20" + cleanPhone.substring(1);
+    public static String cleanWhatsAppPhone(String rawPhone) {
+        if (rawPhone == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (char c : rawPhone.toCharArray()) {
+            if (c >= '0' && c <= '9') {
+                sb.append(c);
+            } else if (c >= '\u0660' && c <= '\u0669') {
+                sb.append((char) ('0' + (c - '\u0660')));
+            } else if (c >= '\u06F0' && c <= '\u06F9') {
+                sb.append((char) ('0' + (c - '\u06F0')));
+            }
         }
+        String digits = sb.toString();
+        if (digits.startsWith("00")) {
+            digits = digits.substring(2);
+        }
+        if (digits.startsWith("01") && digits.length() == 11) {
+            digits = "20" + digits.substring(1);
+        } else if (digits.startsWith("0") && digits.length() == 10) {
+            digits = "966" + digits.substring(1);
+        }
+        return digits;
+    }
+
+    public static boolean isPackageInstalled(PackageManager pm, String packageName) {
+        if (pm == null || packageName == null) return false;
+        try {
+            pm.getPackageInfo(packageName, 0);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static Intent buildWhatsAppIntent(Context context, String phone, String text) {
+        String cleanPhone = cleanWhatsAppPhone(phone);
         String encodedText = Uri.encode(text != null ? text : "");
-        String nativeUri = "whatsapp://send?phone=" + cleanPhone + "&text=" + encodedText;
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(nativeUri));
+        String url = "https://api.whatsapp.com/send?phone=" + cleanPhone + (encodedText.isEmpty() ? "" : ("&text=" + encodedText));
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        if (context != null) {
+            PackageManager pm = context.getPackageManager();
+            if (isPackageInstalled(pm, "com.whatsapp")) {
+                intent.setPackage("com.whatsapp");
+            } else if (isPackageInstalled(pm, "com.whatsapp.w4b")) {
+                intent.setPackage("com.whatsapp.w4b");
+            }
+        }
         return intent;
+    }
+
+    public static Intent buildWhatsAppIntent(String phone, String text) {
+        return buildWhatsAppIntent(null, phone, text);
     }
 
     public static String getStoredGatewayJson(Context context) {

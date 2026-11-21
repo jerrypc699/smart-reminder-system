@@ -168,7 +168,7 @@ public class TaskWhatsAppAlarmReceiver extends BroadcastReceiver {
             String notifBody
     ) {
         try {
-            Intent waIntent = TaskWhatsAppAlarmHelper.buildWhatsAppIntent(phone, message);
+            Intent waIntent = TaskWhatsAppAlarmHelper.buildWhatsAppIntent(context, phone, message);
             int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
             PendingIntent waPI = PendingIntent.getActivity(context, alarmId + 5000, waIntent, flags);
 
@@ -202,7 +202,7 @@ public class TaskWhatsAppAlarmReceiver extends BroadcastReceiver {
             boolean isInteractive = pm != null && pm.isInteractive();
 
             if (!isLocked && isInteractive && (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || canOverlay)) {
-                context.startActivity(TaskWhatsAppAlarmHelper.buildWhatsAppIntent(phone, message));
+                context.startActivity(TaskWhatsAppAlarmHelper.buildWhatsAppIntent(context, phone, message));
             }
         } catch (Exception e) {
             Log.w(TAG, "tryAutoOpenWhatsApp suppressed; notification tap remains ready", e);

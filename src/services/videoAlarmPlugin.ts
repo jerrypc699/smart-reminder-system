@@ -63,6 +63,12 @@ export interface VideoAlarmPluginInterface {
   requestBatteryOptimizationExemption(): Promise<void>;
   requestExactAlarmPermission(): Promise<void>;
   openWhatsApp(options: { phone: string; text: string }): Promise<{ opened: boolean }>;
+  shareImageToWhatsApp(options: {
+    base64: string;
+    fileName: string;
+    phone: string;
+    caption?: string;
+  }): Promise<{ success: boolean; openedDirect: boolean; error?: string }>;
   syncWhatsAppTaskAlarms(options: {
     alarms: NativeWhatsAppTaskAlarmPayload[];
     gatewayConfigJson: string;

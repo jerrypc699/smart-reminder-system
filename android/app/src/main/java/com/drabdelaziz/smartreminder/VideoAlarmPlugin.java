@@ -259,17 +259,12 @@ public class VideoAlarmPlugin extends Plugin {
         Context ctx = getContext();
         JSObject ret = new JSObject();
         try {
-            Intent waIntent = TaskWhatsAppAlarmHelper.buildWhatsAppIntent(phone, text);
+            Intent waIntent = TaskWhatsAppAlarmHelper.buildWhatsAppIntent(ctx, phone, text);
             ctx.startActivity(waIntent);
             ret.put("opened", true);
         } catch (Exception e) {
             try {
-                String cleanPhone = phone != null ? phone.replaceAll("[^0-9]", "") : "";
-                if (cleanPhone.startsWith("00")) {
-                    cleanPhone = cleanPhone.substring(2);
-                } else if (cleanPhone.startsWith("01") && cleanPhone.length() == 11) {
-                    cleanPhone = "20" + cleanPhone.substring(1);
-                }
+                String cleanPhone = TaskWhatsAppAlarmHelper.cleanWhatsAppPhone(phone);
                 String fallbackUrl = "https://api.whatsapp.com/send?phone=" + cleanPhone + "&text=" + Uri.encode(text != null ? text : "");
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
                 browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -277,6 +272,80 @@ public class VideoAlarmPlugin extends Plugin {
                 ret.put("opened", true);
             } catch (Exception ex2) {
                 ret.put("opened", false);
+                ret.put("error", ex2.getMessage());
+            }
+        }
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void shareImageToWhatsApp(PluginCall call) {
+        String base64 = call.getString("base64", "");
+        String rawName = call.getString("fileName", "alert.png");
+        String phone = call.getString("phone", "");
+        String caption = call.getString("caption", "");
+
+        if (base64 == null || base64.isEmpty()) {
+            call.reject("Missing base64 data");
+            return;
+        }
+
+        Context ctx = getContext();
+        JSObject ret = new JSObject();
+        try {
+            byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+            String safeName = (rawName != null ? rawName : "alert.png").replaceAll("[\\\\/:*?\"<>|]", "_");
+
+            File shareDir = new File(ctx.getCacheDir(), "shared_docs");
+            if (!shareDir.exists()) {
+                shareDir.mkdirs();
+            }
+            File cacheFile = new File(shareDir, safeName);
+            try (FileOutputStream fos = new FileOutputStream(cacheFile)) {
+                fos.write(bytes);
+                fos.flush();
+            }
+
+            Uri imageUri = FileProvider.getUriForFile(
+                    ctx,
+                    ctx.getPackageName() + ".fileprovider",
+                    cacheFile
+            );
+
+            String cleanPhone = TaskWhatsAppAlarmHelper.cleanWhatsAppPhone(phone);
+            String jid = (cleanPhone != null && !cleanPhone.isEmpty()) ? (cleanPhone + "@s.whatsapp.net") : "";
+
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("image/png");
+            intent.putExtra(Intent.EXTRA_STREAM, imageUri);
+            if (!jid.isEmpty()) {
+                intent.putExtra("jid", jid);
+            }
+            if (caption != null && !caption.isEmpty()) {
+                intent.putExtra(Intent.EXTRA_TEXT, caption);
+            }
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            PackageManager pm = ctx.getPackageManager();
+            if (TaskWhatsAppAlarmHelper.isPackageInstalled(pm, "com.whatsapp")) {
+                intent.setPackage("com.whatsapp");
+            } else if (TaskWhatsAppAlarmHelper.isPackageInstalled(pm, "com.whatsapp.w4b")) {
+                intent.setPackage("com.whatsapp.w4b");
+            }
+
+            ctx.startActivity(intent);
+            ret.put("success", true);
+            ret.put("openedDirect", true);
+        } catch (Exception e) {
+            Log.w("VideoAlarmPlugin", "Direct WhatsApp image share failed, opening chat fallback", e);
+            try {
+                Intent fallback = TaskWhatsAppAlarmHelper.buildWhatsAppIntent(ctx, phone, caption);
+                ctx.startActivity(fallback);
+                ret.put("success", true);
+                ret.put("openedDirect", false);
+            } catch (Exception ex2) {
+                ret.put("success", false);
                 ret.put("error", ex2.getMessage());
             }
         }

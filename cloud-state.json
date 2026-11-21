@@ -851,8 +851,11 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1795060939852-b0u6g",
-      "status": "pending",
-      "createdAt": "2026-11-19T04:02:19.852Z"
+      "status": "completed",
+      "createdAt": "2026-11-19T04:02:19.852Z",
+      "completedAt": "2026-11-21T10:50:40.690Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:50:40.690Z"
     },
     {
       "title": "مكالمه لزميلي",
@@ -1872,12 +1875,6 @@
             "sourceTaskId": "task-1794991430396-ihp27"
           },
           {
-            "id": "imp_task-1795060939852-b0u6g_2026-11-21",
-            "t": "تقارير الخزنه",
-            "d": false,
-            "sourceTaskId": "task-1795060939852-b0u6g"
-          },
-          {
             "id": "imp_task-1795060797227-cmcdn_2026-11-21",
             "t": "مكالمه لزميلي",
             "d": false,
@@ -1929,7 +1926,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:50:41.526Z",
+  "updatedAt": "2026-11-21T10:50:41.738Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

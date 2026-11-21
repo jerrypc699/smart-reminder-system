@@ -419,8 +419,11 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794417698928-4sndw",
-      "status": "pending",
-      "createdAt": "2026-11-11T17:21:38.928Z"
+      "status": "completed",
+      "createdAt": "2026-11-11T17:21:38.928Z",
+      "completedAt": "2026-11-21T10:49:51.657Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:49:51.657Z"
     },
     {
       "title": "مكالمه عبد العزيز ؛ احمد عثمان",
@@ -1827,12 +1830,6 @@
             "sourceTaskId": "task-1794418554981-68qlo"
           },
           {
-            "id": "imp_task-1794417698928-4sndw_2026-11-21",
-            "t": "مجدى الحدا د",
-            "d": false,
-            "sourceTaskId": "task-1794417698928-4sndw"
-          },
-          {
             "id": "imp_task-1794369844953-4cvfp_2026-11-21",
             "t": "المهندس احمد حسن",
             "d": false,
@@ -1932,7 +1929,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:49:51.379Z",
+  "updatedAt": "2026-11-21T10:49:52.994Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1945,9 +1942,7 @@
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
     "azanReciter": "mishary",
-    "enableDuaaAfterAzan": true,
-    "qiyamTimeMode": "custom",
-    "qiyamCustomTime": "04:00"
+    "enableDuaaAfterAzan": true
   },
   "audioSettings": {
     "masterVolume": 0.85,

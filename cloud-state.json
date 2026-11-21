@@ -127,8 +127,11 @@
       "voiceMessage": "يا دكتور عبد العزيز، تذكير بمهمة: محمد رضا. يرجى متابعتها الآن.",
       "repeat": "none",
       "id": "task-1794813709909-tvr2b",
-      "status": "pending",
-      "createdAt": "2026-11-16T07:21:49.909Z"
+      "status": "completed",
+      "createdAt": "2026-11-16T07:21:49.909Z",
+      "completedAt": "2026-11-21T10:16:40.309Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:16:40.309Z"
     },
     {
       "title": "اخمد على",
@@ -1763,12 +1766,6 @@
             "sourceTaskId": "task-1794805787590-1m88e"
           },
           {
-            "id": "imp_task-1794813709909-tvr2b_2026-11-21",
-            "t": "محمد رضا",
-            "d": false,
-            "sourceTaskId": "task-1794813709909-tvr2b"
-          },
-          {
             "id": "imp_task-1794483515605-7t2dt_2026-11-21",
             "t": "اعمال السيستم",
             "d": false,
@@ -1898,7 +1895,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:16:40.103Z",
+  "updatedAt": "2026-11-21T10:16:41.526Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

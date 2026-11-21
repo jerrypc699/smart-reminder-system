@@ -157,13 +157,13 @@
       "title": "اعمال السيستم",
       "description": "السلام عليكم\nيارب تكون بخير\nبخصوص تعديلات اعمال   السيستم\n¤ متابعه كل موظف بحدا ( مثال اسامه مع شغل ) استلام شيكات ، تأمينات ، الخ )\nالفديو ؛ مش يشتغل علطول ، وعاوز اسمى الفديوهات ،\n* تنسيق رساله الواتس اب من شكل احترافي\nوالاكسل شيت مش بيرفع من المشبك ، ورقم الموبايل لازم اكتبه منول،\nتحياتي\n\n* كذلك  قيام الليل ضيفتها او صلاه الضحى يكون ليها وقت لتنبيه ، وايكونه نفس الصلوات الاساسيه.\n* الاذكار \nمحتاج اضيف تحتها اذكار ، مثل اذكار الصباح والمساء والتوقيت.\n*ميعاد النوم ، وشرب المايه ، يكون ف ميعاد احدد.\n* كذلك التعليم ، والرياضه ، وورد القرأن ، بيكون في ميعاد يحدد وتتبيه.\n* كذلك ؛ الشغل أعمال( ملف لتنميه الأعمال، ملف لمتابعه تقارير )",
       "dueDate": "2026-11-21",
-      "dueTime": "11:02",
+      "dueTime": "12:31",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اعمال السيستم.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "tts",
+      "audioMode": "custom",
       "attachments": [],
       "whatsapp": {
         "enabled": true,
@@ -178,7 +178,9 @@
       "status": "pending",
       "createdAt": "2026-11-12T11:38:35.605Z",
       "lastDueAlarmAt": "2026-11-21T09:02:43.903Z",
-      "lastRemindedAt": "2026-11-21T09:02:43.903Z"
+      "lastRemindedAt": "2026-11-21T09:02:43.903Z",
+      "customAudioId": "media_1794370989995_3er5u",
+      "customAudioName": "824"
     },
     {
       "title": "ملف التامينات",
@@ -859,13 +861,13 @@
       "title": "اجتماع  بخصوص مشروع الضبعه",
       "description": "موقف الاعاشات\nموقف السكن والمواصلات\nموقف شركة النقل\nموقف الرد على المكالمات وتنسيقها \nدراسه اسعار مرتبات العمالة \nورقه الضد",
       "dueDate": "2026-11-21",
-      "dueTime": "09:00",
+      "dueTime": "12:22",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع  بخصوص مشروع الضبعه.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "tts",
+      "audioMode": "custom",
       "id": "task-1795191185537-gncbn",
       "status": "pending",
       "createdAt": "2026-11-20T16:13:05.537Z",
@@ -969,7 +971,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": false,
+      "enabled": true,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1936,7 +1938,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:31:45.499Z",
+  "updatedAt": "2026-11-21T10:47:55.486Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1949,7 +1951,9 @@
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
     "azanReciter": "mishary",
-    "enableDuaaAfterAzan": true
+    "enableDuaaAfterAzan": true,
+    "qiyamTimeMode": "custom",
+    "qiyamCustomTime": "04:00"
   },
   "audioSettings": {
     "masterVolume": 0.85,
@@ -2005,6 +2009,14 @@
   "sourceDevice": "Mobile",
   "athkar": {
     "customAthkar": [
+      {
+        "category": "custom",
+        "title": "دخول المسجد",
+        "text": "اللهم تقبل",
+        "count": 1,
+        "id": "custom-dhikr-1795256896347-ial4",
+        "isCustom": true
+      },
       {
         "category": "custom",
         "title": "دخول",

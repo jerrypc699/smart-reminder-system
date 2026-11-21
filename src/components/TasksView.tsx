@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   CheckSquare, 
   Plus, 
@@ -34,7 +34,8 @@ import {
   Mail,
   Smartphone,
   Share2,
-  FileCheck
+  FileCheck,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -98,6 +99,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   // Form State
   const todayStr = getLocalDateStr();
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(todayStr);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState(todayStr);
@@ -745,6 +747,108 @@ export const TasksView: React.FC<TasksViewProps> = ({
     });
   };
 
+  // Arabic date names
+  const AR_MONTHS = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
+  const AR_WEEKDAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+  // 14-day horizontal date strip centered around today
+  const weekDays = useMemo(() => {
+    const list: {
+      dateStr: string;
+      dayNum: number;
+      monthName: string;
+      weekdayName: string;
+      isToday: boolean;
+      taskCount: number;
+    }[] = [];
+    const baseDate = new Date();
+    for (let i = -3; i <= 10; i++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${day}`;
+      const dayNum = d.getDate();
+      const monthName = AR_MONTHS[d.getMonth()];
+      const weekdayName = AR_WEEKDAYS[d.getDay()];
+      const isToday = dateStr === todayStr;
+      const count = tasks.filter((t) => t.dueDate === dateStr).length;
+      list.push({ dateStr, dayNum, monthName, weekdayName, isToday, taskCount: count });
+    }
+    return list;
+  }, [tasks, todayStr]);
+
+  const selectedDateFormatted = useMemo(() => {
+    if (!selectedDateStr) return 'كافة الأيام والمواعيد';
+    const [yStr, mStr, dStr] = selectedDateStr.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10) - 1;
+    const d = parseInt(dStr, 10);
+    const dateObj = new Date(y, m, d);
+    const weekday = AR_WEEKDAYS[dateObj.getDay()];
+    const monthName = AR_MONTHS[m];
+    return `${weekday}، ${d} ${monthName} ${y}`;
+  }, [selectedDateStr]);
+
+  const formatTimeDisplay = (time24: string) => {
+    if (!time24) return '--:--';
+    const parts = time24.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1] || '0', 10);
+    if (isNaN(h)) return time24;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    const mFormatted = String(m).padStart(2, '0');
+    const hFormatted = String(h12).padStart(2, '0');
+    return `${hFormatted}:${mFormatted} ${period}`;
+  };
+
+  const getCategoryPillStyle = (cat: TaskCategory) => {
+    switch (cat) {
+      case 'clinic':
+        return 'bg-sky-500/25 text-sky-200 border-sky-400/50 shadow-sm shadow-sky-500/20';
+      case 'work':
+        return 'bg-amber-500/25 text-amber-200 border-amber-400/50 shadow-sm shadow-amber-500/20';
+      case 'meeting':
+        return 'bg-rose-500/25 text-rose-200 border-rose-400/50 shadow-sm shadow-rose-500/20';
+      case 'personal':
+        return 'bg-pink-500/25 text-pink-200 border-pink-400/50 shadow-sm shadow-pink-500/20';
+      case 'health':
+        return 'bg-emerald-500/25 text-emerald-200 border-emerald-400/50 shadow-sm shadow-emerald-500/20';
+      case 'dev':
+        return 'bg-indigo-500/25 text-indigo-200 border-indigo-400/50 shadow-sm shadow-indigo-500/20';
+      case 'admin':
+        return 'bg-purple-500/25 text-purple-200 border-purple-400/50 shadow-sm shadow-purple-500/20';
+      default:
+        return 'bg-teal-500/25 text-teal-200 border-teal-400/50 shadow-sm shadow-teal-500/20';
+    }
+  };
+
+  const getCategoryPillName = (cat: TaskCategory) => {
+    switch (cat) {
+      case 'clinic':
+        return 'عيادة';
+      case 'work':
+        return 'عمل';
+      case 'meeting':
+        return 'اجتماعات';
+      case 'personal':
+        return 'مواعيد';
+      case 'health':
+        return 'صحي';
+      case 'dev':
+        return 'برمجة';
+      case 'admin':
+        return 'إداري';
+      default:
+        return 'مهمة';
+    }
+  };
+
   // Filter tasks
   const filteredTasks = tasks.filter((t) => {
     if (searchQuery.trim()) {
@@ -755,6 +859,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
 
     if (selectedCategory !== 'all' && t.category !== selectedCategory) {
+      return false;
+    }
+
+    if (selectedDateStr && t.dueDate !== selectedDateStr) {
       return false;
     }
 
@@ -797,15 +905,20 @@ export const TasksView: React.FC<TasksViewProps> = ({
       {/* Top Controls: Search, Add Button, Statistics */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="icon-squircle-emerald w-12 h-12 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0d4a41] via-[#09352e] to-[#06221d] border border-[#D4AF37]/50 shadow-lg shadow-emerald-950/40 flex items-center justify-center text-[#F5D77F] shrink-0">
             <CheckSquare className="w-6 h-6" strokeWidth={1.75} />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-              مهام العمل والمواعيد
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              تنظيم المواعيد مع التذكير الصوتي الذكي وإرسال رسائل واتساب في الموعد
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-serif drop-shadow-[0_2px_8px_rgba(245,215,127,0.2)]">
+                المهام اليومية
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
+                {tasks.length}
+              </span>
+            </div>
+            <p className="text-xs text-emerald-300/80 mt-0.5 font-medium">
+              تنظيم المواعيد والمهام مع التنبيه الصوتي الذكي والمراسلة التلقائية
             </p>
           </div>
         </div>
@@ -917,376 +1030,515 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {viewMode === 'tasks' ? (
         <>
-          {/* Filter and Search Bar */}
-          <div className="lux-card p-4 sm:p-5 rounded-3xl space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
-          {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.75} />
-            <input
-              type="text"
-              placeholder="البحث في المهام والاجتماعات..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="lux-input w-full pr-10 pl-4 py-2.5 text-sm placeholder-slate-500"
-            />
+          {/* ======================================================== */}
+          {/* 1. HORIZONTAL WEEKLY DATE STRIP (MATCHING SCREENSHOT) */}
+          {/* ======================================================== */}
+          <div className="rounded-3xl p-3.5 sm:p-4 bg-gradient-to-br from-[#0c2e28]/95 via-[#071c18]/95 to-[#041210] border border-emerald-500/30 shadow-[0_12px_35px_rgba(6,34,29,0.4)] space-y-3">
+            {/* Header: Title & Quick Date Filters */}
+            <div className="flex items-center justify-between px-1.5 pb-2 border-b border-emerald-500/20 text-xs font-black">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-[#F5D77F]" />
+                <span className="font-serif text-sm text-[#F5D77F]">
+                  {selectedDateStr ? selectedDateFormatted : 'المهام اليومية — كافة الأيام'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDateStr(null)}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    selectedDateStr === null
+                      ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-sm font-black'
+                      : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20 hover:text-white'
+                  }`}
+                >
+                  كافة الأيام ({tasks.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDateStr(todayStr)}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    selectedDateStr === todayStr
+                      ? 'bg-[#0d4a41] text-[#F5D77F] border-[#D4AF37] font-black shadow-sm'
+                      : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20 hover:text-white'
+                  }`}
+                >
+                  اليوم
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Weekly Horizontal Date Strip */}
+            <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pt-1 pb-1.5 scrollbar-none px-0.5">
+              {weekDays.map((d) => {
+                const isSelected = selectedDateStr === d.dateStr;
+                return (
+                  <button
+                    key={d.dateStr}
+                    type="button"
+                    onClick={() => setSelectedDateStr(isSelected ? null : d.dateStr)}
+                    className={`shrink-0 w-[60px] sm:w-[72px] py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer select-none border ${
+                      isSelected
+                        ? 'bg-gradient-to-b from-[#0d4a41] via-[#09352e] to-[#06221d] border-2 border-[#D4AF37] text-white shadow-xl shadow-amber-500/20 scale-[1.03]'
+                        : 'bg-slate-950/60 hover:bg-emerald-950/40 border-emerald-500/15 text-slate-300 hover:border-amber-400/30'
+                    }`}
+                  >
+                    {/* Month Name (Top) */}
+                    <span
+                      className={`text-[10px] leading-tight font-medium ${
+                        isSelected ? 'text-amber-200' : 'text-slate-400'
+                      }`}
+                    >
+                      {d.monthName}
+                    </span>
+
+                    {/* Day of Month (Middle) */}
+                    <span
+                      className={`text-xl sm:text-2xl font-black font-mono my-0.5 leading-none ${
+                        isSelected
+                          ? 'text-[#F5D77F] drop-shadow-[0_2px_8px_rgba(245,215,127,0.4)]'
+                          : 'text-white'
+                      }`}
+                    >
+                      {d.dayNum}
+                    </span>
+
+                    {/* Weekday Name (Bottom) */}
+                    <span
+                      className={`text-[10px] font-bold leading-tight ${
+                        isSelected ? 'text-emerald-200' : 'text-slate-400'
+                      }`}
+                    >
+                      {d.weekdayName}
+                    </span>
+
+                    {/* Task Count Dot Indicator */}
+                    {d.taskCount > 0 && (
+                      <span
+                        className={`mt-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold leading-tight ${
+                          isSelected
+                            ? 'bg-amber-400 text-slate-950'
+                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        }`}
+                      >
+                        {d.taskCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Category Filter */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap ml-1">التصنيف:</span>
+          {/* ======================================================== */}
+          {/* 2. CATEGORY FILTER CHIPS (MATCHING SCREENSHOT) */}
+          {/* ======================================================== */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {[
               { id: 'all', label: 'الكل' },
               { id: 'clinic', label: 'عيادة' },
               { id: 'work', label: 'عمل' },
               { id: 'meeting', label: 'اجتماعات' },
-              { id: 'dev', label: 'برمجة' },
+              { id: 'personal', label: 'مواعيد' },
               { id: 'health', label: 'صحي' },
-            ].map((cat) => (
+              { id: 'admin', label: 'إداري' },
+              { id: 'dev', label: 'برمجة' },
+            ].map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-md shadow-amber-500/25 ring-1 ring-amber-400/50'
+                      : 'bg-gradient-to-r from-[#0c2e28]/70 to-[#06221d]/80 text-emerald-200 border-emerald-500/20 hover:text-white hover:border-amber-400/30'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Box & Quick Status Filter Bar */}
+          <div className="lux-card p-3.5 sm:p-4 rounded-3xl space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Search Box */}
+              <div className="relative flex-1">
+                <Search
+                  className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  strokeWidth={1.75}
+                />
+                <input
+                  type="text"
+                  placeholder="البحث في المهام والمواعيد..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="lux-input w-full pr-10 pl-4 py-2 text-sm placeholder-slate-500"
+                />
+              </div>
+
+              {/* Status Filters */}
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                {[
+                  { id: 'all', label: 'الكل', count: tasks.length },
+                  {
+                    id: 'today',
+                    label: 'مهام اليوم',
+                    count: tasks.filter((t) => t.dueDate === todayStr).length,
+                  },
+                  {
+                    id: 'urgent',
+                    label: 'عاجلة',
+                    count: tasks.filter((t) => t.priority === 'urgent' && t.status !== 'completed').length,
+                  },
+                  {
+                    id: 'pending',
+                    label: 'قيد الانتظار',
+                    count: tasks.filter((t) => t.status !== 'completed').length,
+                  },
+                  {
+                    id: 'completed',
+                    label: 'مكتملة',
+                    count: tasks.filter((t) => t.status === 'completed').length,
+                  },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setSelectedFilter(f.id as any)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+                      selectedFilter === f.id
+                        ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40 shadow-sm'
+                        : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono tabular-nums bg-white/[0.07] text-slate-200">
+                      {f.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ======================================================== */}
+          {/* 3. TASK LIST CARDS (MATCHING SCREENSHOT + ISLAMIC LUXURY) */}
+          {/* ======================================================== */}
+          {filteredTasks.length === 0 ? (
+            <div className="lux-card text-center py-16 px-4 rounded-3xl">
+              <div className="icon-squircle w-14 h-14 mx-auto mb-3 text-slate-500">
+                <CheckSquare className="w-7 h-7" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">لا توجد مهام مطابقة</h3>
+              <p className="text-xs text-slate-400 mb-6">
+                يمكنك إضافة مهمة جديدة وتحديد موعد تذكير صوتي لها أو إرسالها عبر واتساب.
+              </p>
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
-                  selectedCategory === cat.id
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
-                    : 'bg-white/[0.03] text-slate-400 border-white/[0.07] hover:text-white'
-                }`}
+                onClick={() => {
+                  resetForm();
+                  setIsAddModalOpen(true);
+                }}
+                className="btn-lux-primary px-5 py-2.5 rounded-xl text-xs font-bold cursor-pointer inline-flex items-center gap-2"
               >
-                {cat.label}
+                <Plus className="w-4 h-4" strokeWidth={2} />
+                <span>إضافة مهمة الآن</span>
               </button>
-            ))}
-          </div>
-        </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3.5">
+              {filteredTasks.map((task) => {
+                const isCompleted = task.status === 'completed';
+                const isUrgent = task.priority === 'urgent';
+                const conflict = checkConflict(task.dueDate, task.dueTime);
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-1.5 pt-3 border-t border-white/[0.06] overflow-x-auto scrollbar-none">
-          {[
-            { id: 'all', label: 'كافة المهام', count: tasks.length },
-            { id: 'today', label: 'مهام اليوم', count: tasks.filter((t) => t.dueDate === todayStr).length },
-            { id: 'urgent', label: 'عاجلة جداً', count: tasks.filter((t) => t.priority === 'urgent' && t.status !== 'completed').length },
-            { id: 'pending', label: 'قيد الانتظار', count: tasks.filter((t) => t.status !== 'completed').length },
-            { id: 'completed', label: 'مكتملة', count: tasks.filter((t) => t.status === 'completed').length },
-          ].map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setSelectedFilter(f.id as any)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
-                selectedFilter === f.id
-                  ? 'bg-white/[0.08] text-white border-white/[0.14]'
-                  : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.03]'
-              }`}
-            >
-              <span>{f.label}</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums bg-white/[0.07] text-slate-200">
-                {f.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+                return (
+                  <div
+                    key={task.id}
+                    className={`relative rounded-2xl p-4 sm:p-5 transition-all overflow-hidden border ${
+                      isCompleted
+                        ? 'bg-slate-950/60 border-slate-800/80 opacity-65'
+                        : isUrgent
+                        ? 'bg-gradient-to-br from-[#1c1214] via-[#120a0c] to-[#090506] border-rose-500/50 shadow-[0_10px_30px_rgba(244,63,94,0.2)]'
+                        : 'bg-gradient-to-br from-[#0c2e28]/95 via-[#071c18]/95 to-[#041210] border-emerald-500/30 shadow-[0_12px_35px_rgba(6,34,29,0.35)] hover:border-amber-400/50'
+                    }`}
+                  >
+                    {/* Top Row: Category Pill Badge (Right) + Due Time with Clock (Left) */}
+                    <div className="flex items-center justify-between gap-3">
+                      {/* Category Pill Badge (Matching Screenshot Style) */}
+                      <span
+                        className={`px-3 py-1 rounded-xl text-xs font-black border tracking-wide ${getCategoryPillStyle(
+                          task.category
+                        )}`}
+                      >
+                        {getCategoryPillName(task.category)}
+                      </span>
 
-      {/* Task List */}
-      {filteredTasks.length === 0 ? (
-        <div className="lux-card text-center py-16 px-4 rounded-3xl">
-          <div className="icon-squircle w-14 h-14 mx-auto mb-3 text-slate-500">
-            <CheckSquare className="w-7 h-7" strokeWidth={1.5} />
-          </div>
-          <h3 className="text-base font-bold text-white mb-1">لا توجد مهام مطابقة</h3>
-          <p className="text-xs text-slate-400 mb-6">
-            يمكنك إضافة مهمة جديدة وتحديد موعد تذكير صوتي لها أو إرسالها عبر واتساب.
-          </p>
-          <button
-            onClick={() => {
-              resetForm();
-              setIsAddModalOpen(true);
-            }}
-            className="btn-lux-primary px-5 py-2.5 rounded-xl text-xs font-bold cursor-pointer inline-flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" strokeWidth={2} />
-            <span>إضافة مهمة الآن</span>
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredTasks.map((task) => {
-            const isCompleted = task.status === 'completed';
-            const isUrgent = task.priority === 'urgent';
-            const conflict = checkConflict(task.dueDate, task.dueTime);
+                      {/* Time with Clock Icon (Matching Screenshot 08:50 PM 🕒) */}
+                      <div className="flex items-center gap-1.5 font-mono text-xs sm:text-sm font-bold text-amber-300 bg-slate-950/80 px-3 py-1 rounded-xl border border-amber-400/30 shadow-inner">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span dir="ltr">{formatTimeDisplay(task.dueTime)}</span>
+                      </div>
+                    </div>
 
-            return (
-              <div
-                key={task.id}
-                className={`p-5 rounded-3xl transition-all ${
-                  isCompleted
-                    ? 'lux-card opacity-60'
-                    : isUrgent
-                      ? 'lux-card-interactive border-rose-500/35 shadow-[0_12px_32px_-18px_rgba(244,63,94,0.35)]'
-                      : 'lux-card-interactive'
-                }`}
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* Title & Checkbox */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <button
-                      onClick={() => handleToggle(task.id)}
-                      className={`mt-1 w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
-                        isCompleted
-                          ? 'bg-emerald-500 border-emerald-400 text-white'
-                          : 'bg-slate-800 border-slate-600 hover:border-emerald-500 text-transparent'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-4 h-4 fill-current" />
-                    </button>
-
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3
-                          className={`text-base font-bold ${
-                            isCompleted ? 'line-through text-slate-500' : 'text-white'
+                    {/* Main Row: Checkbox, Note Icon, Title & Priority */}
+                    <div className="mt-3 flex items-start gap-3 justify-between">
+                      <div className="flex items-start gap-2.5 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggle(task.id)}
+                          className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
+                            isCompleted
+                              ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/30'
+                              : 'bg-slate-900 border-slate-700 hover:border-amber-400 text-transparent'
                           }`}
+                          title={isCompleted ? 'إلغاء الإتمام' : 'تعليم كمكتمل'}
                         >
-                          {task.title}
-                        </h3>
+                          <CheckCircle2 className="w-4 h-4 fill-current" />
+                        </button>
 
-                        {/* Priority Badge */}
-                        <span
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
-                            task.priority === 'urgent'
-                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                              : task.priority === 'high'
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                              : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                          }`}
-                        >
-                          {task.priority === 'urgent'
-                            ? 'عاجل جداً'
-                            : task.priority === 'high'
-                            ? 'أولوية مرتفعة'
-                            : task.priority === 'medium'
-                            ? 'أولوية متوسطة'
-                            : 'منخفضة'}
-                        </span>
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <h3
+                              className={`text-sm sm:text-base font-extrabold ${
+                                isCompleted ? 'line-through text-slate-500' : 'text-white'
+                              }`}
+                            >
+                              {task.title}
+                            </h3>
 
-                        {/* Category Badge */}
-                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                          {getCategoryLabel(task.category)}
-                        </span>
+                            {/* Priority Badge */}
+                            {task.priority === 'urgent' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                                عاجل جداً
+                              </span>
+                            )}
+                            {task.priority === 'high' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                أولوية مرتفعة
+                              </span>
+                            )}
+                            {task.status === 'snoozed' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                مؤجل
+                              </span>
+                            )}
 
-                        {/* Snooze Badge */}
-                        {task.status === 'snoozed' && (
-                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
-                            مؤجل
-                          </span>
-                        )}
+                            {/* Employee Dossier Badge */}
+                            {task.employeeName && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const emp = employees.find((e) => e.id === task.employeeId);
+                                  if (emp) setSelectedEmployeeDossier(emp);
+                                }}
+                                className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold inline-flex items-center gap-1 hover:bg-blue-500/25 cursor-pointer"
+                                title="عرض ملف هذا الموظف"
+                              >
+                                <User className="w-3 h-3 text-blue-400" />
+                                <span>{task.employeeName}</span>
+                              </button>
+                            )}
+                          </div>
 
-                        {/* Employee Dossier Badge */}
-                        {task.employeeName && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const emp = employees.find((e) => e.id === task.employeeId);
-                              if (emp) setSelectedEmployeeDossier(emp);
-                            }}
-                            className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold inline-flex items-center gap-1 hover:bg-blue-500/25 cursor-pointer"
-                            title="عرض ملف هذا الموظف"
-                          >
-                            <User className="w-3 h-3 text-blue-400" />
-                            <span>{task.employeeName}</span>
-                          </button>
-                        )}
+                          {task.description && (
+                            <p className="text-xs text-slate-300/85 mr-6 leading-relaxed">
+                              {task.description}
+                            </p>
+                          )}
+
+                          {/* Custom Audio Badge if attached */}
+                          {task.customAudioName && (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs mt-1">
+                              <FileAudio className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <span>تنبيه صوتي مخصص: {task.customAudioName}</span>
+                            </div>
+                          )}
+
+                          {/* Scheduled WhatsApp Badge */}
+                          {task.whatsapp?.enabled && task.whatsapp.phoneNumber && (
+                            <div className="inline-flex flex-wrap items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs mt-1 ml-1">
+                              <MessageCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span>
+                                واتساب في الموعد ←{' '}
+                                <strong className="text-white" dir="ltr">
+                                  {task.whatsapp.recipientName ||
+                                    formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber)}
+                                </strong>
+                              </span>
+                              {task.whatsapp.lastSendStatus === 'sent_api' && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-200 text-[10px] font-bold">
+                                  ✓ تم الإرسال التلقائي
+                                </span>
+                              )}
+                              {task.whatsapp.lastSendStatus === 'opened_app' && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-teal-500/25 text-teal-200 text-[10px] font-bold">
+                                  ↗ فُتح واتساب
+                                </span>
+                              )}
+                              {task.whatsapp.lastSendStatus === 'failed' && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-rose-500/25 text-rose-200 text-[10px] font-bold">
+                                  ⚠ تعذر الإرسال
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Attached Work Files & Documents */}
+                          {task.attachments && task.attachments.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                              {task.attachments.map((att) => {
+                                const isImg =
+                                  att.type.startsWith('image/') ||
+                                  /\.(png|jpe?g|webp|gif)$/i.test(att.name);
+                                return (
+                                  <div
+                                    key={att.id}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/35 text-indigo-200 text-[11px] font-semibold"
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        taskAttachmentService.openAttachment(att, (url, title) =>
+                                          setPreviewImage({ url, title })
+                                        )
+                                      }
+                                      className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+                                      title="فتح / معاينة الملف"
+                                    >
+                                      {isImg ? (
+                                        <ImageIcon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
+                                      ) : (
+                                        <Paperclip className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
+                                      )}
+                                      <span className="max-w-[140px] truncate">{att.name}</span>
+                                      <span className="text-[10px] text-indigo-300/70 font-mono">
+                                        ({formatAttachmentSize(att.size)})
+                                      </span>
+                                      {att.cloudUrl && (
+                                        <Cloud className="w-3 h-3 text-emerald-400 shrink-0" />
+                                      )}
+                                      <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveTaskAttachment(task, att.id)}
+                                      className="p-0.5 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                                      title="حذف المرفق"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Smart Prayer Conflict Warning Badge */}
+                          {conflict && !isCompleted && (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs mt-1">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span>
+                                تزامن قريب مع صلاة {conflict.prayer.arabicName} ({conflict.prayer.formatted12h}) بفارق {conflict.diffMins} دقيقة
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Toolbar */}
+                    <div className="mt-3.5 pt-3 border-t border-emerald-500/15 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                        <CalendarIcon className="w-3.5 h-3.5 text-emerald-400/80" />
+                        <span>{task.dueDate}</span>
                       </div>
 
-                      {task.description && (
-                        <p className="text-xs text-slate-400 leading-relaxed">
-                          {task.description}
-                        </p>
-                      )}
-
-                      {/* Custom Audio Badge if attached */}
-                      {task.customAudioName && (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs mt-1">
-                          <FileAudio className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                          <span>تنبيه صوتي مخصص: {task.customAudioName}</span>
-                        </div>
-                      )}
-
-                      {/* Scheduled WhatsApp Badge */}
-                      {task.whatsapp?.enabled && task.whatsapp.phoneNumber && (
-                        <div className="inline-flex flex-wrap items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs mt-1 ml-1">
-                          <MessageCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span>
-                            واتساب في الموعد ←{' '}
-                            <strong className="text-white" dir="ltr">
-                              {task.whatsapp.recipientName ||
-                                formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber)}
-                            </strong>
-                          </span>
-                          {task.whatsapp.lastSendStatus === 'sent_api' && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-200 text-[10px] font-bold">
-                              ✓ تم الإرسال التلقائي
-                            </span>
-                          )}
-                          {task.whatsapp.lastSendStatus === 'opened_app' && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-teal-500/25 text-teal-200 text-[10px] font-bold">
-                              ↗ فُتح واتساب
-                            </span>
-                          )}
-                          {task.whatsapp.lastSendStatus === 'failed' && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-rose-500/25 text-rose-200 text-[10px] font-bold">
-                              ⚠ تعذر الإرسال
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Attached Work Files & Documents */}
-                      {task.attachments && task.attachments.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 pt-1.5">
-                          {task.attachments.map((att) => {
-                            const isImg = att.type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name);
-                            return (
-                              <div
-                                key={att.id}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/35 text-indigo-200 text-[11px] font-semibold"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    taskAttachmentService.openAttachment(att, (url, title) =>
-                                      setPreviewImage({ url, title })
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-                                  title="فتح / معاينة الملف"
-                                >
-                                  {isImg ? (
-                                    <ImageIcon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
-                                  ) : (
-                                    <Paperclip className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
-                                  )}
-                                  <span className="max-w-[140px] truncate">{att.name}</span>
-                                  <span className="text-[10px] text-indigo-300/70 font-mono">
-                                    ({formatAttachmentSize(att.size)})
-                                  </span>
-                                  {att.cloudUrl && (
-                                    <Cloud className="w-3 h-3 text-emerald-400 shrink-0" />
-                                  )}
-                                  <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveTaskAttachment(task, att.id)}
-                                  className="p-0.5 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                                  title="حذف المرفق"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Smart Prayer Conflict Warning Badge */}
-                      {conflict && !isCompleted && (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs mt-1">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>
-                            تزامن قريب مع صلاة {conflict.prayer.arabicName} ({conflict.prayer.formatted12h}) بفارق {conflict.diffMins} دقيقة
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Date, Time & Action Buttons */}
-                  <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800">
-                    <div className="flex items-center gap-2 font-mono text-xs text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
-                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{task.dueTime}</span>
-                      <span>•</span>
-                      <span>{task.dueDate}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {/* Send WhatsApp Official Dispatch Card / Image Button */}
-                      <button
-                        type="button"
-                        onClick={() => setOfficialLetterTask(task)}
-                        title="إرسال بطاقة التكليف كصورة رسمية على واتساب 📸"
-                        className="p-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/45 transition-colors cursor-pointer flex items-center gap-1"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </button>
-
-                      {/* View Official Task Dispatch Card (البريد المرسل) */}
-                      <button
-                        type="button"
-                        onClick={() => setOfficialLetterTask(task)}
-                        title="معاينة بطاقة التكليف الرسمية (البريد المرسل) وحفظها كصورة أو إرسالها"
-                        className="p-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 transition-colors cursor-pointer"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </button>
-
-                      {/* Quick Attach Document / File */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuickAttachTargetId(task.id);
-                          quickAttachInputRef.current?.click();
-                        }}
-                        title="رفع وإرفاق ملف (PDF، صورة، مستند) لهذه المهمة"
-                        className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 hover:text-white border border-indigo-500/30 transition-colors cursor-pointer"
-                      >
-                        <Paperclip className="w-4 h-4" />
-                      </button>
-
-                      {/* Audio Voice Test */}
-                      <button
-                        onClick={() => onPreviewTaskAudio(task)}
-                        title="استماع للتنبيه الصوتي للمهمة"
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500/30 transition-colors cursor-pointer"
-                      >
-                        <Volume2 className="w-4 h-4" />
-                      </button>
-
-                      {/* Snooze 10 mins */}
-                      {!isCompleted && (
+                      <div className="flex items-center gap-1.5">
+                        {/* Send WhatsApp Official Dispatch Card / Image Button */}
                         <button
-                          onClick={() => onSnoozeTask(task.id, 10)}
-                          title="تأجيل 10 دقائق"
-                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition-colors cursor-pointer"
+                          type="button"
+                          onClick={() => setOfficialLetterTask(task)}
+                          title="إرسال بطاقة التكليف كصورة رسمية على واتساب 📸"
+                          className="p-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/45 transition-colors cursor-pointer"
                         >
-                          <RotateCcw className="w-4 h-4" />
+                          <MessageCircle className="w-4 h-4" />
                         </button>
-                      )}
 
-                      {/* Edit */}
-                      <button
-                        onClick={() => handleOpenEdit(task)}
-                        title="تعديل المهمة"
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-blue-400 border border-slate-700 transition-colors cursor-pointer"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
+                        {/* View Official Task Dispatch Card */}
+                        <button
+                          type="button"
+                          onClick={() => setOfficialLetterTask(task)}
+                          title="معاينة بطاقة التكليف الرسمية (البريد المرسل)"
+                          className="p-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 transition-colors cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
 
-                      {/* Delete */}
-                      <button
-                        onClick={() => onDeleteTask(task.id)}
-                        title="حذف المهمة"
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        {/* Quick Attach Document / File */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickAttachTargetId(task.id);
+                            quickAttachInputRef.current?.click();
+                          }}
+                          title="رفع وإرفاق ملف (PDF، صورة، مستند)"
+                          className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 hover:text-white border border-indigo-500/30 transition-colors cursor-pointer"
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </button>
+
+                        {/* Audio Voice Test */}
+                        <button
+                          type="button"
+                          onClick={() => onPreviewTaskAudio(task)}
+                          title="استماع للتنبيه الصوتي للمهمة"
+                          className="p-2 rounded-xl bg-slate-800/80 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500/30 transition-colors cursor-pointer"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+
+                        {/* Snooze 10 mins */}
+                        {!isCompleted && (
+                          <button
+                            type="button"
+                            onClick={() => onSnoozeTask(task.id, 10)}
+                            title="تأجيل 10 دقائق"
+                            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Edit */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(task)}
+                          title="تعديل المهمة"
+                          className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-blue-400 border border-slate-700 transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          onClick={() => onDeleteTask(task.id)}
+                          title="حذف المهمة"
+                          className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          )}
         </>
       ) : (
         /* Employee Dossiers View */
@@ -3000,6 +3252,20 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Floating Action Button (FAB) for Quick Task Creation - Matching Screenshot with Islamic Gold */}
+      <button
+        type="button"
+        onClick={() => {
+          resetForm();
+          setIsAddModalOpen(true);
+        }}
+        className="fixed bottom-24 left-6 sm:left-8 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-[#996515] via-[#D4AF37] to-[#FFF2B2] text-slate-950 shadow-[0_10px_30px_rgba(212,175,55,0.45)] border-2 border-[#FFF8DC] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+        title="إضافة مهمة جديدة"
+        aria-label="إضافة مهمة جديدة"
+      >
+        <Plus className="w-7 h-7 stroke-[2.5]" />
+      </button>
 
       {/* Official Task Dispatch Letter Modal (البريد المرسل) */}
       <OfficialTaskDispatchModal

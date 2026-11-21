@@ -1755,7 +1755,122 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-21",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794813709909-tvr2b_2026-11-21",
+            "t": "محمد رضا",
+            "d": false,
+            "sourceTaskId": "task-1794813709909-tvr2b"
+          },
+          {
+            "id": "imp_task-1794483515605-7t2dt_2026-11-21",
+            "t": "اعمال السيستم",
+            "d": false,
+            "sourceTaskId": "task-1794483515605-7t2dt"
+          },
+          {
+            "id": "imp_task-1794478443115-vghdc_2026-11-21",
+            "t": "ملف التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794478443115-vghdc"
+          },
+          {
+            "id": "imp_task-1794431372819-0t1ik_2026-11-21",
+            "t": "البنك",
+            "d": false,
+            "sourceTaskId": "task-1794431372819-0t1ik"
+          },
+          {
+            "id": "imp_task-1794418596194-nd6mj_2026-11-21",
+            "t": "احمد اسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418596194-nd6mj"
+          },
+          {
+            "id": "imp_task-1794418554981-68qlo_2026-11-21",
+            "t": "أحمداسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418554981-68qlo"
+          },
+          {
+            "id": "imp_task-1794417698928-4sndw_2026-11-21",
+            "t": "مجدى الحدا د",
+            "d": false,
+            "sourceTaskId": "task-1794417698928-4sndw"
+          },
+          {
+            "id": "imp_task-1794369844953-4cvfp_2026-11-21",
+            "t": "المهندس احمد حسن",
+            "d": false,
+            "sourceTaskId": "task-1794369844953-4cvfp"
+          },
+          {
+            "id": "imp_task-1794887282519-zqse0_2026-11-21",
+            "t": "مستخقات الشركه",
+            "d": false,
+            "sourceTaskId": "task-1794887282519-zqse0"
+          },
+          {
+            "id": "imp_task-1794887428535-fxoc3_2026-11-21",
+            "t": "مستحقات السيارات",
+            "d": false,
+            "sourceTaskId": "task-1794887428535-fxoc3"
+          },
+          {
+            "id": "imp_task-1794926851089-6vtqg_2026-11-21",
+            "t": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
+            "d": false,
+            "sourceTaskId": "task-1794926851089-6vtqg"
+          },
+          {
+            "id": "imp_task-1794928158919-8ovdz_2026-11-21",
+            "t": "تسجيل تقرير الاستلامات",
+            "d": false,
+            "sourceTaskId": "task-1794928158919-8ovdz"
+          },
+          {
+            "id": "imp_task-1794991430396-ihp27_2026-11-21",
+            "t": "مستحقات الشمالي",
+            "d": false,
+            "sourceTaskId": "task-1794991430396-ihp27"
+          },
+          {
+            "id": "imp_task-1794047274656-pjzg1_2026-11-21",
+            "t": "مقابلة الجيار",
+            "d": false,
+            "sourceTaskId": "task-1794047274656-pjzg1"
+          },
+          {
+            "id": "imp_task-1795060939852-b0u6g_2026-11-21",
+            "t": "تقارير الخزنه",
+            "d": false,
+            "sourceTaskId": "task-1795060939852-b0u6g"
+          },
+          {
+            "id": "imp_task-1795060797227-cmcdn_2026-11-21",
+            "t": "مكالمه لزميلي",
+            "d": false,
+            "sourceTaskId": "task-1795060797227-cmcdn"
+          },
+          {
+            "id": "imp_task-1795191185537-gncbn_2026-11-21",
+            "t": "اجتماع  بخصوص مشروع الضبعه",
+            "d": false,
+            "sourceTaskId": "task-1795191185537-gncbn"
+          },
+          {
+            "id": "imp_task-1795198567339-oanxf_2026-11-21",
+            "t": "بخصوص الامن",
+            "d": false,
+            "sourceTaskId": "task-1795198567339-oanxf"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -1783,7 +1898,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:07:18.643Z",
+  "updatedAt": "2026-11-21T10:07:20.360Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

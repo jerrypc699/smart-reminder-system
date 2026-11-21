@@ -160,13 +160,13 @@
       "title": "اعمال السيستم",
       "description": "السلام عليكم\nيارب تكون بخير\nبخصوص تعديلات اعمال   السيستم\n¤ متابعه كل موظف بحدا ( مثال اسامه مع شغل ) استلام شيكات ، تأمينات ، الخ )\nالفديو ؛ مش يشتغل علطول ، وعاوز اسمى الفديوهات ،\n* تنسيق رساله الواتس اب من شكل احترافي\nوالاكسل شيت مش بيرفع من المشبك ، ورقم الموبايل لازم اكتبه منول،\nتحياتي\n\n* كذلك  قيام الليل ضيفتها او صلاه الضحى يكون ليها وقت لتنبيه ، وايكونه نفس الصلوات الاساسيه.\n* الاذكار \nمحتاج اضيف تحتها اذكار ، مثل اذكار الصباح والمساء والتوقيت.\n*ميعاد النوم ، وشرب المايه ، يكون ف ميعاد احدد.\n* كذلك التعليم ، والرياضه ، وورد القرأن ، بيكون في ميعاد يحدد وتتبيه.\n* كذلك ؛ الشغل أعمال( ملف لتنميه الأعمال، ملف لمتابعه تقارير )",
       "dueDate": "2026-11-21",
-      "dueTime": "12:31",
+      "dueTime": "11:02",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اعمال السيستم.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "custom",
+      "audioMode": "tts",
       "attachments": [],
       "whatsapp": {
         "enabled": true,
@@ -876,13 +876,13 @@
       "title": "اجتماع  بخصوص مشروع الضبعه",
       "description": "موقف الاعاشات\nموقف السكن والمواصلات\nموقف شركة النقل\nموقف الرد على المكالمات وتنسيقها \nدراسه اسعار مرتبات العمالة \nورقه الضد",
       "dueDate": "2026-11-21",
-      "dueTime": "12:22",
+      "dueTime": "09:00",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع  بخصوص مشروع الضبعه.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "custom",
+      "audioMode": "tts",
       "id": "task-1795191185537-gncbn",
       "status": "pending",
       "createdAt": "2026-11-20T16:13:05.537Z",
@@ -999,7 +999,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": true,
+      "enabled": false,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1936,7 +1936,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:52:45.392Z",
+  "updatedAt": "2026-11-21T12:31:25.295Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2002,17 +2002,9 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [
-      {
-        "category": "custom",
-        "title": "دخول المسجد",
-        "text": "اللهم تقبل",
-        "count": 1,
-        "id": "custom-dhikr-1795256896347-ial4",
-        "isCustom": true
-      },
       {
         "category": "custom",
         "title": "دخول",
@@ -2036,6 +2028,14 @@
         "count": 3,
         "reward": "عند دخول اجتماع هام",
         "id": "custom-dhikr-1794374575688-bs2r",
+        "isCustom": true
+      },
+      {
+        "category": "custom",
+        "title": "دخول المسجد",
+        "text": "اللهم تقبل",
+        "count": 1,
+        "id": "custom-dhikr-1795256896347-ial4",
         "isCustom": true
       }
     ],

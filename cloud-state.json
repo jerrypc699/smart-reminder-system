@@ -859,17 +859,27 @@
       "title": "اجتماع  بخصوص مشروع الضبعه",
       "description": "موقف الاعاشات\nموقف السكن والمواصلات\nموقف شركة النقل\nموقف الرد على المكالمات وتنسيقها \nدراسه اسعار مرتبات العمالة \nورقه الضد",
       "dueDate": "2026-11-21",
-      "dueTime": "09:00",
+      "dueTime": "12:22",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع  بخصوص مشروع الضبعه.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "tts",
+      "audioMode": "custom",
       "id": "task-1795191185537-gncbn",
       "status": "pending",
       "createdAt": "2026-11-20T16:13:05.537Z",
-      "lastRemindedAt": "2026-11-21T06:55:02.903Z"
+      "lastRemindedAt": "2026-11-21T06:55:02.903Z",
+      "customAudioId": "media_1794463026056_m0xhu",
+      "customAudioName": "افكار",
+      "attachments": [],
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201018282280",
+        "recipientName": "احمد الجيار طاقه",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      }
     },
     {
       "title": "بخصوص الامن",
@@ -1926,7 +1936,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:20:26.415Z",
+  "updatedAt": "2026-11-21T10:20:27.579Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -928,7 +928,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": false,
+      "enabled": true,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1885,7 +1885,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T08:44:39.029Z",
+  "updatedAt": "2026-11-21T08:46:57.716Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1897,15 +1897,15 @@
     "preAzanReminderMinutes": 10,
     "enablePreAzanAlert": true,
     "enableAzanAudio": true,
-    "azanReciter": "mishary",
+    "azanReciter": "abdulbasit",
     "enableDuaaAfterAzan": true
   },
   "audioSettings": {
-    "masterVolume": 0.85,
+    "masterVolume": 1,
     "enableTts": true,
     "ttsVoiceURI": "",
-    "ttsRate": 0.95,
-    "ttsPitch": 1,
+    "ttsRate": 1.3,
+    "ttsPitch": 1.2,
     "chimeSound": "modern",
     "enableSoundEffects": true,
     "soundMuted": false
@@ -1950,10 +1950,44 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "PC",
+  "sourceDevice": "Mobile",
   "athkar": {
-    "customAthkar": [],
-    "favorites": [],
+    "customAthkar": [
+      {
+        "category": "custom",
+        "title": "دخول",
+        "text": "دخول",
+        "count": 1,
+        "id": "custom-dhikr-1794462832067-oumb",
+        "isCustom": true
+      },
+      {
+        "category": "custom",
+        "title": "ذكر بدايه اليوم",
+        "text": "اللهم احفظ مصر",
+        "count": 1,
+        "id": "custom-dhikr-1794462271619-8su2",
+        "isCustom": true
+      },
+      {
+        "category": "custom",
+        "title": "ادعيه ، للقبول",
+        "text": "دخلت عليك بحسن القبول ؛ وختمت فمك بختم الرسول؛\n\n انا احكى وانت تسمع ما اقول ؛\n \nالله اكبر ، الله أكبر ، الله اكبر",
+        "count": 3,
+        "reward": "عند دخول اجتماع هام",
+        "id": "custom-dhikr-1794374575688-bs2r",
+        "isCustom": true
+      }
+    ],
+    "favorites": [
+      "custom-dhikr-1794374575688-bs2r",
+      "m_kursi",
+      "m_asbahna",
+      "m_sayyid",
+      "m_bika",
+      "m_hayy",
+      "m_afiyah"
+    ],
     "totalTasbeeh": 210,
     "dailyTasbeeh": {
       "count": 0,
@@ -2010,7 +2044,9 @@
       "q_hasanah": 1,
       "q_sharh": 1,
       "q_muqallib": 3,
-      "q_huda": 1
+      "q_huda": 1,
+      "custom-dhikr-1794462271619-8su2": 1,
+      "custom-dhikr-1794374575688-bs2r": 3
     },
     "floatingSettings": {
       "enabled": true,

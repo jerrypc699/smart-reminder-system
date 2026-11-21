@@ -950,6 +950,21 @@
       "completedAt": "2026-11-21T10:50:32.400Z",
       "isArchived": true,
       "archivedAt": "2026-11-21T10:50:32.400Z"
+    },
+    {
+      "title": "القيام والذهاب إلى الجيم",
+      "description": "القيام الساعة ٦ صباحًا والذهاب إلى الجيم",
+      "dueDate": "2026-11-22",
+      "dueTime": "06:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: القيام والذهاب إلى الجيم.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1795277159064-c7rc2",
+      "status": "pending",
+      "createdAt": "2026-11-21T16:05:59.064Z"
     }
   ],
   "employees": [
@@ -1851,7 +1866,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T16:05:57.829Z",
+  "updatedAt": "2026-11-21T16:05:59.884Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

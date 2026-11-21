@@ -928,7 +928,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": true,
+      "enabled": false,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1890,7 +1890,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T09:01:04.186Z",
+  "updatedAt": "2026-11-21T09:01:04.958Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1955,7 +1955,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [
       {

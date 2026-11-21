@@ -932,8 +932,11 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1795256324176-r1k09",
-      "status": "pending",
-      "createdAt": "2026-11-21T10:18:44.176Z"
+      "status": "completed",
+      "createdAt": "2026-11-21T10:18:44.176Z",
+      "completedAt": "2026-11-21T10:50:32.400Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:50:32.400Z"
     }
   ],
   "employees": [
@@ -1895,7 +1898,7 @@
           {
             "id": "imp_task-1795256324176-r1k09_2026-11-21",
             "t": "اجتماع الضبعه",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795256324176-r1k09"
           }
         ],
@@ -1926,7 +1929,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:50:33.264Z",
+  "updatedAt": "2026-11-21T10:50:33.954Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -1078,6 +1078,11 @@
     "webhookSecret": "",
     "savedContacts": [
       {
+        "id": "wa_contact_1795251584360",
+        "name": "التستاذ الفاضل احمد الجيار",
+        "phone": "201018282280"
+      },
+      {
         "id": "wa_contact_1794858958538",
         "name": "حبيبى",
         "phone": "201066613188"
@@ -1885,7 +1890,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T08:59:44.642Z",
+  "updatedAt": "2026-11-21T08:59:45.849Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

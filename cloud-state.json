@@ -1885,7 +1885,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T07:04:59.378Z",
+  "updatedAt": "2026-11-21T07:04:59.601Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1950,7 +1950,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [],
     "favorites": [],

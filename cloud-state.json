@@ -167,12 +167,14 @@
         "recipientName": "التستاذ الفاضل احمد الجيار",
         "autoTriggerAtDueTime": true,
         "includeAttachmentsLinks": true,
-        "lastSentAt": "2026-11-12T12:29:19.860Z",
+        "lastSentAt": "2026-11-21T09:02:43.931Z",
         "lastSendStatus": "opened_app"
       },
       "id": "task-1794483515605-7t2dt",
       "status": "pending",
-      "createdAt": "2026-11-12T11:38:35.605Z"
+      "createdAt": "2026-11-12T11:38:35.605Z",
+      "lastDueAlarmAt": "2026-11-21T09:02:43.903Z",
+      "lastRemindedAt": "2026-11-21T09:02:43.903Z"
     },
     {
       "title": "ملف التامينات",
@@ -928,7 +930,7 @@
       "scheduledTime": "22:20",
       "repeat": "none",
       "volume": 0.9,
-      "enabled": true,
+      "enabled": false,
       "audioId": "media_1794287818936_k4oav",
       "audioName": "181912",
       "audioDuration": 21,
@@ -1890,7 +1892,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T09:02:16.051Z",
+  "updatedAt": "2026-11-21T09:02:46.187Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -1955,7 +1957,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [
       {

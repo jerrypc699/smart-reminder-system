@@ -53,31 +53,30 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.42.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.43.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.42.apk
-          path: DrAbdelaziz-Reminder-v1.0.42.apk
+          name: DrAbdelaziz-Reminder-v1.0.43.apk
+          path: DrAbdelaziz-Reminder-v1.0.43.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.42
+      - name: Create or Update GitHub Release v1.0.43
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.42
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.42"
+          tag_name: v1.0.43
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.43"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.42
-            - حماية كاملة ومطلقة للبيانات والمهام المسجلة (Anti-Data-Loss Shield) تمنع تصفير المهام أو اختفاءها أثناء استخدام التطبيق.
-            - إيقاف الاستبدال التلقائي الخاطئ من مجموعات السحابة الفارغة واستبداله بنظام دمج ذكي وغير هدام (Non-Destructive Smart Merge).
-            - استعادة تلقائية فورية للمهام من الخزنة المركزية الدائمة (Master Vault) في حال حدوث أي خلل في الذاكرة المؤقتة.
-            - مزامنة خلفية متزامنة بين السحابة وقواعد البيانات وقنوات المزامنة دون أي فقدان لأي مهمة نشطة أو مؤرشفة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.43
+            - مشغّل فيديو داخلي لمعاينة وتشغيل الفيديو قبل إرفاقه للمهمة مع إمكانية الفحص الكامل واعتماد الإرفاق أو الإلغاء.
+            - تشغيل أي فيديو مرفق في المهام مباشرة داخل التطبيق دون الحاجة لمتصفح خارجي أو تنزيل.
+            - درع حماية إضافي لمنع تصفير أو فقدان بيانات المهام في الخلفية.
           files: |
-            DrAbdelaziz-Reminder-v1.0.42.apk
+            DrAbdelaziz-Reminder-v1.0.43.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -90,7 +89,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.42.apk
+            DrAbdelaziz-Reminder-v1.0.43.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

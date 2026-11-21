@@ -175,9 +175,11 @@ class TaskAttachmentService {
    */
   public async openAttachment(
     att: TaskAttachment,
-    onImagePreview?: (url: string, title: string) => void
+    onImagePreview?: (url: string, title: string) => void,
+    onVideoPreview?: (url: string, title: string) => void
   ): Promise<void> {
-    const isImage = att.type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name);
+    const isImage = (att.type && att.type.startsWith('image/')) || /\.(png|jpe?g|webp|gif)$/i.test(att.name);
+    const isVideo = (att.type && att.type.startsWith('video/')) || /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(att.name);
     const localBlob = await this.getAttachmentBlob(att.id);
     const url = localBlob ? URL.createObjectURL(localBlob) : att.cloudUrl;
 
@@ -188,6 +190,11 @@ class TaskAttachmentService {
 
     if (isImage && onImagePreview) {
       onImagePreview(url, att.name);
+      return;
+    }
+
+    if (isVideo && onVideoPreview) {
+      onVideoPreview(url, att.name);
       return;
     }
 

@@ -68,6 +68,7 @@ import {
 import { VoiceTaskModal } from './VoiceTaskModal';
 import { PdfExportModal } from './PdfExportModal';
 import { ImageLightboxModal } from './ImageLightboxModal';
+import { VideoPlayerModal, VideoPreviewData } from './VideoPlayerModal';
 import { OfficialTaskDispatchModal } from './OfficialTaskDispatchModal';
 
 interface TasksViewProps {
@@ -99,6 +100,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<VideoPreviewData | null>(null);
 
   // Form State
   const todayStr = getLocalDateStr();
@@ -556,28 +558,74 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setIsAddModalOpen(true);
   };
 
+  const isVideoFile = (f: File) =>
+    (f.type && f.type.toLowerCase().startsWith('video/')) ||
+    (f.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(f.name));
+
   const handleUploadModalAttachments = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
-    setIsUploadingAttachment(true);
-    try {
-      const uploaded: TaskAttachment[] = [];
-      for (let i = 0; i < fileList.length; i++) {
-        const f = fileList[i];
-        setAttachmentStatusMsg(`جاري رفع وإرفاق: ${f.name}...`);
-        const meta = await taskAttachmentService.saveAttachment(f, (pct) => {
-          setAttachmentStatusMsg(`جاري رفع "${f.name}" للسحابة: ${pct}%`);
-        });
-        uploaded.push(meta);
+
+    const filesArray = Array.from(fileList);
+    const videoFiles = filesArray.filter(isVideoFile);
+    const nonVideoFiles = filesArray.filter((f) => !isVideoFile(f));
+
+    // 1. Process non-video files directly
+    if (nonVideoFiles.length > 0) {
+      setIsUploadingAttachment(true);
+      try {
+        const uploaded: TaskAttachment[] = [];
+        for (const f of nonVideoFiles) {
+          setAttachmentStatusMsg(`جاري رفع وإرفاق: ${f.name}...`);
+          const meta = await taskAttachmentService.saveAttachment(f, (pct) => {
+            setAttachmentStatusMsg(`جاري رفع "${f.name}" للسحابة: ${pct}%`);
+          });
+          uploaded.push(meta);
+        }
+        setAttachments((prev) => [...prev, ...uploaded]);
+        setAttachmentStatusMsg(`تم إرفاق ${uploaded.length} ملف بنجاح ✓`);
+      } catch (err: any) {
+        setAttachmentStatusMsg(`خطأ أثناء رفع الملف: ${err?.message || ''}`);
+      } finally {
+        setIsUploadingAttachment(false);
       }
-      setAttachments((prev) => [...prev, ...uploaded]);
-      setAttachmentStatusMsg(`تم إرفاق ${uploaded.length} ملف بنجاح ✓`);
-    } catch (err: any) {
-      setAttachmentStatusMsg(`خطأ أثناء رفع الملف: ${err?.message || ''}`);
-    } finally {
-      setIsUploadingAttachment(false);
-      e.target.value = '';
     }
+
+    // 2. For video files: open the in-app player preview FIRST before adding to the task!
+    if (videoFiles.length > 0) {
+      const vFile = videoFiles[0];
+      const objectUrl = URL.createObjectURL(vFile);
+
+      setPreviewVideo({
+        url: objectUrl,
+        title: vFile.name,
+        size: vFile.size,
+        isPreAttachment: true,
+        confirmLoading: false,
+        onConfirmAttach: async () => {
+          setPreviewVideo((prev) => (prev ? { ...prev, confirmLoading: true } : null));
+          setIsUploadingAttachment(true);
+          try {
+            setAttachmentStatusMsg(`جاري رفع وإرفاق فيديو: ${vFile.name}...`);
+            const meta = await taskAttachmentService.saveAttachment(vFile, (pct) => {
+              setAttachmentStatusMsg(`جاري رفع فيديو "${vFile.name}" للسحابة: ${pct}%`);
+            });
+            setAttachments((prev) => [...prev, meta]);
+            setAttachmentStatusMsg(`تم فحص واعتماد وإرفاق الفيديو بنجاح ✓`);
+          } catch (err: any) {
+            setAttachmentStatusMsg(`خطأ أثناء رفع الفيديو: ${err?.message || ''}`);
+          } finally {
+            setIsUploadingAttachment(false);
+            setPreviewVideo(null);
+            try {
+              URL.revokeObjectURL(objectUrl);
+            } catch {}
+          }
+        },
+      });
+    }
+
+    e.target.value = '';
   };
 
   const handleQuickAttachFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -587,27 +635,61 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const task = tasks.find((t) => t.id === targetId);
     if (!task) return;
 
-    try {
-      const added: TaskAttachment[] = [];
-      for (let i = 0; i < fileList.length; i++) {
-        const meta = await taskAttachmentService.saveAttachment(fileList[i]);
-        added.push(meta);
+    const filesArray = Array.from(fileList);
+    const videoFiles = filesArray.filter(isVideoFile);
+    const nonVideoFiles = filesArray.filter((f) => !isVideoFile(f));
+
+    if (nonVideoFiles.length > 0) {
+      try {
+        const added: TaskAttachment[] = [];
+        for (const f of nonVideoFiles) {
+          const meta = await taskAttachmentService.saveAttachment(f);
+          added.push(meta);
+        }
+        const nextAtts = [...(task.attachments || []), ...added];
+        onUpdateTask(targetId, {
+          attachments: nextAtts,
+        });
+      } catch (err: any) {
+        alert('تعذر رفع الملف: ' + (err?.message || ''));
       }
-      const nextAtts = [...(task.attachments || []), ...added];
-      const hasVideo = nextAtts.some((a) =>
-        (a.type && a.type.toLowerCase().startsWith('video/')) ||
-        (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
-      );
-      onUpdateTask(targetId, {
-        attachments: nextAtts,
-        customMediaType: hasVideo ? 'video' : task.customMediaType,
-      });
-    } catch (err: any) {
-      alert('تعذر رفع الملف: ' + (err?.message || ''));
-    } finally {
-      setQuickAttachTargetId(null);
-      e.target.value = '';
     }
+
+    if (videoFiles.length > 0) {
+      const vFile = videoFiles[0];
+      const objectUrl = URL.createObjectURL(vFile);
+
+      setPreviewVideo({
+        url: objectUrl,
+        title: vFile.name,
+        size: vFile.size,
+        isPreAttachment: true,
+        confirmLoading: false,
+        onConfirmAttach: async () => {
+          setPreviewVideo((prev) => (prev ? { ...prev, confirmLoading: true } : null));
+          try {
+            const meta = await taskAttachmentService.saveAttachment(vFile);
+            const nextAtts = [...(task.attachments || []), meta];
+            onUpdateTask(targetId, {
+              attachments: nextAtts,
+              customMediaType: 'video',
+            });
+          } catch (err: any) {
+            alert('تعذر إرفاق الفيديو: ' + (err?.message || ''));
+          } finally {
+            setPreviewVideo(null);
+            setQuickAttachTargetId(null);
+            try {
+              URL.revokeObjectURL(objectUrl);
+            } catch {}
+          }
+        },
+      });
+    } else {
+      setQuickAttachTargetId(null);
+    }
+
+    e.target.value = '';
   };
 
   const handleRemoveModalAttachment = async (attId: string) => {
@@ -1505,8 +1587,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        taskAttachmentService.openAttachment(att, (url, title) =>
-                                          setPreviewImage({ url, title })
+                                        taskAttachmentService.openAttachment(
+                                          att,
+                                          (url, title) => setPreviewImage({ url, title }),
+                                          (url, title) => setPreviewVideo({ url, title, isPreAttachment: false })
                                         )
                                       }
                                       className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
@@ -2239,21 +2323,24 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           <button
                             type="button"
                             onClick={() =>
-                              taskAttachmentService.openAttachment(att, (url, title) =>
-                                setPreviewImage({ url, title })
+                              taskAttachmentService.openAttachment(
+                                att,
+                                (url, title) => setPreviewImage({ url, title }),
+                                (url, title) => setPreviewVideo({ url, title, isPreAttachment: false })
                               )
                             }
-                            className="flex items-center gap-2 min-w-0 flex-1 text-right hover:text-indigo-300 cursor-pointer"
+                            className="flex items-center gap-2 min-w-0 flex-1 text-right hover:text-amber-300 cursor-pointer"
                           >
                             {isVid ? (
-                              <Film className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <Film className="w-4 h-4 text-amber-400 shrink-0" />
                             ) : (
                               <Paperclip className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                             )}
                             <span className="truncate font-semibold text-white">{att.name}</span>
                             {isVid && (
-                              <span className="px-1.5 py-0.5 rounded bg-amber-400/25 text-amber-300 text-[9px] font-extrabold shrink-0 border border-amber-400/30">
-                                منبه فيديو 🎬
+                              <span className="px-2 py-0.5 rounded-lg bg-amber-400/25 text-amber-300 text-[10px] font-extrabold shrink-0 border border-amber-400/30 flex items-center gap-1">
+                                <Play className="w-3 h-3 fill-amber-300 text-amber-300" />
+                                <span>تشغيل الفيديو</span>
                               </span>
                             )}
                             <span className="text-[10px] text-slate-400 shrink-0 font-mono">
@@ -2723,6 +2810,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
       {/* Lightbox Preview for Image Attachments */}
       <ImageLightboxModal image={previewImage} onClose={() => setPreviewImage(null)} />
 
+      {/* In-App Video Player & Pre-Attachment Inspection Modal */}
+      <VideoPlayerModal
+        video={previewVideo}
+        onClose={() => {
+          if (previewVideo?.url && previewVideo.isPreAttachment) {
+            try {
+              URL.revokeObjectURL(previewVideo.url);
+            } catch {}
+          }
+          setPreviewVideo(null);
+        }}
+      />
+
       {/* Employee Profile Create / Edit Modal */}
       {isEmployeeModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
@@ -3144,8 +3244,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                                             key={att.id}
                                             type="button"
                                             onClick={() =>
-                                              taskAttachmentService.openAttachment(att, (url, title) =>
-                                                setPreviewImage({ url, title })
+                                              taskAttachmentService.openAttachment(
+                                                att,
+                                                (url, title) => setPreviewImage({ url, title }),
+                                                (url, title) => setPreviewVideo({ url, title, isPreAttachment: false })
                                               )
                                             }
                                             className="px-2 py-0.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-[10px] font-bold flex items-center gap-1 hover:bg-indigo-500/25 cursor-pointer"

@@ -211,7 +211,7 @@ export class TaskService {
         const { cloudSyncService } = await import('./cloudSyncService');
         if (cloudSyncService.isAvailable()) {
           const currentTasks = this.getTasks();
-          currentTasks.forEach((t) => cloudSyncService.syncTask(t).catch(() => {}));
+          currentTasks.forEach((t) => cloudSyncService.syncTask(t).catch(() => { }));
         }
       } catch (e) {
         console.warn('Auto cloud sync failed:', e);
@@ -247,8 +247,8 @@ export class TaskService {
           map.set(local.id, {
             ...remote,
             ...local,
-            status: local.status === 'completed' || remote.status === 'completed' 
-              ? 'completed' 
+            status: local.status === 'completed' || remote.status === 'completed'
+              ? 'completed'
               : (local.status || remote.status),
           });
         }
@@ -317,7 +317,7 @@ export class TaskService {
                 return fromVault;
               }
             }
-          } catch {}
+          } catch { }
         }
         return INITIAL_TASKS.filter((t) => !deletedIds.has(t.id));
       }
@@ -335,7 +335,7 @@ export class TaskService {
                 return fromVault;
               }
             }
-          } catch {}
+          } catch { }
         }
       }
       return Array.isArray(parsed) ? parsed.filter((t) => t && t.id && !deletedIds.has(t.id)) : [];
@@ -378,7 +378,7 @@ export class TaskService {
       }
       import('./appPersistenceService').then(({ appPersistenceService }) => {
         appPersistenceService.triggerSave('tasks');
-      }).catch(() => {});
+      }).catch(() => { });
     } catch (e) {
       console.error('Failed to save tasks', e);
     }
@@ -460,9 +460,9 @@ export class TaskService {
     const tasks = this.getTasks().filter((t) => t.id !== taskId);
     this.saveTasks(tasks, true);
     import('./vercelCloudSync').then(({ vercelCloudSync }) => {
-      vercelCloudSync.pushCurrentState({ 
-        tasks, 
-        deletedTaskIds: this.getDeletedTaskIds() 
+      vercelCloudSync.pushCurrentState({
+        tasks,
+        deletedTaskIds: this.getDeletedTaskIds()
       }).catch(console.warn);
     }).catch(console.warn);
     import('./supabaseService').then(({ supabaseService }) => {
@@ -549,7 +549,7 @@ export class TaskService {
       }
       import('./appPersistenceService').then(({ appPersistenceService }) => {
         appPersistenceService.triggerSave('tasks');
-      }).catch(() => {});
+      }).catch(() => { });
     } catch (e) {
       console.error('Failed to save employees', e);
     }
@@ -603,9 +603,9 @@ export class TaskService {
     const list = this.getEmployees().filter((emp) => emp.id !== id);
     this.saveEmployees(list, true);
     import('./vercelCloudSync').then(({ vercelCloudSync }) => {
-      vercelCloudSync.pushCurrentState({ 
-        employees: list, 
-        deletedEmployeeIds: this.getDeletedEmployeeIds() 
+      vercelCloudSync.pushCurrentState({
+        employees: list,
+        deletedEmployeeIds: this.getDeletedEmployeeIds()
       }).catch(console.warn);
     }).catch(console.warn);
     import('./supabaseService').then(({ supabaseService }) => {

@@ -53,32 +53,29 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.35.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.36.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.35.apk
-          path: DrAbdelaziz-Reminder-v1.0.35.apk
+          name: DrAbdelaziz-Reminder-v1.0.36.apk
+          path: DrAbdelaziz-Reminder-v1.0.36.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.35
+      - name: Create or Update GitHub Release v1.0.36
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.35
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.35"
+          tag_name: v1.0.36
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.36"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.35
-            - تحديث واجهة قائمة المهام اليومية بالكامل بنفس شكل ونمط وألوان مواقيت الصلاة الإسلامية الملكية الفاخرة:
-              1. شريط أفقي أسبوعي فاخر للأيام (الشهر، رقم اليوم، اسم اليوم، مؤشر عدد المهام) مع تمييز اليوم النشط ببطاقة خضراء زمردية وذهبية.
-              2. شريط تصنيفات المهام البيضاوي السلس (الكل، عيادة، عمل، اجتماعات، مواعيد، صحي، إداري، برمجة).
-              3. بطاقات مهام يومية أنيقة (تصنيف المهمة أعلى اليمين بلونه المخصص، وقت المهمة بالأيقونة أعلى اليسار، عنوان المهمة بأيقونة المستند والتقويم، وشريط الإجراءات والواتساب).
-              4. زر الإضافة الدائري العائم (FAB) الذهبي الملكي ثلاثي الأبعاد في أسفل الشاشة لسرعة الإضافة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.36
+            - تحسين ألوان وقراءة قائمة المهام اليومية وأزرار التصنيفات والشريط الأسبوعي بأعلى تباين ووضوح فائق في الوضع الفاتح والداكن.
+            - ميزة الإملاء الصوتي المستمر للمهام (Push-to-Talk): يستمر الميكروفون بالتسجيل بدون توقف طالما ضاغط على الزر حتى رفع اليد.
           files: |
-            DrAbdelaziz-Reminder-v1.0.35.apk
+            DrAbdelaziz-Reminder-v1.0.36.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -91,7 +88,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.35.apk
+            DrAbdelaziz-Reminder-v1.0.36.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

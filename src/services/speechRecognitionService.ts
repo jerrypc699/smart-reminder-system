@@ -15,6 +15,10 @@ class UniversalSpeechService {
   private isStarting: boolean = false;
   private partialListenerHandle: any = null;
   private listeningStateHandle: any = null;
+  private accumulatedText: string = '';
+  private currentSegmentText: string = '';
+  private activeCallbacks: SpeechRecognitionCallbacks | null = null;
+  private restartTimeout: any = null;
 
   constructor() {
     this.isNative = Capacitor.isNativePlatform();
@@ -53,7 +57,7 @@ class UniversalSpeechService {
   }
 
   /**
-   * Start Voice Dictation
+   * Start Voice Dictation with continuous listening support
    */
   public async startListening(callbacks: SpeechRecognitionCallbacks): Promise<boolean> {
     // Prevent concurrent startup race conditions
@@ -63,6 +67,13 @@ class UniversalSpeechService {
     }
 
     this.isStarting = true;
+    this.activeCallbacks = callbacks;
+    this.accumulatedText = '';
+    this.currentSegmentText = '';
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout);
+      this.restartTimeout = null;
+    }
 
     try {
       // 1. Ensure any previous native or web session is cleanly stopped
@@ -97,28 +108,62 @@ class UniversalSpeechService {
             this.listeningStateHandle = null;
           }
 
-          // Force stop any lingering native session cleanly before starting and wait for IDLE
+          // Force stop any lingering native session cleanly before starting
           try {
             const isLis = await SpeechRecognition.isListening().catch(() => ({ listening: false }));
             if (isLis.listening) {
               await SpeechRecognition.forceStop({ timeout: 0 }).catch(() => {});
-              await new Promise((resolve) => setTimeout(resolve, 300));
+              await new Promise((resolve) => setTimeout(resolve, 250));
             }
           } catch {}
 
           // Listen for partial and final results in real-time
           this.partialListenerHandle = await SpeechRecognition.addListener('partialResults', (event: any) => {
             if (event && event.matches && event.matches.length > 0) {
-              callbacks.onResult(event.matches[0], false);
+              this.currentSegmentText = event.matches[0];
+              const combined = this.accumulatedText
+                ? `${this.accumulatedText} ${this.currentSegmentText}`
+                : this.currentSegmentText;
+              this.activeCallbacks?.onResult(combined, false);
             }
           });
 
           // Listen for session stop / completion state
-          this.listeningStateHandle = await SpeechRecognition.addListener('listeningState', (event: any) => {
+          // When Android speech engine stops after pause, if isCurrentlyListening is true (push-to-talk), auto-restart!
+          this.listeningStateHandle = await SpeechRecognition.addListener('listeningState', async (event: any) => {
             if (event && (event.status === 'stopped' || event.state === 'stopped')) {
-              this.isCurrentlyListening = false;
-              this.isStarting = false;
-              callbacks.onEnd?.();
+              // If user is still holding or hasn't called stopListening:
+              if (this.isCurrentlyListening) {
+                // Commit segment text
+                if (this.currentSegmentText) {
+                  this.accumulatedText = this.accumulatedText
+                    ? `${this.accumulatedText} ${this.currentSegmentText}`
+                    : this.currentSegmentText;
+                  this.currentSegmentText = '';
+                }
+
+                console.log('[UniversalSpeechService] Recognizer reached silence threshold while user is still dictating. Seamlessly restarting...');
+                // Briefly wait and restart so speech is continuous until user lifts hand
+                if (this.restartTimeout) clearTimeout(this.restartTimeout);
+                this.restartTimeout = setTimeout(async () => {
+                  if (this.isCurrentlyListening) {
+                    try {
+                      await SpeechRecognition.start({
+                        language: 'ar-EG',
+                        maxResults: 3,
+                        prompt: 'استمر بالحديث يا دكتور عبد العزيز...',
+                        popup: false,
+                        partialResults: true,
+                        addPunctuation: true,
+                      });
+                    } catch (restartErr) {
+                      console.warn('[UniversalSpeechService] Native auto-restart notice:', restartErr);
+                    }
+                  }
+                }, 120);
+              } else {
+                this.activeCallbacks?.onEnd?.();
+              }
             }
           });
 
@@ -144,7 +189,7 @@ class UniversalSpeechService {
               if (errStr.includes('already running') || errStr.includes('busy')) {
                 console.warn(`[SpeechRecognition] Recognizer busy (attempt ${attempt + 1}/4), waiting for idle state...`);
                 await SpeechRecognition.forceStop({ timeout: 0 }).catch(() => {});
-                await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+                await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
               } else {
                 throw startErr;
               }
@@ -189,7 +234,7 @@ class UniversalSpeechService {
       try {
         const rec = new SpeechRec();
         rec.lang = 'ar-EG';
-        rec.continuous = false;
+        rec.continuous = true; // Continuous listening - does not stop on pauses
         rec.interimResults = true;
         rec.maxAlternatives = 1;
 
@@ -199,28 +244,46 @@ class UniversalSpeechService {
         };
 
         rec.onresult = (event: any) => {
-          let currentText = '';
-          let isFinal = false;
+          let interimText = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentText += event.results[i][0].transcript;
-            if (event.results[i].isFinal) isFinal = true;
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              this.accumulatedText = this.accumulatedText
+                ? `${this.accumulatedText} ${transcript}`
+                : transcript;
+            } else {
+              interimText += transcript;
+            }
           }
-          callbacks.onResult(currentText, isFinal);
+          const fullText = (this.accumulatedText + (interimText ? ' ' + interimText : '')).trim();
+          callbacks.onResult(fullText, false);
         };
 
         rec.onerror = (e: any) => {
           console.warn('Web speech recognition error:', e.error);
-          this.isCurrentlyListening = false;
           if (e.error === 'not-allowed') {
+            this.isCurrentlyListening = false;
             callbacks.onError?.('تم رفض إذن الميكروفون. يرجى تفعيل إذن الميكروفون من إعدادات المتصفح.');
           } else if (e.error !== 'no-speech') {
-            callbacks.onError?.(`خطأ في التعرف الصوتي: ${e.error}`);
+            // Keep going if it's just a temporary no-speech pause
+            if (!this.isCurrentlyListening) {
+              callbacks.onError?.(`خطأ في التعرف الصوتي: ${e.error}`);
+            }
           }
         };
 
         rec.onend = () => {
-          this.isCurrentlyListening = false;
-          callbacks.onEnd?.();
+          if (this.isCurrentlyListening) {
+            // Browser stopped on silence while user is still dictating; auto-resume
+            try {
+              rec.start();
+            } catch {
+              this.isCurrentlyListening = false;
+              callbacks.onEnd?.();
+            }
+          } else {
+            callbacks.onEnd?.();
+          }
         };
 
         this.webRecognition = rec;
@@ -243,9 +306,14 @@ class UniversalSpeechService {
     this.isCurrentlyListening = false;
     this.isStarting = false;
 
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout);
+      this.restartTimeout = null;
+    }
+
     if (this.isNative) {
       try {
-        await SpeechRecognition.forceStop({ timeout: 10 }).catch(() => {});
+        await SpeechRecognition.forceStop({ timeout: 0 }).catch(() => {});
         if (this.partialListenerHandle) {
           await this.partialListenerHandle.remove().catch(() => {});
           this.partialListenerHandle = null;
@@ -263,6 +331,19 @@ class UniversalSpeechService {
       } catch {}
       this.webRecognition = null;
     }
+
+    // Final result callback
+    if (this.currentSegmentText) {
+      this.accumulatedText = this.accumulatedText
+        ? `${this.accumulatedText} ${this.currentSegmentText}`
+        : this.currentSegmentText;
+      this.currentSegmentText = '';
+    }
+
+    if (this.accumulatedText) {
+      this.activeCallbacks?.onResult(this.accumulatedText, true);
+    }
+    this.activeCallbacks?.onEnd?.();
   }
 
   public isListening(): boolean {

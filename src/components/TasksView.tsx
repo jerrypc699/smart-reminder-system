@@ -810,21 +810,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const getCategoryPillStyle = (cat: TaskCategory) => {
     switch (cat) {
       case 'clinic':
-        return 'bg-sky-500/25 text-sky-200 border-sky-400/50 shadow-sm shadow-sky-500/20';
+        return 'bg-sky-100 text-sky-950 border-sky-300 dark:bg-sky-950/70 dark:text-sky-200 dark:border-sky-500/40 shadow-sm';
       case 'work':
-        return 'bg-amber-500/25 text-amber-200 border-amber-400/50 shadow-sm shadow-amber-500/20';
+        return 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-500/40 shadow-sm';
       case 'meeting':
-        return 'bg-rose-500/25 text-rose-200 border-rose-400/50 shadow-sm shadow-rose-500/20';
+        return 'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-500/40 shadow-sm';
       case 'personal':
-        return 'bg-pink-500/25 text-pink-200 border-pink-400/50 shadow-sm shadow-pink-500/20';
+        return 'bg-pink-100 text-pink-950 border-pink-300 dark:bg-pink-950/70 dark:text-pink-200 dark:border-pink-500/40 shadow-sm';
       case 'health':
-        return 'bg-emerald-500/25 text-emerald-200 border-emerald-400/50 shadow-sm shadow-emerald-500/20';
+        return 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-200 dark:border-emerald-500/40 shadow-sm';
       case 'dev':
-        return 'bg-indigo-500/25 text-indigo-200 border-indigo-400/50 shadow-sm shadow-indigo-500/20';
+        return 'bg-indigo-100 text-indigo-950 border-indigo-300 dark:bg-indigo-950/70 dark:text-indigo-200 dark:border-indigo-500/40 shadow-sm';
       case 'admin':
-        return 'bg-purple-500/25 text-purple-200 border-purple-400/50 shadow-sm shadow-purple-500/20';
+        return 'bg-purple-100 text-purple-950 border-purple-300 dark:bg-purple-950/70 dark:text-purple-200 dark:border-purple-500/40 shadow-sm';
       default:
-        return 'bg-teal-500/25 text-teal-200 border-teal-400/50 shadow-sm shadow-teal-500/20';
+        return 'bg-slate-100 text-slate-900 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-sm';
     }
   };
 
@@ -1033,12 +1033,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
           {/* ======================================================== */}
           {/* 1. HORIZONTAL WEEKLY DATE STRIP (MATCHING SCREENSHOT) */}
           {/* ======================================================== */}
-          <div className="rounded-3xl p-3.5 sm:p-4 bg-gradient-to-br from-[#0c2e28]/95 via-[#071c18]/95 to-[#041210] border border-emerald-500/30 shadow-[0_12px_35px_rgba(6,34,29,0.4)] space-y-3">
+          <div className="rounded-3xl p-3.5 sm:p-4 bg-white dark:bg-gradient-to-br dark:from-[#0c2e28]/95 dark:via-[#071c18]/95 dark:to-[#041210] border-2 border-emerald-600/20 dark:border-emerald-500/30 shadow-[0_4px_25px_rgba(6,34,29,0.06)] space-y-3">
             {/* Header: Title & Quick Date Filters */}
-            <div className="flex items-center justify-between px-1.5 pb-2 border-b border-emerald-500/20 text-xs font-black">
+            <div className="flex items-center justify-between px-1.5 pb-2 border-b border-slate-200 dark:border-emerald-500/20 text-xs font-black">
               <div className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-[#F5D77F]" />
-                <span className="font-serif text-sm text-[#F5D77F]">
+                <CalendarIcon className="w-4 h-4 text-emerald-600 dark:text-[#F5D77F]" />
+                <span className="font-serif text-sm font-black text-slate-900 dark:text-[#F5D77F]">
                   {selectedDateStr ? selectedDateFormatted : 'المهام اليومية — كافة الأيام'}
                 </span>
               </div>
@@ -1049,7 +1049,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                     selectedDateStr === null
                       ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-sm font-black'
-                      : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20 hover:text-white'
+                      : 'bg-slate-100 dark:bg-emerald-950/40 text-slate-700 dark:text-emerald-300 border-slate-200 dark:border-emerald-500/20 hover:text-slate-950 dark:hover:text-white'
                   }`}
                 >
                   كافة الأيام ({tasks.length})
@@ -1059,8 +1059,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   onClick={() => setSelectedDateStr(todayStr)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                     selectedDateStr === todayStr
-                      ? 'bg-[#0d4a41] text-[#F5D77F] border-[#D4AF37] font-black shadow-sm'
-                      : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/20 hover:text-white'
+                      ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-sm font-black'
+                      : 'bg-slate-100 dark:bg-emerald-950/40 text-slate-700 dark:text-emerald-300 border-slate-200 dark:border-emerald-500/20 hover:text-slate-950 dark:hover:text-white'
                   }`}
                 >
                   اليوم
@@ -1079,14 +1079,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     onClick={() => setSelectedDateStr(isSelected ? null : d.dateStr)}
                     className={`shrink-0 w-[60px] sm:w-[72px] py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer select-none border ${
                       isSelected
-                        ? 'bg-gradient-to-b from-[#0d4a41] via-[#09352e] to-[#06221d] border-2 border-[#D4AF37] text-white shadow-xl shadow-amber-500/20 scale-[1.03]'
-                        : 'bg-slate-950/60 hover:bg-emerald-950/40 border-emerald-500/15 text-slate-300 hover:border-amber-400/30'
+                        ? 'bg-gradient-to-b from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] border-2 border-amber-400 text-slate-950 shadow-md shadow-amber-500/25 scale-[1.03]'
+                        : 'bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-emerald-950/40 border-slate-200 dark:border-emerald-500/15 text-slate-700 dark:text-slate-300 hover:border-amber-400'
                     }`}
                   >
                     {/* Month Name (Top) */}
                     <span
                       className={`text-[10px] leading-tight font-medium ${
-                        isSelected ? 'text-amber-200' : 'text-slate-400'
+                        isSelected ? 'text-amber-950 font-bold' : 'text-slate-500 dark:text-slate-400'
                       }`}
                     >
                       {d.monthName}
@@ -1096,8 +1096,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     <span
                       className={`text-xl sm:text-2xl font-black font-mono my-0.5 leading-none ${
                         isSelected
-                          ? 'text-[#F5D77F] drop-shadow-[0_2px_8px_rgba(245,215,127,0.4)]'
-                          : 'text-white'
+                          ? 'text-slate-950'
+                          : 'text-slate-900 dark:text-white'
                       }`}
                     >
                       {d.dayNum}
@@ -1106,7 +1106,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     {/* Weekday Name (Bottom) */}
                     <span
                       className={`text-[10px] font-bold leading-tight ${
-                        isSelected ? 'text-emerald-200' : 'text-slate-400'
+                        isSelected ? 'text-amber-950 font-black' : 'text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       {d.weekdayName}
@@ -1117,8 +1117,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
                       <span
                         className={`mt-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold leading-tight ${
                           isSelected
-                            ? 'bg-amber-400 text-slate-950'
-                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            ? 'bg-slate-950 text-amber-300'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
                         }`}
                       >
                         {d.taskCount}
@@ -1152,8 +1152,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer border ${
                     isSelected
-                      ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-md shadow-amber-500/25 ring-1 ring-amber-400/50'
-                      : 'bg-gradient-to-r from-[#0c2e28]/70 to-[#06221d]/80 text-emerald-200 border-emerald-500/20 hover:text-white hover:border-amber-400/30'
+                      ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-md shadow-amber-500/25 ring-1 ring-amber-400/50 scale-[1.02]'
+                      : 'bg-white dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-emerald-500/20 hover:border-amber-400 shadow-sm'
                   }`}
                 >
                   {cat.label}
@@ -1259,10 +1259,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     key={task.id}
                     className={`relative rounded-2xl p-4 sm:p-5 transition-all overflow-hidden border ${
                       isCompleted
-                        ? 'bg-slate-950/60 border-slate-800/80 opacity-65'
+                        ? 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 opacity-65'
                         : isUrgent
-                        ? 'bg-gradient-to-br from-[#1c1214] via-[#120a0c] to-[#090506] border-rose-500/50 shadow-[0_10px_30px_rgba(244,63,94,0.2)]'
-                        : 'bg-gradient-to-br from-[#0c2e28]/95 via-[#071c18]/95 to-[#041210] border-emerald-500/30 shadow-[0_12px_35px_rgba(6,34,29,0.35)] hover:border-amber-400/50'
+                        ? 'bg-rose-50/70 dark:bg-gradient-to-br dark:from-[#1c1214] dark:via-[#120a0c] dark:to-[#090506] border-2 border-rose-400/60 shadow-[0_4px_20px_rgba(244,63,94,0.12)]'
+                        : 'bg-white dark:bg-gradient-to-br dark:from-[#0c2e28]/95 dark:via-[#071c18]/95 dark:to-[#041210] border-2 border-emerald-600/20 dark:border-emerald-500/30 shadow-[0_4px_20px_rgba(13,74,65,0.08)] hover:shadow-lg hover:border-amber-400/50'
                     }`}
                   >
                     {/* Top Row: Category Pill Badge (Right) + Due Time with Clock (Left) */}
@@ -1277,8 +1277,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
                       </span>
 
                       {/* Time with Clock Icon (Matching Screenshot 08:50 PM 🕒) */}
-                      <div className="flex items-center gap-1.5 font-mono text-xs sm:text-sm font-bold text-amber-300 bg-slate-950/80 px-3 py-1 rounded-xl border border-amber-400/30 shadow-inner">
-                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      <div className="flex items-center gap-1.5 font-mono text-xs sm:text-sm font-bold text-slate-800 dark:text-amber-300 bg-slate-100 dark:bg-slate-950/80 px-3 py-1 rounded-xl border border-slate-200 dark:border-amber-400/30 shadow-inner">
+                        <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                         <span dir="ltr">{formatTimeDisplay(task.dueTime)}</span>
                       </div>
                     </div>
@@ -1292,7 +1292,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
                             isCompleted
                               ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/30'
-                              : 'bg-slate-900 border-slate-700 hover:border-amber-400 text-transparent'
+                              : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:border-amber-400 text-transparent'
                           }`}
                           title={isCompleted ? 'إلغاء الإتمام' : 'تعليم كمكتمل'}
                         >
@@ -1301,10 +1301,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
                         <div className="space-y-1.5 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <h3
                               className={`text-sm sm:text-base font-extrabold ${
-                                isCompleted ? 'line-through text-slate-500' : 'text-white'
+                                isCompleted ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'
                               }`}
                             >
                               {task.title}
@@ -1345,7 +1345,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           </div>
 
                           {task.description && (
-                            <p className="text-xs text-slate-300/85 mr-6 leading-relaxed">
+                            <p className="text-xs text-slate-600 dark:text-slate-300/85 mr-6 leading-relaxed font-medium">
                               {task.description}
                             </p>
                           )}
@@ -1451,9 +1451,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     </div>
 
                     {/* Action Buttons Toolbar */}
-                    <div className="mt-3.5 pt-3 border-t border-emerald-500/15 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                        <CalendarIcon className="w-3.5 h-3.5 text-emerald-400/80" />
+                    <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-emerald-500/15 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono font-bold">
+                        <CalendarIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400/80" />
                         <span>{task.dueDate}</span>
                       </div>
 
@@ -1463,7 +1463,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           type="button"
                           onClick={() => setOfficialLetterTask(task)}
                           title="إرسال بطاقة التكليف كصورة رسمية على واتساب 📸"
-                          className="p-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/45 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/25 dark:hover:bg-emerald-600/45 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/45 transition-colors cursor-pointer"
                         >
                           <MessageCircle className="w-4 h-4" />
                         </button>
@@ -1473,7 +1473,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           type="button"
                           onClick={() => setOfficialLetterTask(task)}
                           title="معاينة بطاقة التكليف الرسمية (البريد المرسل)"
-                          className="p-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/30 text-sky-700 dark:text-blue-300 border border-sky-300 dark:border-blue-500/30 transition-colors cursor-pointer"
                         >
                           <FileText className="w-4 h-4" />
                         </button>
@@ -1486,7 +1486,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                             quickAttachInputRef.current?.click();
                           }}
                           title="رفع وإرفاق ملف (PDF، صورة، مستند)"
-                          className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 hover:text-white border border-indigo-500/30 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30 transition-colors cursor-pointer"
                         >
                           <Paperclip className="w-4 h-4" />
                         </button>
@@ -1496,7 +1496,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           type="button"
                           onClick={() => onPreviewTaskAudio(task)}
                           title="استماع للتنبيه الصوتي للمهمة"
-                          className="p-2 rounded-xl bg-slate-800/80 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500/30 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800/80 dark:hover:bg-emerald-500/20 text-slate-700 hover:text-emerald-700 dark:text-slate-300 dark:hover:text-emerald-400 border border-slate-300 hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-500/30 transition-colors cursor-pointer"
                         >
                           <Volume2 className="w-4 h-4" />
                         </button>
@@ -1507,7 +1507,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                             type="button"
                             onClick={() => onSnoozeTask(task.id, 10)}
                             title="تأجيل 10 دقائق"
-                            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition-colors cursor-pointer"
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 hover:text-amber-700 dark:text-slate-300 dark:hover:text-amber-400 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
@@ -1518,7 +1518,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           type="button"
                           onClick={() => handleOpenEdit(task)}
                           title="تعديل المهمة"
-                          className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-blue-400 border border-slate-700 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 hover:text-blue-700 dark:text-slate-300 dark:hover:text-blue-400 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
@@ -1528,7 +1528,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           type="button"
                           onClick={() => onDeleteTask(task.id)}
                           title="حذف المهمة"
-                          className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-slate-800/80 dark:hover:bg-rose-500/20 text-rose-700 hover:text-rose-900 dark:text-slate-300 dark:hover:text-rose-400 border border-rose-200 hover:border-rose-300 dark:border-slate-700 dark:hover:border-rose-500/30 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

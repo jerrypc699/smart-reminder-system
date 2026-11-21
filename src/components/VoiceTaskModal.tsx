@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, 
   MicOff, 
@@ -8,7 +8,6 @@ import {
   Clock, 
   Calendar, 
   AlertCircle, 
-  Volume2, 
   RotateCcw,
   MessageCircle
 } from 'lucide-react';
@@ -44,6 +43,10 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
   const [waPhone, setWaPhone] = useState<string>('');
   const [waName, setWaName] = useState<string>('');
 
+  // Push-to-Talk (Hold to speak) refs
+  const pressStartTimeRef = useRef<number>(0);
+  const isHoldingRef = useRef<boolean>(false);
+
   // Modal lifecycle
   useEffect(() => {
     if (!isOpen) {
@@ -54,10 +57,10 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
       setIsStarting(false);
       setWaPhone('');
       setWaName('');
+      isHoldingRef.current = false;
       return;
     }
 
-    // Modal is opened: ready for Dr. Abdelaziz to press the mic button deliberately
     return () => {
       stopListening();
     };
@@ -127,6 +130,39 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
     }
   };
 
+  // Push to talk event handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Left click or touch
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    pressStartTimeRef.current = Date.now();
+    isHoldingRef.current = true;
+    if (!isListening && !isStarting) {
+      startListening();
+    }
+  };
+
+  const handlePointerUp = () => {
+    const elapsed = Date.now() - pressStartTimeRef.current;
+    const wasHolding = isHoldingRef.current;
+    isHoldingRef.current = false;
+
+    // If held for >= 400ms: push-to-talk released -> stop listening as user requested
+    if (wasHolding && elapsed >= 400) {
+      if (isListening || isStarting) {
+        stopListening();
+      }
+    }
+  };
+
+  const handlePointerCancel = () => {
+    if (isHoldingRef.current) {
+      isHoldingRef.current = false;
+      if (isListening) {
+        stopListening();
+      }
+    }
+  };
+
   const handleRetry = async () => {
     setErrorMsg('');
     await stopListening();
@@ -193,47 +229,61 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
           </button>
         </div>
 
-        {/* Microphone Pulse & Status */}
-        <div className="flex flex-col items-center justify-center py-4 space-y-3">
+        {/* Microphone Pulse & Status (Supports Press-and-Hold & Tap-to-Talk) */}
+        <div className="flex flex-col items-center justify-center py-4 space-y-3 select-none">
           <div className="relative">
             {isListening && (
               <>
                 <div className="absolute inset-0 rounded-full bg-emerald-500/30 animate-ping" />
-                <div className="absolute -inset-2 rounded-full bg-teal-500/20 animate-pulse" />
+                <div className="absolute -inset-3 rounded-full bg-teal-500/25 animate-pulse" />
               </>
             )}
             <button
               type="button"
-              onClick={toggleListening}
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+              onClick={() => {
+                const elapsed = Date.now() - pressStartTimeRef.current;
+                if (elapsed < 400) {
+                  toggleListening();
+                }
+              }}
               disabled={isStarting}
-              className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer ${
+              className={`relative z-10 w-24 h-24 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all cursor-pointer touch-none ${
                 isStarting
                   ? 'bg-slate-700 text-slate-300 opacity-80 cursor-wait'
                   : isListening
-                  ? 'bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-rose-500/30 scale-105'
-                  : 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-emerald-500/30 hover:scale-105'
+                  ? 'bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-rose-500/40 scale-105 ring-4 ring-rose-400/50'
+                  : 'bg-gradient-to-tr from-emerald-600 via-teal-600 to-[#D4AF37] text-white shadow-emerald-500/30 hover:scale-105 active:scale-95'
               }`}
             >
               {isStarting ? (
-                <div className="w-8 h-8 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-9 h-9 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin" />
               ) : isListening ? (
-                <MicOff className="w-8 h-8" />
+                <>
+                  <MicOff className="w-9 h-9 animate-pulse" />
+                  <span className="text-[9px] font-black mt-1 text-rose-100">ارفع للحفظ</span>
+                </>
               ) : (
-                <Mic className="w-8 h-8" />
+                <>
+                  <Mic className="w-9 h-9" />
+                  <span className="text-[9px] font-black mt-1 text-emerald-100">اضغط مطولاً</span>
+                </>
               )}
             </button>
           </div>
 
-          <div className="text-center">
-            <span className={`text-sm font-bold ${isStarting ? 'text-teal-400 animate-pulse' : isListening ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`}>
+          <div className="text-center px-4">
+            <span className={`text-sm font-black ${isStarting ? 'text-teal-400 animate-pulse' : isListening ? 'text-emerald-400 animate-pulse' : 'text-slate-200'}`}>
               {isStarting
                 ? '⏳ جاري تجهيز الميكروفون...'
                 : isListening
-                ? '🎙️ جاري الاستماع إلى دكتور عبد العزيز الآن... تفضل بالحديث'
-                : 'اضغط على الميكروفون للتحدث'}
+                ? '🎙️ جاري الاستماع... تفضل بالحديث وارفع يدك عند الانتهاء'
+                : 'اضغط باستمرار للتحدث وارفع يدك عند الانتهاء'}
             </span>
-            <p className="text-[11px] text-slate-500 mt-1">
-              مثال: "مقابلة الجيار غداً الساعة خمسة مساءً" أو "كشف العيادة اليوم الساعة 7 مساء عاجل"
+            <p className="text-[11px] text-slate-400 mt-1">
+              (يعمل بالتسجيل المستمر بدون توقف طالما ضاغط على الزر، أو بنقرة واحدة للتشغيل)
             </p>
           </div>
         </div>
@@ -259,20 +309,20 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
 
         {/* Spoken Text Display */}
         {transcript && (
-          <div className="p-3.5 rounded-2xl bg-slate-800/70 border border-slate-700/60">
-            <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1 font-semibold">
+          <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/60 shadow-sm">
+            <div className="text-[11px] text-emerald-300 mb-1 flex items-center gap-1 font-bold">
               <span>🗣️ ما تم سماعه:</span>
             </div>
-            <p className="text-sm font-medium text-white italic">"{transcript}"</p>
+            <p className="text-sm font-semibold text-white leading-relaxed">"{transcript}"</p>
           </div>
         )}
 
         {/* Parsed Fields (Editable Preview) */}
         {parsed && (
-          <div className="space-y-3.5 p-4 rounded-2xl bg-slate-800/40 border border-emerald-500/20">
-            <div className="flex items-center justify-between text-xs text-emerald-400 font-bold border-b border-slate-700/50 pb-2">
+          <div className="space-y-3.5 p-4 rounded-2xl bg-slate-800/50 border border-emerald-500/30">
+            <div className="flex items-center justify-between text-xs text-[#F5D77F] font-black border-b border-slate-700/50 pb-2">
               <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 البيانات المستخرجة تلقائياً:
               </span>
               <button
@@ -287,7 +337,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
 
             {/* Title */}
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1 font-semibold">عنوان المهمة:</label>
+              <label className="block text-[11px] text-slate-300 mb-1 font-bold">عنوان المهمة:</label>
               <input
                 type="text"
                 value={title}
@@ -299,7 +349,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-semibold flex items-center gap-1">
+                <label className="block text-[11px] text-slate-300 mb-1 font-bold flex items-center gap-1">
                   <Calendar className="w-3 h-3 text-emerald-400" />
                   تاريخ المهمة:
                 </label>
@@ -307,12 +357,12 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-semibold flex items-center gap-1">
+                <label className="block text-[11px] text-slate-300 mb-1 font-bold flex items-center gap-1">
                   <Clock className="w-3 h-3 text-teal-400" />
                   وقت الاستحقاق:
                 </label>
@@ -320,7 +370,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
             </div>
@@ -328,26 +378,26 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
             {/* Category & Priority */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-semibold">التصنيف:</label>
+                <label className="block text-[11px] text-slate-300 mb-1 font-bold">التصنيف:</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as TaskCategory)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
                 >
                   <option value="clinic">🩺 عيادة ومرضى</option>
                   <option value="work">💼 عمل ومشاريع</option>
                   <option value="meeting">👥 اجتماعات ومقابلات</option>
                   <option value="dev">💻 تطوير وبرمجة</option>
-                  <option value="personal">🏠 شخصي ومنزل</option>
+                  <option value="personal">🏠 شخصي ومواعيد</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-semibold">الأولوية:</label>
+                <label className="block text-[11px] text-slate-300 mb-1 font-bold">الأولوية:</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
                 >
                   <option value="urgent">🚨 عاجل جداً</option>
                   <option value="high">⚡ مرتفعة</option>
@@ -358,7 +408,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
             </div>
 
             {/* Optional Scheduled WhatsApp Recipient */}
-            <div className="p-2.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 space-y-2">
+            <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <label className="text-[11px] text-emerald-300 font-bold flex items-center gap-1.5">
                   <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
@@ -375,7 +425,7 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
                         setWaPhone(c.phone);
                         setWaName(c.name);
                       }}
-                      className="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-emerald-300 hover:border-emerald-500/40 cursor-pointer"
+                      className="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-[10px] text-emerald-300 hover:border-emerald-500/40 cursor-pointer font-bold"
                     >
                       {c.name}
                     </button>
@@ -384,42 +434,24 @@ export const VoiceTaskModal: React.FC<VoiceTaskModalProps> = ({
               )}
               <input
                 type="tel"
-                dir="ltr"
+                placeholder="رقم الهاتف (مثال: 01012345678)"
                 value={waPhone}
                 onChange={(e) => setWaPhone(e.target.value)}
-                placeholder="رقم الواتساب (مثال: 01012345678)"
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
 
-            {/* Spoken Voice Alert Preview */}
-            <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-800/30 text-[11px] text-emerald-300 flex items-center gap-2">
-              <Volume2 className="w-4 h-4 shrink-0 text-emerald-400" />
-              <span className="truncate">نطق التنبيه: <strong>{voiceMessage}</strong></span>
-            </div>
+            {/* Confirm Save Button */}
+            <button
+              type="button"
+              onClick={handleSave}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] hover:brightness-105 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
+            >
+              <Check className="w-4 h-4" strokeWidth={2.5} />
+              <span>اعتماد وحفظ المهمة</span>
+            </button>
           </div>
         )}
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-800">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition-all cursor-pointer"
-          >
-            إلغاء
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!title.trim()}
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Check className="w-4 h-4" />
-            <span>حفظ المهمة كمنبه ✅</span>
-          </button>
-        </div>
       </div>
     </div>
   );

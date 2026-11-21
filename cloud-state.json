@@ -62,8 +62,11 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1794805787590-1m88e",
-      "status": "pending",
-      "createdAt": "2026-11-16T05:09:47.590Z"
+      "status": "completed",
+      "createdAt": "2026-11-16T05:09:47.590Z",
+      "completedAt": "2026-11-21T10:49:34.762Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T10:49:34.762Z"
     },
     {
       "title": "اجتماع شركة الامن",
@@ -1797,12 +1800,6 @@
         "weight": "",
         "tasks": [
           {
-            "id": "imp_task-1794805787590-1m88e_2026-11-21",
-            "t": "محمد",
-            "d": false,
-            "sourceTaskId": "task-1794805787590-1m88e"
-          },
-          {
             "id": "imp_task-1794483515605-7t2dt_2026-11-21",
             "t": "اعمال السيستم",
             "d": false,
@@ -1938,7 +1935,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T10:49:35.569Z",
+  "updatedAt": "2026-11-21T10:49:36.265Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

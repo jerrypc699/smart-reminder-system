@@ -1300,7 +1300,7 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1795318688193-x2wfq",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-22T03:38:08.193Z",
       "attachments": [],
       "completedAt": "2026-11-22T10:47:36.615Z",
@@ -2493,7 +2493,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T10:47:41.640Z",
+  "updatedAt": "2026-11-22T10:47:43.726Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

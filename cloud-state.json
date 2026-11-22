@@ -1300,12 +1300,12 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1795318688193-x2wfq",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-22T03:38:08.193Z",
       "attachments": [],
-      "completedAt": "2026-11-22T10:47:36.615Z",
+      "completedAt": "2026-11-22T10:48:03.885Z",
       "isArchived": true,
-      "archivedAt": "2026-11-22T10:47:36.615Z"
+      "archivedAt": "2026-11-22T10:48:03.885Z"
     },
     {
       "title": "ياسمين تشغيل سيارات — تقفيل فواتير شهر 9 وشهر 10",
@@ -2541,7 +2541,7 @@
           {
             "id": "imp_task-1795318688193-x2wfq_2026-11-22",
             "t": "لوائل الشاذلي — اجتماع يوم الاثنين",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795318688193-x2wfq"
           },
           {
@@ -2590,7 +2590,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T10:48:02.570Z",
+  "updatedAt": "2026-11-22T10:48:04.137Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

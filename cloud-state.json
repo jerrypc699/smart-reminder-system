@@ -750,9 +750,12 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794926851089-6vtqg",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-17T14:47:31.089Z",
-      "attachments": []
+      "attachments": [],
+      "completedAt": "2026-11-22T10:48:34.256Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-22T10:48:34.256Z"
     },
     {
       "title": "تسجيل تقرير الاستلامات",
@@ -2493,7 +2496,7 @@
           {
             "id": "imp_task-1794926851089-6vtqg_2026-11-22",
             "t": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1794926851089-6vtqg"
           },
           {
@@ -2590,7 +2593,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T10:48:33.175Z",
+  "updatedAt": "2026-11-22T10:48:34.557Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

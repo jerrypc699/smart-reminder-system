@@ -1192,6 +1192,29 @@
       "id": "task-1795316106531-jyj9a",
       "status": "pending",
       "createdAt": "2026-11-22T02:55:06.531Z"
+    },
+    {
+      "title": "رسالة واتساب — اجتماع مشروع الضبعة اليوم (أحمد عثمان)",
+      "description": "السلام عليكم، عندنا اجتماع النهاردة لمشروع الضبعة بعد صلاة المغرب مباشرة، للمناقشة في السكن، وفي التعيينات، وتنسيق الخطوط والمكالمات الهاتفية.",
+      "dueDate": "2026-11-22",
+      "dueTime": "05:15",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: رسالة واتساب — اجتماع مشروع الضبعة اليوم (أحمد عثمان).  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201063045767",
+        "recipientName": "أحمد عثمان",
+        "customMessage": "السلام عليكم، عندنا اجتماع النهاردة لمشروع الضبعة بعد صلاة المغرب مباشرة، للمناقشة في السكن، وفي التعيينات، وتنسيق الخطوط والمكالمات الهاتفية.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795316896411-v1ljp",
+      "status": "pending",
+      "createdAt": "2026-11-22T03:08:16.411Z"
     }
   ],
   "employees": [
@@ -2284,6 +2307,12 @@
             "t": "رسالة واتساب للأستاذ حمدي المحامي — متابعة العقود",
             "d": false,
             "sourceTaskId": "task-1795316106531-jyj9a"
+          },
+          {
+            "id": "imp_task-1795316896411-v1ljp_2026-11-22",
+            "t": "رسالة واتساب — اجتماع مشروع الضبعة اليوم (أحمد عثمان)",
+            "d": false,
+            "sourceTaskId": "task-1795316896411-v1ljp"
           }
         ],
         "dismissedTaskIds": [],
@@ -2313,7 +2342,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T03:02:34.501Z",
+  "updatedAt": "2026-11-22T03:26:53.780Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -1215,6 +1215,45 @@
       "id": "task-1795316896411-v1ljp",
       "status": "pending",
       "createdAt": "2026-11-22T03:08:16.411Z"
+    },
+    {
+      "title": "مكالمة عمر المحامي",
+      "description": "الاتصال بعمر المحامي بخصوص البنت اللي رشّحها لتعيينها في الشركة تمسك التسويق: البنت لحد دلوقتي ما اشتغلتش، عندها مشكلة في المواعيد واختفت كذا مرة وأعذارها كتير. توصيل المعلومة له بهدوء عشان ما يزعلش، لأنها جاية عن طريقه.",
+      "dueDate": "2026-11-22",
+      "dueTime": "08:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: مكالمة عمر المحامي.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1795318497872-q704q",
+      "status": "pending",
+      "createdAt": "2026-11-22T03:34:57.872Z",
+      "attachments": []
+    },
+    {
+      "title": "رسالة واتساب لوائل الشاذلي — اجتماع يوم الاثنين",
+      "description": "وائل، محتاجك عندي في الشركة في اجتماع يوم الاثنين الساعة ١١ صباحًا.",
+      "dueDate": "2026-11-22",
+      "dueTime": "09:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: رسالة واتساب لوائل الشاذلي — اجتماع يوم الاثنين.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201060627270",
+        "recipientName": "وائل الشاذلي",
+        "customMessage": "وائل، محتاجك عندي في الشركة في اجتماع يوم الاثنين الساعة ١١ صباحًا.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795318688193-x2wfq",
+      "status": "pending",
+      "createdAt": "2026-11-22T03:38:08.193Z"
     }
   ],
   "employees": [
@@ -2342,7 +2381,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T03:33:31.727Z",
+  "updatedAt": "2026-11-22T04:26:54.922Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

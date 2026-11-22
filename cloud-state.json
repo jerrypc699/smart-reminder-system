@@ -1435,6 +1435,29 @@
       "id": "task-1795344578299-sobcf",
       "status": "pending",
       "createdAt": "2026-11-22T10:49:38.299Z"
+    },
+    {
+      "title": "محمود شحاته - اجتماع مشروع الضبعة",
+      "description": "السلام عليكم، عندنا اجتماع النهاردة لمشروع الضبعة بعد صلاة المغرب مباشرة، للمناقشة في السكن، وفي التعيينات، وتنسيق الخطوط والمكالمات الهاتفية.",
+      "dueDate": "2026-11-22",
+      "dueTime": "17:15",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: رسالة واتساب — محمود شحاته - اجتماع مشروع الضبعة.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201001742734",
+        "recipientName": "محمود شحاته",
+        "customMessage": "السلام عليكم، عندنا اجتماع النهاردة لمشروع الضبعة بعد صلاة المغرب مباشرة، للمناقشة في السكن، وفي التعيينات، وتنسيق الخطوط والمكالمات الهاتفية.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795351430499-34yd9",
+      "status": "pending",
+      "createdAt": "2026-11-22T12:43:50.499Z"
     }
   ],
   "employees": [
@@ -1514,6 +1537,17 @@
       "notes": "",
       "id": "emp-1795351418653-hxvt",
       "createdAt": "2026-11-22T12:43:38.653Z"
+    },
+    {
+      "name": "باسم شغل",
+      "role": "",
+      "department": "",
+      "phone": "01097531016",
+      "whatsappPhone": "01097531016",
+      "email": "",
+      "notes": "",
+      "id": "emp-1795351431403-7355",
+      "createdAt": "2026-11-22T12:43:51.403Z"
     }
   ],
   "scheduledMedia": [
@@ -2601,6 +2635,12 @@
             "t": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
             "d": true,
             "sourceTaskId": "task-1794926851089-6vtqg"
+          },
+          {
+            "id": "imp_task-1795351430499-34yd9_2026-11-22",
+            "t": "محمود شحاته - اجتماع مشروع الضبعة",
+            "d": false,
+            "sourceTaskId": "task-1795351430499-34yd9"
           }
         ],
         "dismissedTaskIds": [],
@@ -2630,7 +2670,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T12:43:50.220Z",
+  "updatedAt": "2026-11-22T12:43:51.505Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

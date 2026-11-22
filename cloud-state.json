@@ -969,8 +969,11 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1795277159064-c7rc2",
-      "status": "pending",
-      "createdAt": "2026-11-21T16:05:59.064Z"
+      "status": "completed",
+      "createdAt": "2026-11-21T16:05:59.064Z",
+      "completedAt": "2026-11-22T04:54:34.029Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-22T04:54:34.029Z"
     },
     {
       "title": "رسالة واتساب لحبيبي",
@@ -1092,8 +1095,11 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1795288261773-kmkwj",
-      "status": "pending",
-      "createdAt": "2026-11-21T19:11:01.773Z"
+      "status": "completed",
+      "createdAt": "2026-11-21T19:11:01.773Z",
+      "completedAt": "2026-11-22T04:57:13.197Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-22T04:57:13.197Z"
     },
     {
       "title": "إرسال واتساب إلى أحمد أسعد",
@@ -2326,13 +2332,13 @@
           {
             "id": "imp_task-1795277159064-c7rc2_2026-11-22",
             "t": "القيام والذهاب إلى الجيم",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795277159064-c7rc2"
           },
           {
             "id": "imp_task-1795288261773-kmkwj_2026-11-22",
             "t": "صلاة قيام الليل",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795288261773-kmkwj"
           },
           {
@@ -2393,7 +2399,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T04:32:04.605Z",
+  "updatedAt": "2026-11-22T05:26:55.726Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

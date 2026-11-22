@@ -257,6 +257,26 @@ class AudioService {
       // Ayat Al-Kursi by Sheikh Mishary Alafasy
       return ['https://everyayah.com/data/Alafasy_128kbps/002255.mp3'];
     }
+    if (norm.includes('قلهواللهأحد') && norm.includes('قلأعوذبربالفلق')) {
+      // Complete recitation of Al-Ikhlas + Al-Falaq + An-Nas
+      return [
+        'https://everyayah.com/data/Alafasy_128kbps/112001.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/112002.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/112003.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/112004.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113001.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113002.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113003.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113004.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113005.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114001.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114002.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114003.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114004.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114005.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114006.mp3',
+      ];
+    }
     if (norm.includes('قلهواللهأحد')) {
       return [
         'https://everyayah.com/data/Alafasy_128kbps/112001.mp3',
@@ -328,12 +348,10 @@ class AudioService {
         return;
       }
 
-      const isVercelHost =
-        typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
-      const baseUrl = isVercelHost ? '' : 'https://smart-reminder-system-nu.vercel.app';
-
+      // Direct zero-dependency TTS stream with no-referrer
       playlistUrls = chunks.map(
-        (chunk) => `${baseUrl}/api/tts?text=${encodeURIComponent(chunk)}&lang=ar`
+        (chunk) =>
+          `https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(chunk)}`
       );
     }
 
@@ -355,7 +373,11 @@ class AudioService {
       const url = playlistUrls[currentIndex];
       currentIndex++;
 
-      const audio = new Audio(url);
+      const audio = new Audio();
+      if ('referrerPolicy' in audio) {
+        (audio as any).referrerPolicy = 'no-referrer';
+      }
+      audio.src = url;
       audio.volume = options.volume ?? 1.0;
       this.currentCustomAudio = audio;
 

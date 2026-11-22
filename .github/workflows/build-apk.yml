@@ -53,32 +53,32 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.46.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.47.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.46.apk
-          path: DrAbdelaziz-Reminder-v1.0.46.apk
+          name: DrAbdelaziz-Reminder-v1.0.47.apk
+          path: DrAbdelaziz-Reminder-v1.0.47.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.46
+      - name: Create or Update GitHub Release v1.0.47
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.46
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.46"
+          tag_name: v1.0.47
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.47"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.46
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.47
             
             التحديثات الجديدة:
-            - تفعيل التلاوة الصوتية الشاملة للأذكار عبر خادم صوتي مخصص (Dedicated TTS Proxy) لتجاوز قيود وحظر المتصفحات وهواتف الأندرويد.
-            - تلاوة استوديو نقية بصوت الشيخ مشاري العفاسي لآية الكرسي والمعوذات وسورة الإخلاص مباشرة.
-            - مؤشر ضوئي نابض متفاعل فور الضغط على علامة السماعة.
+            - تفعيل التلاوة الصوتية المباشرة للأذكار بميزة no-referrer المباشرة لتعمل باستقلالية تامة 100% دون الحاجة لأي وسيط خارجي.
+            - تلاوة استوديو نقية بصوت الشيخ مشاري العفاسي لآية الكرسي والمعوذتين وسورة الإخلاص بالكامل.
+            - تشغيل Web App دائم على منصة GitHub Pages المستقرة بدون أي توقفات.
           files: |
-            DrAbdelaziz-Reminder-v1.0.46.apk
+            DrAbdelaziz-Reminder-v1.0.47.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -91,8 +91,9 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.46.apk
+            DrAbdelaziz-Reminder-v1.0.47.apk
             DrAbdelaziz-Reminder.apk
+            app-debug.apk
             app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

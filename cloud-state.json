@@ -2307,6 +2307,12 @@
             "t": "رسالة واتساب للأستاذ حمدي المحامي — متابعة العقود",
             "d": false,
             "sourceTaskId": "task-1795316106531-jyj9a"
+          },
+          {
+            "id": "imp_task-1795316896411-v1ljp_2026-11-22",
+            "t": "رسالة واتساب — اجتماع مشروع الضبعة اليوم (أحمد عثمان)",
+            "d": false,
+            "sourceTaskId": "task-1795316896411-v1ljp"
           }
         ],
         "dismissedTaskIds": [],
@@ -2336,7 +2342,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T03:26:54.698Z",
+  "updatedAt": "2026-11-22T03:26:56.252Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -2483,7 +2483,104 @@
         "water": 0,
         "food": false,
         "weight": "",
-        "tasks": [],
+        "tasks": [
+          {
+            "id": "imp_task-1794483515605-7t2dt_2026-11-22",
+            "t": "اعمال السيستم",
+            "d": false,
+            "sourceTaskId": "task-1794483515605-7t2dt"
+          },
+          {
+            "id": "imp_task-1794431372819-0t1ik_2026-11-22",
+            "t": "البنك",
+            "d": false,
+            "sourceTaskId": "task-1794431372819-0t1ik"
+          },
+          {
+            "id": "imp_task-1794887282519-zqse0_2026-11-22",
+            "t": "مستخقات الشركه",
+            "d": false,
+            "sourceTaskId": "task-1794887282519-zqse0"
+          },
+          {
+            "id": "imp_task-1794887428535-fxoc3_2026-11-22",
+            "t": "مستحقات السيارات",
+            "d": false,
+            "sourceTaskId": "task-1794887428535-fxoc3"
+          },
+          {
+            "id": "imp_task-1794928158919-8ovdz_2026-11-22",
+            "t": "تسجيل تقرير الاستلامات",
+            "d": false,
+            "sourceTaskId": "task-1794928158919-8ovdz"
+          },
+          {
+            "id": "imp_task-1795060797227-cmcdn_2026-11-22",
+            "t": "مكالمه لزميلي",
+            "d": false,
+            "sourceTaskId": "task-1795060797227-cmcdn"
+          },
+          {
+            "id": "imp_task-1795277159064-c7rc2_2026-11-22",
+            "t": "القيام والذهاب إلى الجيم",
+            "d": true,
+            "sourceTaskId": "task-1795277159064-c7rc2"
+          },
+          {
+            "id": "imp_task-1795288261773-kmkwj_2026-11-22",
+            "t": "صلاة قيام الليل",
+            "d": true,
+            "sourceTaskId": "task-1795288261773-kmkwj"
+          },
+          {
+            "id": "imp_task-1795316106531-jyj9a_2026-11-22",
+            "t": "للأستاذ حمدي المحامي — متابعة العقود",
+            "d": false,
+            "sourceTaskId": "task-1795316106531-jyj9a"
+          },
+          {
+            "id": "imp_task-1795316896411-v1ljp_2026-11-22",
+            "t": "اجتماع مشروع الضبعة اليوم (أحمد عثمان)",
+            "d": false,
+            "sourceTaskId": "task-1795316896411-v1ljp"
+          },
+          {
+            "id": "imp_task-1795318497872-q704q_2026-11-22",
+            "t": "مكالمة عمر المحامي",
+            "d": true,
+            "sourceTaskId": "task-1795318497872-q704q"
+          },
+          {
+            "id": "imp_task-1795318688193-x2wfq_2026-11-22",
+            "t": "لوائل الشاذلي — اجتماع يوم الاثنين",
+            "d": true,
+            "sourceTaskId": "task-1795318688193-x2wfq"
+          },
+          {
+            "id": "imp_task-1795325959631-yufjw_2026-11-22",
+            "t": "ياسمين تشغيل سيارات — تقفيل فواتير شهر 9 وشهر 10",
+            "d": true,
+            "sourceTaskId": "task-1795325959631-yufjw"
+          },
+          {
+            "id": "imp_task-1795326042829-eauo2_2026-11-22",
+            "t": "للدكتور عمران — نرهان لم تبعت تقرير أمس",
+            "d": true,
+            "sourceTaskId": "task-1795326042829-eauo2"
+          },
+          {
+            "id": "imp_task-1795327285475-cjfbh_2026-11-22",
+            "t": "نورهان — تقارير أمس",
+            "d": true,
+            "sourceTaskId": "task-1795327285475-cjfbh"
+          },
+          {
+            "id": "imp_task-1794926851089-6vtqg_2026-11-22",
+            "t": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
+            "d": true,
+            "sourceTaskId": "task-1794926851089-6vtqg"
+          }
+        ],
         "dismissedTaskIds": [],
         "notes": {
           "good": "",
@@ -2511,7 +2608,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T12:42:33.177Z",
+  "updatedAt": "2026-11-22T12:42:34.230Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

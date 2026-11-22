@@ -2635,6 +2635,12 @@
             "t": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
             "d": true,
             "sourceTaskId": "task-1794926851089-6vtqg"
+          },
+          {
+            "id": "imp_task-1795351430499-34yd9_2026-11-22",
+            "t": "محمود شحاته - اجتماع مشروع الضبعة",
+            "d": false,
+            "sourceTaskId": "task-1795351430499-34yd9"
           }
         ],
         "dismissedTaskIds": [],
@@ -2664,7 +2670,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T12:43:52.389Z",
+  "updatedAt": "2026-11-22T12:43:53.236Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

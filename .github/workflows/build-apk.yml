@@ -53,30 +53,31 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.43.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.44.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.43.apk
-          path: DrAbdelaziz-Reminder-v1.0.43.apk
+          name: DrAbdelaziz-Reminder-v1.0.44.apk
+          path: DrAbdelaziz-Reminder-v1.0.44.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.43
+      - name: Create or Update GitHub Release v1.0.44
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.43
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.43"
+          tag_name: v1.0.44
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.44"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.43
-            - مشغّل فيديو داخلي لمعاينة وتشغيل الفيديو قبل إرفاقه للمهمة مع إمكانية الفحص الكامل واعتماد الإرفاق أو الإلغاء.
-            - تشغيل أي فيديو مرفق في المهام مباشرة داخل التطبيق دون الحاجة لمتصفح خارجي أو تنزيل.
-            - درع حماية إضافي لمنع تصفير أو فقدان بيانات المهام في الخلفية.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.44
+            - إخفاء المهام المكتملة والمؤرشفة تلقائياً من نظامي (Daily System).
+            - تلاوة الأذكار بصوت عربي واضح ومسموع عند النقر على أي بطاقة ذكر.
+            - إدراج كافة الصلوات والنوافل (الضحى، قيام الليل، الوتر، السنن الرواتب) في العبادات بنظامي.
+            - إمكانية إعادة تسمية ملفات الفيديو والوسائط المرفوعة في قسم الوسائط مباشرة.
           files: |
-            DrAbdelaziz-Reminder-v1.0.43.apk
+            DrAbdelaziz-Reminder-v1.0.44.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -89,7 +90,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.43.apk
+            DrAbdelaziz-Reminder-v1.0.44.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

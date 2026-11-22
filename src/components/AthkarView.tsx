@@ -78,6 +78,7 @@ export const AthkarView: React.FC = () => {
   const [tasbeehPresets, setTasbeehPresets] = useState<string[]>(DEFAULT_TASBEEH_PRESETS);
   const [isTasbeehHapticEnabled, setIsTasbeehHapticEnabled] = useState<boolean>(true);
   const [isTasbeehSoundEnabled, setIsTasbeehSoundEnabled] = useState<boolean>(true);
+  const [isVoiceReciteEnabled, setIsVoiceReciteEnabled] = useState<boolean>(true);
 
   // Floating Dhikr Settings State
   const [floatingSettings, setFloatingSettings] = useState<FloatingDhikrSettings>(() => athkarStorageService.getFloatingSettings());
@@ -170,12 +171,32 @@ export const AthkarView: React.FC = () => {
     return { total, completed, percent };
   }, [filteredAthkar, athkarProgress]);
 
-  // Decrement single dhikr counter (Tap on card)
-  const handleDhikrProgress = (id: string, initialCount: number) => {
+  // Helper to clean dhikr text from brackets and numbers for high-clarity voice recitation
+  const cleanDhikrForVoice = (text: string): string => {
+    if (!text) return '';
+    return text
+      .replace(/\[.*?\]/g, '') // remove book references
+      .replace(/\{.*?\}/g, '')
+      .replace(/\(.*?مرات.*?\)/g, '') // remove repetition notes
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  // Decrement single dhikr counter & speak clearly (Tap on card)
+  const handleDhikrProgress = (item: AthkarItem) => {
+    const id = item.id;
+    const initialCount = item.count;
     if (isTasbeehHapticEnabled && 'vibrate' in navigator) {
       navigator.vibrate(35);
     }
-    if (isTasbeehSoundEnabled) {
+
+    // Audible and clear voice recitation on tap
+    if (isVoiceReciteEnabled) {
+      const cleanText = cleanDhikrForVoice(item.text);
+      if (cleanText) {
+        audioService.speak(cleanText, { volume: 1.0, rate: 0.88 });
+      }
+    } else if (isTasbeehSoundEnabled) {
       audioService.playChime('click', 0.25);
     }
 
@@ -231,7 +252,8 @@ export const AthkarView: React.FC = () => {
   // Speak single Dhikr
   const handleReadDhikr = (text: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    audioService.speak(text, { volume: 0.95, rate: 0.9 });
+    const cleanText = cleanDhikrForVoice(text);
+    audioService.speak(cleanText || text, { volume: 1.0, rate: 0.88 });
   };
 
   // Continuous auto-read playlist
@@ -716,6 +738,26 @@ export const AthkarView: React.FC = () => {
               style={{ width: `${sectionStats.percent}%` }}
             />
           </div>
+
+          {/* Voice Recitation Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+            <button
+              type="button"
+              onClick={() => setIsVoiceReciteEnabled(!isVoiceReciteEnabled)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                isVoiceReciteEnabled
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                  : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}
+              title="تلاوة صوتية واضحة ومسموعة عند النقر على أي بطاقة ذكر"
+            >
+              <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>تلاوة مسموعة عند لمس الذكر {isVoiceReciteEnabled ? '✓' : '✕'}</span>
+            </button>
+            <span className="text-[11px] text-slate-400">
+              {isVoiceReciteEnabled ? 'اضغط على أي ذكر لقراءته بصوت مسموع وواضح' : 'القراءة الصوتية التلقائية متوقفة'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -759,7 +801,7 @@ export const AthkarView: React.FC = () => {
           return (
             <div
               key={item.id}
-              onClick={() => handleDhikrProgress(item.id, item.count)}
+              onClick={() => handleDhikrProgress(item)}
               className={`p-6 rounded-3xl border transition-all cursor-pointer select-none relative overflow-hidden group ${
                 isDone
                   ? 'bg-slate-900/40 border-emerald-500/40 shadow-inner'

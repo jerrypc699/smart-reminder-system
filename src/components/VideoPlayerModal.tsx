@@ -135,3 +135,4 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ video, onClo
     </div>
   );
 };
+

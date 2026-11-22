@@ -25,7 +25,9 @@ import {
   RefreshCw,
   Cloud,
   ShieldCheck,
-  Zap
+  Zap,
+  Pencil,
+  Check
 } from 'lucide-react';
 import { ScheduledMedia, StoredMediaMeta, TaskRepeat, MediaType } from '../types';
 import { audioStorageService } from '../services/audioStorageService';
@@ -53,6 +55,26 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
   const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
   const [autoLaunchPerms, setAutoLaunchPerms] = useState<AutoLaunchPermissionsStatus | null>(null);
   const isAndroidNative = NativeAlarmService.isAndroidNative();
+
+  // Renaming state for media library
+  const [renamingItem, setRenamingItem] = useState<StoredMediaMeta | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+
+  const handleStartRename = (item: StoredMediaMeta) => {
+    setRenamingItem(item);
+    setRenameInput(item.name);
+  };
+
+  const handleSaveRename = async () => {
+    if (!renamingItem || !renameInput.trim()) return;
+    const ok = await audioStorageService.renameMediaFile(renamingItem.id, renameInput.trim());
+    if (ok) {
+      setUploadSuccess(`✓ تم تعديل اسم الملف إلى "${renameInput.trim()}" بنجاح`);
+      loadLibrary();
+      onRefreshScheduled();
+    }
+    setRenamingItem(null);
+  };
 
   // Form states for scheduling
   const [title, setTitle] = useState('');
@@ -1260,56 +1282,114 @@ export const AudioSchedulerView: React.FC<AudioSchedulerViewProps> = ({
                       ) : null}
 
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           {!isVideo && (
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
                               <Music className="w-4 h-4" />
                             </div>
                           )}
-                          <div>
-                            <h5 className="text-sm font-bold text-white truncate max-w-[180px]">
-                              {item.name}
-                            </h5>
+                          <div className="flex-1 min-w-0">
+                            {renamingItem?.id === item.id ? (
+                              <div className="flex items-center gap-1.5 my-1">
+                                <input
+                                  type="text"
+                                  value={renameInput}
+                                  onChange={(e) => setRenameInput(e.target.value)}
+                                  className="w-full px-2 py-1 text-xs rounded-lg bg-slate-800 border border-amber-500 text-white focus:outline-none"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveRename();
+                                    if (e.key === 'Escape') setRenamingItem(null);
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleSaveRename}
+                                  className="p-1 rounded bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 text-xs cursor-pointer shrink-0"
+                                  title="حفظ"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRenamingItem(null)}
+                                  className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer shrink-0"
+                                  title="إلغاء"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <h5 className="text-sm font-bold text-white truncate max-w-full">
+                                {item.name}
+                              </h5>
+                            )}
                             <span className="text-[10px] text-slate-500 block">
                               {formatSize(item.size)} {item.duration ? `• ${formatTime(item.duration)}` : ''}
                             </span>
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => handleDeleteLibraryItem(item.id)}
-                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
-                          title="حذف الملف"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleStartRename(item)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                            title="إعادة تسمية الملف"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLibraryItem(item.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="حذف الملف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-800/80">
-                      {isVideo ? (
+                    <div className="flex items-center justify-between gap-1.5 mt-4 pt-3 border-t border-slate-800/80">
+                      <div className="flex items-center gap-1.5">
+                        {isVideo ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenVideoPreview(item.id, item.name, item.cloudUrl)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 transition-all cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>مشاهدة</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAudioPlay(item.id, item.cloudUrl)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                              isPlaying
+                                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                            }`}
+                          >
+                            {isPlaying ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                            <span>{isPlaying ? 'إيقاف' : 'استماع'}</span>
+                          </button>
+                        )}
+
                         <button
-                          onClick={() => handleOpenVideoPreview(item.id, item.name, item.cloudUrl)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 transition-all cursor-pointer"
+                          type="button"
+                          onClick={() => handleStartRename(item)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 text-xs font-semibold border border-amber-500/30 transition-all cursor-pointer"
+                          title="إعادة تسمية الملف"
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>مشاهدة</span>
+                          <Pencil className="w-3 h-3" />
+                          <span>إعادة تسمية</span>
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => handleToggleAudioPlay(item.id, item.cloudUrl)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                            isPlaying
-                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                          }`}
-                        >
-                          {isPlaying ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                          <span>{isPlaying ? 'إيقاف' : 'استماع'}</span>
-                        </button>
-                      )}
+                      </div>
 
                       <button
+                        type="button"
                         onClick={() => {
                           setSelectedMediaId(item.id);
                           setTitle(item.name);

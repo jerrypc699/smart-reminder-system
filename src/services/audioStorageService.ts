@@ -658,6 +658,75 @@ class AudioStorageService {
     this.notifyLibraryChange();
   }
 
+  /**
+   * Rename a media item in localStorage registry and any scheduled items that reference it
+   */
+  public async renameMediaFile(id: string, newName: string): Promise<boolean> {
+    const trimmed = newName.trim();
+    if (!trimmed || !id) return false;
+
+    // 1. Update in registry
+    if (typeof window !== 'undefined') {
+      try {
+        const list = this.getMetaRegistry();
+        const item = list.find((m) => m.id === id);
+        if (item) {
+          item.name = trimmed;
+          localStorage.setItem(MEDIA_META_STORAGE_KEY, JSON.stringify(list));
+        }
+      } catch (e) {
+        console.warn('Failed to update media registry:', e);
+      }
+    }
+
+    // 2. Also update in IndexedDB if stored with metadata
+    try {
+      const db = await this.getDB();
+      await new Promise<void>((resolve) => {
+        const tx = db.transaction(BLOB_STORE, 'readwrite');
+        const store = tx.objectStore(BLOB_STORE);
+        const req = store.get(id);
+        req.onsuccess = () => {
+          if (req.result) {
+            req.result.name = trimmed;
+            store.put(req.result);
+          }
+          resolve();
+        };
+        req.onerror = () => resolve();
+      });
+    } catch (e) {
+      console.warn('Failed to rename in IndexedDB:', e);
+    }
+
+    // 3. Update any scheduled media items that reference this media
+    try {
+      const scheduled = this.getScheduledMedias();
+      let schedUpdated = false;
+      scheduled.forEach((s) => {
+        if (s.mediaId === id) {
+          s.mediaName = trimmed;
+          schedUpdated = true;
+        }
+      });
+      if (schedUpdated && typeof window !== 'undefined') {
+        localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(scheduled));
+        this.notifyScheduledChange(scheduled);
+      }
+    } catch {}
+
+    // 4. Synchronize immediately to cloud
+    try {
+      vercelCloudSync.pushCurrentState({
+        mediaLibrary: this.getMetaRegistry(),
+        scheduledMedia: this.getScheduledMedias(),
+      }).catch(console.warn);
+    } catch {}
+
+    this.notifyLibraryChange();
+    return true;
+  }
+
   public async deleteAudioFile(id: string): Promise<void> {
     return this.deleteMediaFile(id);
   }

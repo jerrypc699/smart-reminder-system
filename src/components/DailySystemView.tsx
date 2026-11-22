@@ -88,10 +88,14 @@ const BUILT_IN_LABELS: Record<string, string> = {
   card_all_tasks: 'قسم سجل مهام العمل الشامل',
   card_notes: 'قسم مراجعة آخر اليوم بالكامل',
   prayer_fajr: 'صلاة الفجر',
+  prayer_duha: 'صلاة الضحى',
   prayer_dhuhr: 'صلاة الظهر',
   prayer_asr: 'صلاة العصر',
   prayer_maghrib: 'صلاة المغرب',
   prayer_isha: 'صلاة العشاء',
+  prayer_qiyam: 'قيام الليل',
+  prayer_witr: 'صلاة الوتر',
+  prayer_sunan: 'السنن الرواتب',
   adhkar_sabah: 'أذكار الصباح',
   adhkar_masaa: 'أذكار المساء',
   adhkar_nawm: 'أذكار النوم',
@@ -166,11 +170,17 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     return unsub;
   }, [currentDateKey, currentMonthKey]);
 
+  // Active tasks only in Daily System (completed and archived tasks are removed)
+  const activeTasks = useMemo(
+    () => tasks.filter((t) => t.status !== 'completed' && !t.isArchived),
+    [tasks]
+  );
+
   // Automatic Task Sync whenever date, tasks, or auto-import setting changes
   useEffect(() => {
-    dailySystemService.autoSyncWorkTasksForDay(tasks, currentDateKey);
+    dailySystemService.autoSyncWorkTasksForDay(activeTasks, currentDateKey);
     setDayRecord(dailySystemService.getDay(currentDateKey));
-  }, [currentDateKey, tasks, settings.autoImportTasks, settings.autoImportIncludePendingPrevious]);
+  }, [currentDateKey, activeTasks, settings.autoImportTasks, settings.autoImportIncludePendingPrevious]);
 
   // Keep monthReview in sync when month changes
   useEffect(() => {
@@ -231,9 +241,9 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     const completedWork = todayTasks.filter((t) => t.d).length;
     const workTotal = todayTasks.length;
 
-    // 6. All Work Tasks
-    const allTasksCount = tasks.length;
-    const allCompletedTasks = tasks.filter((t) => t.status === 'completed').length;
+    // 6. All Active Work Tasks
+    const allTasksCount = activeTasks.length;
+    const allCompletedTasks = 0; // Completed & archived tasks are hidden from Daily System
 
     // 7. Evening Notes
     const notesFilled = Boolean(dayRecord.notes?.good?.trim() || dayRecord.notes?.tomorrow?.trim() || dayRecord.notes?.block?.trim());
@@ -594,15 +604,15 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   // Month stats
   const monthStats = calculateMonthStats(currentMonthKey, allDays, settings);
 
-  // Work tasks integration across Daily System & Reports
+  // Work tasks integration across Daily System & Reports (Active tasks only)
   const dayWorkTasks = useMemo(
-    () => tasks.filter((t) => t.dueDate === currentDateKey),
-    [tasks, currentDateKey]
+    () => activeTasks.filter((t) => t.dueDate === currentDateKey),
+    [activeTasks, currentDateKey]
   );
 
   const monthWorkTasks = useMemo(
-    () => tasks.filter((t) => (t.dueDate || '').startsWith(currentMonthKey)),
-    [tasks, currentMonthKey]
+    () => activeTasks.filter((t) => (t.dueDate || '').startsWith(currentMonthKey)),
+    [activeTasks, currentMonthKey]
   );
 
   const reportFilteredTasks = useMemo(() => {
@@ -1245,7 +1255,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
                   {PRAYERS_LIST.filter(([k]) => !hiddenSet.has(`prayer_${k}`)).map(([k, name]) => {
                     const status = dayRecord.prayers[k] || 0;
                     const isOntime = status === 2;
@@ -2237,7 +2247,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        dailySystemService.importTasksFromWorkList(tasks, currentDateKey);
+                        dailySystemService.importTasksFromWorkList(activeTasks, currentDateKey);
                         showToast('تمت مزامنة واستيراد كافة مهام اليوم تلقائياً ✓');
                       }}
                       className="px-2.5 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
@@ -2449,15 +2459,15 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   </div>
                 </div>
 
-                {(dayTasksMode === 'all' ? tasks : dayWorkTasks).length === 0 ? (
+                {(dayTasksMode === 'all' ? activeTasks : dayWorkTasks).length === 0 ? (
                   <div className="text-center py-6 text-xs text-slate-400">
                     {dayTasksMode === 'all'
-                      ? 'لا توجد مهام عمل مضافة حتى الآن.'
+                      ? 'لا توجد مهام عمل نشطة مضافة حتى الآن.'
                       : `لا توجد مهام مجدولة بتاريخ ${currentDateKey}. يمكنك التبديل إلى "كل المهام".`}
                   </div>
                 ) : (
                   <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5">
-                    {(dayTasksMode === 'all' ? tasks : dayWorkTasks).map((t) => renderWorkTaskRow(t))}
+                    {(dayTasksMode === 'all' ? activeTasks : dayWorkTasks).map((t) => renderWorkTaskRow(t))}
                   </div>
                 )}
               </div>
@@ -3297,7 +3307,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    dailySystemService.importTasksFromWorkList(tasks, currentDateKey);
+                    dailySystemService.importTasksFromWorkList(activeTasks, currentDateKey);
                     showToast('⚡ تمت مزامنة مهام اليوم تلقائياً');
                   }}
                   className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-all"
@@ -3323,7 +3333,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       const enabled = e.target.checked;
                       dailySystemService.updateSettings({ autoImportTasks: enabled });
                       if (enabled) {
-                        dailySystemService.autoSyncWorkTasksForDay(tasks, currentDateKey);
+                        dailySystemService.autoSyncWorkTasksForDay(activeTasks, currentDateKey);
                         showToast('✓ تم تفعيل الاستيراد التلقائي ومزامنة مهام اليوم');
                       } else {
                         showToast('تم إيقاف الاستيراد التلقائي للمهام');
@@ -3349,7 +3359,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       const enabled = e.target.checked;
                       dailySystemService.updateSettings({ autoImportIncludePendingPrevious: enabled });
                       if (settings.autoImportTasks !== false) {
-                        dailySystemService.autoSyncWorkTasksForDay(tasks, currentDateKey);
+                        dailySystemService.autoSyncWorkTasksForDay(activeTasks, currentDateKey);
                       }
                       showToast(enabled ? '✓ سيتم تضمين المهام غير المنجزة' : 'سيتم استيراد مهام تاريخ اليوم فقط');
                     }}

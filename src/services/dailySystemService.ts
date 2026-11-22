@@ -3,10 +3,14 @@ import { Task } from '../types';
 export interface DailyPrayers {
   [key: string]: number;
   fajr: number; // 0 = none, 1 = late, 2 = on time
+  duha: number;
   dhuhr: number;
   asr: number;
   maghrib: number;
   isha: number;
+  qiyam: number;
+  witr: number;
+  sunan: number;
 }
 
 export interface DailyAdhkar {
@@ -127,12 +131,16 @@ export interface DayScoreResult {
   total: number;
 }
 
-export const PRAYERS_LIST: ['fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', string][] = [
-  ['fajr', 'الفجر'],
-  ['dhuhr', 'الظهر'],
-  ['asr', 'العصر'],
-  ['maghrib', 'المغرب'],
-  ['isha', 'العشاء'],
+export const PRAYERS_LIST: [string, string][] = [
+  ['fajr', 'صلاة الفجر'],
+  ['duha', 'صلاة الضحى'],
+  ['dhuhr', 'صلاة الظهر'],
+  ['asr', 'صلاة العصر'],
+  ['maghrib', 'صلاة المغرب'],
+  ['isha', 'صلاة العشاء'],
+  ['qiyam', 'قيام الليل'],
+  ['witr', 'صلاة الوتر'],
+  ['sunan', 'السنن الرواتب'],
 ];
 
 export const ADHKAR_LIST: ['sabah' | 'masaa' | 'nawm' | 'dua', string, number][] = [
@@ -193,7 +201,7 @@ export function addDaysToDateKey(dateKey: string, days: number): string {
 export function createBlankDay(date: string): DailyRecord {
   return {
     date,
-    prayers: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
+    prayers: { fajr: 0, duha: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, qiyam: 0, witr: 0, sunan: 0 },
     adhkar: { sabah: false, masaa: false, nawm: false, dua: false },
     quran: 0,
     sport: 0,
@@ -391,8 +399,9 @@ export function calculateScore(d: DailyRecord, S: DailySettings): DayScoreResult
 
 export function isMinDay(d: DailyRecord, S: DailySettings = DEFAULT_DAILY_SETTINGS): boolean {
   const hidden = new Set(S.hiddenBuiltIns || []);
-  const activePrayers = PRAYERS_LIST.filter(([k]) => !hidden.has('card_prayer') && !hidden.has(`prayer_${k}`));
-  const prayersOk = activePrayers.every(([k]) => (d.prayers[k] || 0) > 0);
+  const fardKeys = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  const activePrayers = fardKeys.filter((k) => !hidden.has('card_prayer') && !hidden.has(`prayer_${k}`));
+  const prayersOk = activePrayers.every((k) => (d.prayers[k] || 0) > 0);
   const sabahOk = hidden.has('card_adhkar') || hidden.has('adhkar_sabah') || !!d.adhkar.sabah;
   const masaaOk = hidden.has('card_adhkar') || hidden.has('adhkar_masaa') || !!d.adhkar.masaa;
   const quranOk = hidden.has('card_qss') || hidden.has('item_quran') || d.quran >= 1;
@@ -515,15 +524,16 @@ export function calculateMonthStats(
 
   let pOn = 0;
   let pAny = 0;
+  const fardKeys = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
   logged.forEach(({ d }) =>
-    PRAYERS_LIST.forEach(([k]) => {
+    fardKeys.forEach((k) => {
       if (d.prayers[k] === 2) pOn++;
       if (d.prayers[k] > 0) pAny++;
     })
   );
 
-  result.onTime = (pOn / (n * 5)) * 100;
-  result.prayed = (pAny / (n * 5)) * 100;
+  result.onTime = (pOn / (n * fardKeys.length)) * 100;
+  result.prayed = (pAny / (n * fardKeys.length)) * 100;
   result.adhkarPct =
     (logged.reduce((a, { d }) => a + (d.adhkar.sabah ? 1 : 0) + (d.adhkar.masaa ? 1 : 0), 0) /
       (n * 2)) *
@@ -593,6 +603,7 @@ export function calculateMonthStats(
 }
 
 function doesWorkTaskApplyToDate(task: Task, dateKey: string, todayKey: string, includePendingPrevious: boolean): boolean {
+  if (task.status === 'completed' || Boolean(task.isArchived)) return false;
   if (task.dueDate === dateKey) return true;
   if (task.repeat === 'daily') return true;
   const targetDate = parseDateKey(dateKey);
@@ -605,7 +616,6 @@ function doesWorkTaskApplyToDate(task: Task, dateKey: string, todayKey: string, 
   if (
     includePendingPrevious &&
     dateKey === todayKey &&
-    task.status !== 'completed' &&
     task.dueDate &&
     task.dueDate < dateKey
   ) {
@@ -1077,6 +1087,8 @@ class DailySystemService {
 
     const matchingWorkTasks = tasks.filter(
       (t) =>
+        t.status !== 'completed' &&
+        !t.isArchived &&
         !dismissed.has(t.id) &&
         doesWorkTaskApplyToDate(
           t,
@@ -1096,26 +1108,26 @@ class DailySystemService {
     for (const existing of day.tasks) {
       if (existing.sourceTaskId) {
         const wt = matchingById.get(existing.sourceTaskId);
-        if (wt) {
+        if (wt && wt.status !== 'completed' && !wt.isArchived) {
           seenLinkedIds.add(wt.id);
           nextTasks.push({
             ...existing,
             t: wt.title,
-            d: wt.status === 'completed',
+            d: false,
           });
         }
-      } else if (existing.t.trim().length > 0 || existing.d) {
+      } else if (existing.t.trim().length > 0) {
         nextTasks.push(existing);
       }
     }
 
     // Append newly discovered matching Work Tasks
     for (const wt of matchingWorkTasks) {
-      if (!seenLinkedIds.has(wt.id)) {
+      if (!seenLinkedIds.has(wt.id) && wt.status !== 'completed' && !wt.isArchived) {
         nextTasks.push({
           id: `imp_${wt.id}_${dateKey}`,
           t: wt.title,
-          d: wt.status === 'completed',
+          d: false,
           sourceTaskId: wt.id,
         });
       }

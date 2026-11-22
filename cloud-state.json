@@ -1378,9 +1378,12 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1795327285475-cjfbh",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-22T06:01:25.475Z",
-      "attachments": []
+      "attachments": [],
+      "completedAt": "2026-11-22T10:47:34.003Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-22T10:47:34.003Z"
     },
     {
       "title": "معاد عند دكتور الأسنان",
@@ -2553,7 +2556,7 @@
           {
             "id": "imp_task-1795327285475-cjfbh_2026-11-22",
             "t": "نورهان — تقارير أمس",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795327285475-cjfbh"
           }
         ],
@@ -2584,7 +2587,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T10:47:33.660Z",
+  "updatedAt": "2026-11-22T10:47:34.730Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

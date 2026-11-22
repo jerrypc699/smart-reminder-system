@@ -2352,18 +2352,6 @@
             "t": "رسالة واتساب — اجتماع مشروع الضبعة اليوم (أحمد عثمان)",
             "d": false,
             "sourceTaskId": "task-1795316896411-v1ljp"
-          },
-          {
-            "id": "imp_task-1795318497872-q704q_2026-11-22",
-            "t": "مكالمة عمر المحامي",
-            "d": false,
-            "sourceTaskId": "task-1795318497872-q704q"
-          },
-          {
-            "id": "imp_task-1795318688193-x2wfq_2026-11-22",
-            "t": "رسالة واتساب لوائل الشاذلي — اجتماع يوم الاثنين",
-            "d": false,
-            "sourceTaskId": "task-1795318688193-x2wfq"
           }
         ],
         "dismissedTaskIds": [],
@@ -2393,7 +2381,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T04:26:57.584Z",
+  "updatedAt": "2026-11-22T04:26:58.449Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

@@ -62,7 +62,7 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1794805787590-1m88e",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-16T05:09:47.590Z",
       "completedAt": "2026-11-21T10:49:34.762Z",
       "isArchived": true,
@@ -130,7 +130,7 @@
       "voiceMessage": "يا دكتور عبد العزيز، تذكير بمهمة: محمد رضا. يرجى متابعتها الآن.",
       "repeat": "none",
       "id": "task-1794813709909-tvr2b",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-16T07:21:49.909Z",
       "completedAt": "2026-11-21T10:16:40.309Z",
       "isArchived": true,
@@ -204,7 +204,7 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1794478443115-vghdc",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-12T10:14:03.115Z",
       "attachments": [
         {
@@ -419,7 +419,7 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794417698928-4sndw",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-11T17:21:38.928Z",
       "completedAt": "2026-11-21T10:49:51.657Z",
       "isArchived": true,
@@ -833,7 +833,7 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1794047274656-pjzg1",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-07T10:27:54.656Z",
       "completedAt": "2026-11-21T10:50:05.508Z",
       "isArchived": true,
@@ -851,7 +851,7 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1795060939852-b0u6g",
-      "status": "completed",
+      "status": "pending",
       "createdAt": "2026-11-19T04:02:19.852Z",
       "completedAt": "2026-11-21T10:50:40.690Z",
       "isArchived": true,
@@ -1985,28 +1985,10 @@
         "weight": "",
         "tasks": [
           {
-            "id": "imp_task-1794805787590-1m88e_2026-11-22",
-            "t": "محمد",
-            "d": false,
-            "sourceTaskId": "task-1794805787590-1m88e"
-          },
-          {
-            "id": "imp_task-1794813709909-tvr2b_2026-11-22",
-            "t": "محمد رضا",
-            "d": false,
-            "sourceTaskId": "task-1794813709909-tvr2b"
-          },
-          {
             "id": "imp_task-1794483515605-7t2dt_2026-11-22",
             "t": "اعمال السيستم",
             "d": false,
             "sourceTaskId": "task-1794483515605-7t2dt"
-          },
-          {
-            "id": "imp_task-1794478443115-vghdc_2026-11-22",
-            "t": "ملف التامينات",
-            "d": false,
-            "sourceTaskId": "task-1794478443115-vghdc"
           },
           {
             "id": "imp_task-1794431372819-0t1ik_2026-11-22",
@@ -2025,12 +2007,6 @@
             "t": "أحمداسعد",
             "d": false,
             "sourceTaskId": "task-1794418554981-68qlo"
-          },
-          {
-            "id": "imp_task-1794417698928-4sndw_2026-11-22",
-            "t": "مجدى الحدا د",
-            "d": false,
-            "sourceTaskId": "task-1794417698928-4sndw"
           },
           {
             "id": "imp_task-1794369844953-4cvfp_2026-11-22",
@@ -2069,18 +2045,6 @@
             "sourceTaskId": "task-1794991430396-ihp27"
           },
           {
-            "id": "imp_task-1794047274656-pjzg1_2026-11-22",
-            "t": "مقابلة الجيار",
-            "d": false,
-            "sourceTaskId": "task-1794047274656-pjzg1"
-          },
-          {
-            "id": "imp_task-1795060939852-b0u6g_2026-11-22",
-            "t": "تقارير الخزنه",
-            "d": false,
-            "sourceTaskId": "task-1795060939852-b0u6g"
-          },
-          {
             "id": "imp_task-1795060797227-cmcdn_2026-11-22",
             "t": "مكالمه لزميلي",
             "d": false,
@@ -2097,6 +2061,18 @@
             "t": "بخصوص الامن",
             "d": false,
             "sourceTaskId": "task-1795198567339-oanxf"
+          },
+          {
+            "id": "imp_task-1795277159064-c7rc2_2026-11-22",
+            "t": "القيام والذهاب إلى الجيم",
+            "d": false,
+            "sourceTaskId": "task-1795277159064-c7rc2"
+          },
+          {
+            "id": "imp_task-1795277678211-94y0a_2026-11-22",
+            "t": "رسالة واتساب لحبيبي",
+            "d": false,
+            "sourceTaskId": "task-1795277678211-94y0a"
           }
         ],
         "dismissedTaskIds": [],
@@ -2126,7 +2102,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T02:26:55.385Z",
+  "updatedAt": "2026-11-22T02:26:55.755Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

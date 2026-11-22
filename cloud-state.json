@@ -1273,9 +1273,12 @@
       "repeat": "none",
       "audioMode": "tts",
       "id": "task-1795318497872-q704q",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-22T03:34:57.872Z",
-      "attachments": []
+      "attachments": [],
+      "completedAt": "2026-11-22T10:47:28.332Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-22T10:47:28.332Z"
     },
     {
       "title": "لوائل الشاذلي — اجتماع يوم الاثنين",
@@ -2526,7 +2529,7 @@
           {
             "id": "imp_task-1795318497872-q704q_2026-11-22",
             "t": "مكالمة عمر المحامي",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795318497872-q704q"
           },
           {
@@ -2581,7 +2584,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T10:47:27.887Z",
+  "updatedAt": "2026-11-22T10:47:29.051Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

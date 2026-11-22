@@ -187,6 +187,150 @@ class AudioService {
   }
 
   /**
+   * Clean text for voice engines: removes brackets, references, and non-standard Quranic glyphs
+   */
+  public cleanArabicTextForVoice(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/\[.*?\]/g, '') // remove book references like [رواه البخاري]
+      .replace(/\{.*?\}/g, '')
+      .replace(/\(.*?\)/g, '') // remove repetition notes like (3 مرات)
+      .replace(/[\u06D6-\u06ED\u06DD\uFD3E\uFD3F]/g, '') // remove Quranic stop marks and symbols
+      .replace(/[﴿﴾۝۞]/g, '')
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Split long Arabic text into natural, digestible clauses under maxLen characters
+   */
+  public splitArabicIntoChunks(text: string, maxLen = 160): string[] {
+    const sentences = text.split(/(?<=[.،؛!?])/g).map((s) => s.trim()).filter(Boolean);
+    const chunks: string[] = [];
+    let cur = '';
+    for (const s of sentences) {
+      if ((cur + ' ' + s).trim().length <= maxLen) {
+        cur = (cur ? cur + ' ' + s : s).trim();
+      } else {
+        if (cur) chunks.push(cur);
+        if (s.length <= maxLen) {
+          cur = s;
+        } else {
+          const words = s.split(' ');
+          cur = '';
+          for (const w of words) {
+            if ((cur + ' ' + w).trim().length <= maxLen) {
+              cur = (cur ? cur + ' ' + w : w).trim();
+            } else {
+              if (cur) chunks.push(cur);
+              cur = w;
+            }
+          }
+        }
+      }
+    }
+    if (cur) chunks.push(cur);
+    return chunks;
+  }
+
+  /**
+   * Universal crystal clear Arabic Dhikr recitation
+   * Streams high quality natural Arabic audio with sequential chunking,
+   * with automatic fallback to SpeechSynthesis if offline.
+   */
+  public playDhikrRecitation(
+    text: string,
+    options: {
+      volume?: number;
+      onStart?: () => void;
+      onEnd?: () => void;
+      onError?: () => void;
+    } = {}
+  ): void {
+    if (typeof window === 'undefined') {
+      options.onEnd?.();
+      return;
+    }
+
+    this.stopAll();
+    this.initAudioContext();
+
+    const cleanText = this.cleanArabicTextForVoice(text);
+    if (!cleanText) {
+      options.onEnd?.();
+      return;
+    }
+
+    const chunks = this.splitArabicIntoChunks(cleanText, 160);
+    if (chunks.length === 0) {
+      options.onEnd?.();
+      return;
+    }
+
+    let currentIndex = 0;
+    let isCanceled = false;
+
+    options.onStart?.();
+    this.notifySpeaking(true);
+
+    const playNextChunk = () => {
+      if (isCanceled) return;
+      if (currentIndex >= chunks.length) {
+        this.notifySpeaking(false);
+        this.currentCustomAudio = null;
+        options.onEnd?.();
+        return;
+      }
+
+      const chunk = chunks[currentIndex];
+      currentIndex++;
+
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+      const audio = new Audio(url);
+      audio.volume = options.volume ?? 1.0;
+      this.currentCustomAudio = audio;
+
+      audio.onended = () => {
+        if (!isCanceled) {
+          playNextChunk();
+        }
+      };
+
+      audio.onerror = () => {
+        if (!isCanceled) {
+          console.warn('Online recitation chunk failed, falling back to local speech synthesis.');
+          this.speak(cleanText, {
+            volume: options.volume ?? 1.0,
+            onEnd: () => {
+              this.notifySpeaking(false);
+              options.onEnd?.();
+            },
+          });
+        }
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Audio play error, falling back to speech synthesis:', err);
+          if (!isCanceled) {
+            this.speak(cleanText, {
+              volume: options.volume ?? 1.0,
+              onEnd: () => {
+                this.notifySpeaking(false);
+                options.onEnd?.();
+              },
+            });
+          }
+        });
+      }
+    };
+
+    playNextChunk();
+  }
+
+  /**
    * Speak Arabic text with Text-to-Speech
    */
   public speak(
@@ -205,9 +349,12 @@ class AudioService {
     }
 
     // Cancel current speech if any
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch {}
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const cleanText = this.cleanArabicTextForVoice(text);
+    const utterance = new SpeechSynthesisUtterance(cleanText || text);
     utterance.lang = 'ar-SA';
     utterance.volume = options.volume ?? 1;
     utterance.rate = options.rate ?? 0.95;
@@ -249,7 +396,21 @@ class AudioService {
       options.onEnd?.();
     };
 
-    window.speechSynthesis.speak(utterance);
+    if (window.speechSynthesis.paused) {
+      try {
+        window.speechSynthesis.resume();
+      } catch {}
+    }
+
+    // Workaround for Chrome/Android cancel() discarding subsequent speak()
+    setTimeout(() => {
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn('SpeechSynthesis error:', e);
+        options.onEnd?.();
+      }
+    }, 60);
   }
 
   /**

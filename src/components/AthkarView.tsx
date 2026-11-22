@@ -79,6 +79,7 @@ export const AthkarView: React.FC = () => {
   const [isTasbeehHapticEnabled, setIsTasbeehHapticEnabled] = useState<boolean>(true);
   const [isTasbeehSoundEnabled, setIsTasbeehSoundEnabled] = useState<boolean>(true);
   const [isVoiceReciteEnabled, setIsVoiceReciteEnabled] = useState<boolean>(true);
+  const [playingDhikrId, setPlayingDhikrId] = useState<string | null>(null);
 
   // Floating Dhikr Settings State
   const [floatingSettings, setFloatingSettings] = useState<FloatingDhikrSettings>(() => athkarStorageService.getFloatingSettings());
@@ -192,10 +193,12 @@ export const AthkarView: React.FC = () => {
 
     // Audible and clear voice recitation on tap
     if (isVoiceReciteEnabled) {
-      const cleanText = cleanDhikrForVoice(item.text);
-      if (cleanText) {
-        audioService.speak(cleanText, { volume: 1.0, rate: 0.88 });
-      }
+      setPlayingDhikrId(item.id);
+      audioService.playDhikrRecitation(item.text, {
+        volume: 1.0,
+        onEnd: () => setPlayingDhikrId((curr) => (curr === item.id ? null : curr)),
+        onError: () => setPlayingDhikrId((curr) => (curr === item.id ? null : curr)),
+      });
     } else if (isTasbeehSoundEnabled) {
       audioService.playChime('click', 0.25);
     }
@@ -249,11 +252,21 @@ export const AthkarView: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Speak single Dhikr
-  const handleReadDhikr = (text: string, e?: React.MouseEvent) => {
+  // Speak single Dhikr with universal audio player & toggle control
+  const handleReadDhikr = (item: AthkarItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    const cleanText = cleanDhikrForVoice(text);
-    audioService.speak(cleanText || text, { volume: 1.0, rate: 0.88 });
+    if (playingDhikrId === item.id) {
+      audioService.stopAll();
+      setPlayingDhikrId(null);
+      return;
+    }
+
+    setPlayingDhikrId(item.id);
+    audioService.playDhikrRecitation(item.text, {
+      volume: 1.0,
+      onEnd: () => setPlayingDhikrId((curr) => (curr === item.id ? null : curr)),
+      onError: () => setPlayingDhikrId((curr) => (curr === item.id ? null : curr)),
+    });
   };
 
   // Continuous auto-read playlist
@@ -263,6 +276,7 @@ export const AthkarView: React.FC = () => {
       clearTimeout(sequenceTimeoutRef.current);
       audioService.stopAll();
       setCurrentPlayingIndex(-1);
+      setPlayingDhikrId(null);
     } else {
       if (filteredAthkar.length === 0) return;
       setIsPlayingSequence(true);
@@ -274,21 +288,28 @@ export const AthkarView: React.FC = () => {
     if (index >= filteredAthkar.length) {
       setIsPlayingSequence(false);
       setCurrentPlayingIndex(-1);
+      setPlayingDhikrId(null);
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
       return;
     }
 
-    setCurrentPlayingIndex(index);
     const item = filteredAthkar[index];
-    audioService.speak(item.text, { volume: 0.95, rate: 0.9 });
+    setCurrentPlayingIndex(index);
+    setPlayingDhikrId(item.id);
 
-    // Approximate speech duration based on word count
-    const words = item.text.split(' ').length;
-    const estDurationMs = Math.max(3500, words * 450);
-
-    sequenceTimeoutRef.current = setTimeout(() => {
-      playSequenceItem(index + 1);
-    }, estDurationMs);
+    audioService.playDhikrRecitation(item.text, {
+      volume: 1.0,
+      onEnd: () => {
+        sequenceTimeoutRef.current = setTimeout(() => {
+          playSequenceItem(index + 1);
+        }, 800);
+      },
+      onError: () => {
+        sequenceTimeoutRef.current = setTimeout(() => {
+          playSequenceItem(index + 1);
+        }, 800);
+      },
+    });
   };
 
   // Misbaha Dial Tap
@@ -871,11 +892,20 @@ export const AthkarView: React.FC = () => {
 
                   {/* Single Audio Read */}
                   <button
-                    onClick={(e) => handleReadDhikr(item.text, e)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer"
-                    title="استماع صوتي للذكر"
+                    type="button"
+                    onClick={(e) => handleReadDhikr(item, e)}
+                    className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                      playingDhikrId === item.id
+                        ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-md shadow-emerald-500/30 scale-110 ring-2 ring-emerald-500/40'
+                        : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80'
+                    }`}
+                    title={playingDhikrId === item.id ? 'إيقاف القراءة الصوتية' : 'استماع صوتي واضح للذكر'}
                   >
-                    <Volume2 className="w-4 h-4" />
+                    {playingDhikrId === item.id ? (
+                      <Square className="w-4 h-4 fill-emerald-400 text-emerald-400 animate-pulse" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>

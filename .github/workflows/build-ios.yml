@@ -48,30 +48,44 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.44.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.44.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.45.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.45.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.44.ipa
-          path: DrAbdelaziz-Reminder-v1.0.44.ipa
+          name: DrAbdelaziz-Reminder-v1.0.45.ipa
+          path: DrAbdelaziz-Reminder-v1.0.45.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.44
+      - name: Attach IPA to GitHub Release v1.0.45
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.44
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.44"
+          tag_name: v1.0.45
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.45"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.44
-            - إخفاء المهام المكتملة والمؤرشفة تلقائياً من نظامي (Daily System).
-            - تلاوة الأذكار بصوت عربي واضح ومسموع عند النقر على أي بطاقة ذكر.
-            - إدراج كافة الصلوات والنوافل (الضحى، قيام الليل، الوتر، السنن الرواتب) في العبادات بنظامي.
-            - إمكانية إعادة تسمية ملفات الفيديو والوسائط المرفوعة في قسم الوسائط مباشرة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.45
+            
+            التحديثات الجديدة:
+            - تفعيل التلاوة الصوتية الشاملة للأذكار بنظام تشغيل صوتي عربي فائق الجودة والوضوح (Google TTS Streaming + SpeechSynthesis Fallback).
+            - حل مشكلة كتم الصوت على أجهزة الأندرويد والويب وإزالة العلامات القرآنية المانعة للنطق.
+            - إضافة مؤشر تفاعلي مباشر عند الضغط على أيقونة السماعة (تشغيل / إيقاف مع نبض مضيء).
+            - تلاوة الورد المتتابع والأذكار الفردية بطبقات صوتية نقية ومسموعة.
           files: |
-            DrAbdelaziz-Reminder-v1.0.44.ipa
+            DrAbdelaziz-Reminder-v1.0.45.ipa
+            DrAbdelaziz-Reminder.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Also Update Latest Tag
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main')
+        with:
+          tag_name: latest
+          name: "Dr. Abdelaziz Smart Reminder App (Latest)"
+          files: |
+            DrAbdelaziz-Reminder-v1.0.45.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

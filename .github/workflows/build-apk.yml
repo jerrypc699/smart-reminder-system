@@ -53,31 +53,33 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.44.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.45.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.44.apk
-          path: DrAbdelaziz-Reminder-v1.0.44.apk
+          name: DrAbdelaziz-Reminder-v1.0.45.apk
+          path: DrAbdelaziz-Reminder-v1.0.45.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.44
+      - name: Create or Update GitHub Release v1.0.45
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.44
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.44"
+          tag_name: v1.0.45
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.45"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.44
-            - إخفاء المهام المكتملة والمؤرشفة تلقائياً من نظامي (Daily System).
-            - تلاوة الأذكار بصوت عربي واضح ومسموع عند النقر على أي بطاقة ذكر.
-            - إدراج كافة الصلوات والنوافل (الضحى، قيام الليل، الوتر، السنن الرواتب) في العبادات بنظامي.
-            - إمكانية إعادة تسمية ملفات الفيديو والوسائط المرفوعة في قسم الوسائط مباشرة.
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.45
+            
+            التحديثات الجديدة:
+            - تفعيل التلاوة الصوتية الشاملة للأذكار بنظام تشغيل صوتي عربي فائق الجودة والوضوح (Google TTS Streaming + SpeechSynthesis Fallback).
+            - حل مشكلة كتم الصوت على أجهزة الأندرويد والويب وإزالة العلامات القرآنية المانعة للنطق.
+            - إضافة مؤشر تفاعلي مباشر عند الضغط على أيقونة السماعة (تشغيل / إيقاف مع نبض مضيء).
+            - تلاوة الورد المتتابع والأذكار الفردية بطبقات صوتية نقية ومسموعة.
           files: |
-            DrAbdelaziz-Reminder-v1.0.44.apk
+            DrAbdelaziz-Reminder-v1.0.45.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -90,7 +92,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.44.apk
+            DrAbdelaziz-Reminder-v1.0.45.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

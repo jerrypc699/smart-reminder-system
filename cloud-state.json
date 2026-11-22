@@ -2664,12 +2664,6 @@
             "t": "محمود شحاته - اجتماع مشروع الضبعة",
             "d": false,
             "sourceTaskId": "task-1795351430499-34yd9"
-          },
-          {
-            "id": "imp_task-1795351490225-hi2bn_2026-11-22",
-            "t": "باسم شغل - اجتماع مشروع الضبعة",
-            "d": false,
-            "sourceTaskId": "task-1795351490225-hi2bn"
           }
         ],
         "dismissedTaskIds": [],
@@ -2699,7 +2693,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T12:44:54.111Z",
+  "updatedAt": "2026-11-22T12:44:55.344Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

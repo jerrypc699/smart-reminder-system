@@ -7,6 +7,7 @@ class AudioService {
   private currentCustomAudio: HTMLAudioElement | null = null;
   private isSpeaking: boolean = false;
   private onSpeakingChangeCallbacks: Set<(isSpeaking: boolean) => void> = new Set();
+  private cachedVoices: SpeechSynthesisVoice[] = [];
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -19,6 +20,17 @@ class AudioService {
       window.addEventListener('click', unlockAudio);
       window.addEventListener('keydown', unlockAudio);
       window.addEventListener('touchstart', unlockAudio);
+
+      if (window.speechSynthesis) {
+        const loadVoices = () => {
+          const v = window.speechSynthesis.getVoices();
+          if (v && v.length > 0) {
+            this.cachedVoices = v;
+          }
+        };
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
     }
   }
 
@@ -172,11 +184,12 @@ class AudioService {
    */
   public getArabicVoices(): SpeechSynthesisVoice[] {
     if (typeof window === 'undefined' || !window.speechSynthesis) return [];
-    const voices = window.speechSynthesis.getVoices();
+    const voices = this.cachedVoices.length > 0 ? this.cachedVoices : window.speechSynthesis.getVoices();
     return voices.filter(
       (v) =>
         v.lang.toLowerCase().startsWith('ar') ||
         v.name.toLowerCase().includes('arabic') ||
+        v.name.toLowerCase().includes('العربية') ||
         v.name.toLowerCase().includes('hoda') ||
         v.name.toLowerCase().includes('naayf') ||
         v.name.toLowerCase().includes('tarik') ||
@@ -235,6 +248,46 @@ class AudioService {
   }
 
   /**
+   * Direct studio recitations for Quranic Athkar
+   */
+  private getSpecialRecitationUrls(text: string): string[] | null {
+    if (!text) return null;
+    const norm = text.replace(/[\u064B-\u0652\u0670\s\u06D6-\u06ED\u06DD\uFD3E\uFD3F﴿﴾۝۞]/g, '');
+    if (norm.includes('اللهلاإلهإلاهوالحيالقيوم') || norm.includes('وسعكرسيه')) {
+      // Ayat Al-Kursi by Sheikh Mishary Alafasy
+      return ['https://everyayah.com/data/Alafasy_128kbps/002255.mp3'];
+    }
+    if (norm.includes('قلهواللهأحد')) {
+      return [
+        'https://everyayah.com/data/Alafasy_128kbps/112001.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/112002.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/112003.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/112004.mp3',
+      ];
+    }
+    if (norm.includes('قلأعوذبربالفلق')) {
+      return [
+        'https://everyayah.com/data/Alafasy_128kbps/113001.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113002.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113003.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113004.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/113005.mp3',
+      ];
+    }
+    if (norm.includes('قلأعوذبربالناس')) {
+      return [
+        'https://everyayah.com/data/Alafasy_128kbps/114001.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114002.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114003.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114004.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114005.mp3',
+        'https://everyayah.com/data/Alafasy_128kbps/114006.mp3',
+      ];
+    }
+    return null;
+  }
+
+  /**
    * Universal crystal clear Arabic Dhikr recitation
    * Streams high quality natural Arabic audio with sequential chunking,
    * with automatic fallback to SpeechSynthesis if offline.
@@ -262,10 +315,26 @@ class AudioService {
       return;
     }
 
-    const chunks = this.splitArabicIntoChunks(cleanText, 160);
-    if (chunks.length === 0) {
-      options.onEnd?.();
-      return;
+    // 1. Check for dedicated high-quality Quran studio recitations
+    const specialUrls = this.getSpecialRecitationUrls(text);
+    let playlistUrls: string[] = [];
+
+    if (specialUrls && specialUrls.length > 0) {
+      playlistUrls = specialUrls;
+    } else {
+      const chunks = this.splitArabicIntoChunks(cleanText, 150);
+      if (chunks.length === 0) {
+        options.onEnd?.();
+        return;
+      }
+
+      const isVercelHost =
+        typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app');
+      const baseUrl = isVercelHost ? '' : 'https://smart-reminder-system-nu.vercel.app';
+
+      playlistUrls = chunks.map(
+        (chunk) => `${baseUrl}/api/tts?text=${encodeURIComponent(chunk)}&lang=ar`
+      );
     }
 
     let currentIndex = 0;
@@ -274,32 +343,31 @@ class AudioService {
     options.onStart?.();
     this.notifySpeaking(true);
 
-    const playNextChunk = () => {
+    const playNext = () => {
       if (isCanceled) return;
-      if (currentIndex >= chunks.length) {
+      if (currentIndex >= playlistUrls.length) {
         this.notifySpeaking(false);
         this.currentCustomAudio = null;
         options.onEnd?.();
         return;
       }
 
-      const chunk = chunks[currentIndex];
+      const url = playlistUrls[currentIndex];
       currentIndex++;
 
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(chunk)}`;
       const audio = new Audio(url);
       audio.volume = options.volume ?? 1.0;
       this.currentCustomAudio = audio;
 
       audio.onended = () => {
         if (!isCanceled) {
-          playNextChunk();
+          playNext();
         }
       };
 
       audio.onerror = () => {
         if (!isCanceled) {
-          console.warn('Online recitation chunk failed, falling back to local speech synthesis.');
+          console.warn('Audio recitation stream error, falling back to local speech synthesis.');
           this.speak(cleanText, {
             volume: options.volume ?? 1.0,
             onEnd: () => {
@@ -313,7 +381,7 @@ class AudioService {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
-          console.warn('Audio play error, falling back to speech synthesis:', err);
+          console.warn('Audio play promise rejected, falling back to speech synthesis:', err);
           if (!isCanceled) {
             this.speak(cleanText, {
               volume: options.volume ?? 1.0,
@@ -327,7 +395,7 @@ class AudioService {
       }
     };
 
-    playNextChunk();
+    playNext();
   }
 
   /**

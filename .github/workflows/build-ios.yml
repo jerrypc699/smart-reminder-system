@@ -48,32 +48,31 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.45.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.45.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.46.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.46.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.45.ipa
-          path: DrAbdelaziz-Reminder-v1.0.45.ipa
+          name: DrAbdelaziz-Reminder-v1.0.46.ipa
+          path: DrAbdelaziz-Reminder-v1.0.46.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.45
+      - name: Attach IPA to GitHub Release v1.0.46
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.45
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.45"
+          tag_name: v1.0.46
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.46"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.45
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.46
             
             التحديثات الجديدة:
-            - تفعيل التلاوة الصوتية الشاملة للأذكار بنظام تشغيل صوتي عربي فائق الجودة والوضوح (Google TTS Streaming + SpeechSynthesis Fallback).
-            - حل مشكلة كتم الصوت على أجهزة الأندرويد والويب وإزالة العلامات القرآنية المانعة للنطق.
-            - إضافة مؤشر تفاعلي مباشر عند الضغط على أيقونة السماعة (تشغيل / إيقاف مع نبض مضيء).
-            - تلاوة الورد المتتابع والأذكار الفردية بطبقات صوتية نقية ومسموعة.
+            - تفعيل التلاوة الصوتية الشاملة للأذكار عبر خادم صوتي مخصص (Dedicated TTS Proxy) لتجاوز قيود وحظر المتصفحات وهواتف الأندرويد.
+            - تلاوة استوديو نقية بصوت الشيخ مشاري العفاسي لآية الكرسي والمعوذات وسورة الإخلاص مباشرة.
+            - مؤشر ضوئي نابض متفاعل فور الضغط على علامة السماعة.
           files: |
-            DrAbdelaziz-Reminder-v1.0.45.ipa
+            DrAbdelaziz-Reminder-v1.0.46.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,7 +84,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.45.ipa
+            DrAbdelaziz-Reminder-v1.0.46.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

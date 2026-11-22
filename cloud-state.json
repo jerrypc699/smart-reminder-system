@@ -1348,9 +1348,12 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1795326042829-eauo2",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-22T05:40:42.829Z",
-      "attachments": []
+      "attachments": [],
+      "completedAt": "2026-11-22T10:47:24.535Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-22T10:47:24.535Z"
     },
     {
       "title": "نورهان — تقارير أمس",
@@ -2541,7 +2544,7 @@
           {
             "id": "imp_task-1795326042829-eauo2_2026-11-22",
             "t": "للدكتور عمران — نرهان لم تبعت تقرير أمس",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795326042829-eauo2"
           },
           {
@@ -2578,7 +2581,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T10:47:23.760Z",
+  "updatedAt": "2026-11-22T10:47:24.770Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

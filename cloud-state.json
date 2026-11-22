@@ -1503,6 +1503,17 @@
       "notes": "",
       "id": "emp-1795351403831-iyie",
       "createdAt": "2026-11-22T12:43:23.831Z"
+    },
+    {
+      "name": "محمد عزيز شطا",
+      "role": "",
+      "department": "",
+      "phone": "01028376154",
+      "whatsappPhone": "01028376154",
+      "email": "",
+      "notes": "",
+      "id": "emp-1795351418653-hxvt",
+      "createdAt": "2026-11-22T12:43:38.653Z"
     }
   ],
   "scheduledMedia": [
@@ -2619,7 +2630,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T12:43:38.419Z",
+  "updatedAt": "2026-11-22T12:43:40.458Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",

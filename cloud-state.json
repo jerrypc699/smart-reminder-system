@@ -159,14 +159,14 @@
     {
       "title": "اعمال السيستم",
       "description": "السلام عليكم\nيارب تكون بخير\nبخصوص تعديلات اعمال   السيستم\n¤ متابعه كل موظف بحدا ( مثال اسامه مع شغل ) استلام شيكات ، تأمينات ، الخ )\nالفديو ؛ مش يشتغل علطول ، وعاوز اسمى الفديوهات ،\n* تنسيق رساله الواتس اب من شكل احترافي\nوالاكسل شيت مش بيرفع من المشبك ، ورقم الموبايل لازم اكتبه منول،\nتحياتي\n\n* كذلك  قيام الليل ضيفتها او صلاه الضحى يكون ليها وقت لتنبيه ، وايكونه نفس الصلوات الاساسيه.\n* الاذكار \nمحتاج اضيف تحتها اذكار ، مثل اذكار الصباح والمساء والتوقيت.\n*ميعاد النوم ، وشرب المايه ، يكون ف ميعاد احدد.\n* كذلك التعليم ، والرياضه ، وورد القرأن ، بيكون في ميعاد يحدد وتتبيه.\n* كذلك ؛ الشغل أعمال( ملف لتنميه الأعمال، ملف لمتابعه تقارير )",
-      "dueDate": "2026-11-21",
-      "dueTime": "12:31",
+      "dueDate": "2026-11-12",
+      "dueTime": "13:43",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اعمال السيستم.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "custom",
+      "audioMode": "tts",
       "attachments": [],
       "whatsapp": {
         "enabled": true,
@@ -174,7 +174,7 @@
         "recipientName": "التستاذ الفاضل احمد الجيار",
         "autoTriggerAtDueTime": true,
         "includeAttachmentsLinks": true,
-        "lastSentAt": "2026-11-21T09:02:43.931Z",
+        "lastSentAt": "2026-11-12T12:29:19.860Z",
         "lastSendStatus": "opened_app"
       },
       "id": "task-1794483515605-7t2dt",
@@ -876,13 +876,13 @@
       "title": "اجتماع  بخصوص مشروع الضبعه",
       "description": "موقف الاعاشات\nموقف السكن والمواصلات\nموقف شركة النقل\nموقف الرد على المكالمات وتنسيقها \nدراسه اسعار مرتبات العمالة \nورقه الضد",
       "dueDate": "2026-11-21",
-      "dueTime": "12:22",
+      "dueTime": "09:00",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع  بخصوص مشروع الضبعه.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "custom",
+      "audioMode": "tts",
       "id": "task-1795191185537-gncbn",
       "status": "pending",
       "createdAt": "2026-11-20T16:13:05.537Z",
@@ -1960,6 +1960,153 @@
         },
         "customValues": {},
         "customNotes": {}
+      },
+      "2026-11-22": {
+        "date": "2026-11-22",
+        "prayers": {
+          "fajr": 0,
+          "dhuhr": 0,
+          "asr": 0,
+          "maghrib": 0,
+          "isha": 0
+        },
+        "adhkar": {
+          "sabah": false,
+          "masaa": false,
+          "nawm": false,
+          "dua": false
+        },
+        "quran": 0,
+        "sport": 0,
+        "study": 0,
+        "sleep": 0,
+        "water": 0,
+        "food": false,
+        "weight": "",
+        "tasks": [
+          {
+            "id": "imp_task-1794805787590-1m88e_2026-11-22",
+            "t": "محمد",
+            "d": false,
+            "sourceTaskId": "task-1794805787590-1m88e"
+          },
+          {
+            "id": "imp_task-1794813709909-tvr2b_2026-11-22",
+            "t": "محمد رضا",
+            "d": false,
+            "sourceTaskId": "task-1794813709909-tvr2b"
+          },
+          {
+            "id": "imp_task-1794483515605-7t2dt_2026-11-22",
+            "t": "اعمال السيستم",
+            "d": false,
+            "sourceTaskId": "task-1794483515605-7t2dt"
+          },
+          {
+            "id": "imp_task-1794478443115-vghdc_2026-11-22",
+            "t": "ملف التامينات",
+            "d": false,
+            "sourceTaskId": "task-1794478443115-vghdc"
+          },
+          {
+            "id": "imp_task-1794431372819-0t1ik_2026-11-22",
+            "t": "البنك",
+            "d": false,
+            "sourceTaskId": "task-1794431372819-0t1ik"
+          },
+          {
+            "id": "imp_task-1794418596194-nd6mj_2026-11-22",
+            "t": "احمد اسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418596194-nd6mj"
+          },
+          {
+            "id": "imp_task-1794418554981-68qlo_2026-11-22",
+            "t": "أحمداسعد",
+            "d": false,
+            "sourceTaskId": "task-1794418554981-68qlo"
+          },
+          {
+            "id": "imp_task-1794417698928-4sndw_2026-11-22",
+            "t": "مجدى الحدا د",
+            "d": false,
+            "sourceTaskId": "task-1794417698928-4sndw"
+          },
+          {
+            "id": "imp_task-1794369844953-4cvfp_2026-11-22",
+            "t": "المهندس احمد حسن",
+            "d": false,
+            "sourceTaskId": "task-1794369844953-4cvfp"
+          },
+          {
+            "id": "imp_task-1794887282519-zqse0_2026-11-22",
+            "t": "مستخقات الشركه",
+            "d": false,
+            "sourceTaskId": "task-1794887282519-zqse0"
+          },
+          {
+            "id": "imp_task-1794887428535-fxoc3_2026-11-22",
+            "t": "مستحقات السيارات",
+            "d": false,
+            "sourceTaskId": "task-1794887428535-fxoc3"
+          },
+          {
+            "id": "imp_task-1794926851089-6vtqg_2026-11-22",
+            "t": "فواتير ( الملاكى ) جاسكو ( محمود بغدادى (",
+            "d": false,
+            "sourceTaskId": "task-1794926851089-6vtqg"
+          },
+          {
+            "id": "imp_task-1794928158919-8ovdz_2026-11-22",
+            "t": "تسجيل تقرير الاستلامات",
+            "d": false,
+            "sourceTaskId": "task-1794928158919-8ovdz"
+          },
+          {
+            "id": "imp_task-1794991430396-ihp27_2026-11-22",
+            "t": "مستحقات الشمالي",
+            "d": false,
+            "sourceTaskId": "task-1794991430396-ihp27"
+          },
+          {
+            "id": "imp_task-1794047274656-pjzg1_2026-11-22",
+            "t": "مقابلة الجيار",
+            "d": false,
+            "sourceTaskId": "task-1794047274656-pjzg1"
+          },
+          {
+            "id": "imp_task-1795060939852-b0u6g_2026-11-22",
+            "t": "تقارير الخزنه",
+            "d": false,
+            "sourceTaskId": "task-1795060939852-b0u6g"
+          },
+          {
+            "id": "imp_task-1795060797227-cmcdn_2026-11-22",
+            "t": "مكالمه لزميلي",
+            "d": false,
+            "sourceTaskId": "task-1795060797227-cmcdn"
+          },
+          {
+            "id": "imp_task-1795191185537-gncbn_2026-11-22",
+            "t": "اجتماع  بخصوص مشروع الضبعه",
+            "d": false,
+            "sourceTaskId": "task-1795191185537-gncbn"
+          },
+          {
+            "id": "imp_task-1795198567339-oanxf_2026-11-22",
+            "t": "بخصوص الامن",
+            "d": false,
+            "sourceTaskId": "task-1795198567339-oanxf"
+          }
+        ],
+        "dismissedTaskIds": [],
+        "notes": {
+          "good": "",
+          "block": "",
+          "tomorrow": ""
+        },
+        "customValues": {},
+        "customNotes": {}
       }
     },
     "months": {},
@@ -1979,7 +2126,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-21T16:15:25.846Z",
+  "updatedAt": "2026-11-22T02:26:52.993Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2045,7 +2192,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "PC",
+  "sourceDevice": "Mobile",
   "athkar": {
     "customAthkar": [
       {

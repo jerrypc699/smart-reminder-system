@@ -2278,12 +2278,6 @@
             "t": "طلب اللوجو واسم شركة الأمن المقترحة من طلال",
             "d": false,
             "sourceTaskId": "task-1795289624953-h314s"
-          },
-          {
-            "id": "imp_task-1795316106531-jyj9a_2026-11-22",
-            "t": "رسالة واتساب للأستاذ حمدي المحامي — متابعة العقود",
-            "d": false,
-            "sourceTaskId": "task-1795316106531-jyj9a"
           }
         ],
         "dismissedTaskIds": [],
@@ -2313,7 +2307,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T02:55:07.147Z",
+  "updatedAt": "2026-11-22T02:55:08.933Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2379,7 +2373,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "PC",
+  "sourceDevice": "Mobile",
   "athkar": {
     "customAthkar": [
       {

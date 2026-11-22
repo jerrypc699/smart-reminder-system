@@ -2332,13 +2332,13 @@
           {
             "id": "imp_task-1795277159064-c7rc2_2026-11-22",
             "t": "القيام والذهاب إلى الجيم",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795277159064-c7rc2"
           },
           {
             "id": "imp_task-1795288261773-kmkwj_2026-11-22",
             "t": "صلاة قيام الليل",
-            "d": false,
+            "d": true,
             "sourceTaskId": "task-1795288261773-kmkwj"
           },
           {
@@ -2399,7 +2399,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T05:26:59.703Z",
+  "updatedAt": "2026-11-22T05:26:59.877Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2465,7 +2465,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [
       {

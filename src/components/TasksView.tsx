@@ -50,6 +50,7 @@ import {
   TaskAudioMode,
   StoredAudioMeta,
   WhatsAppSavedContact,
+  WhatsAppRecipient,
   Employee
 } from '../types';
 import { taskService } from '../services/taskService';
@@ -133,6 +134,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [waCustomMessage, setWaCustomMessage] = useState('');
   const [waAutoTrigger, setWaAutoTrigger] = useState(true);
   const [waIncludeAttachments, setWaIncludeAttachments] = useState(true);
+  const [waIsGroupDispatch, setWaIsGroupDispatch] = useState(false);
+  const [waRecipients, setWaRecipients] = useState<WhatsAppRecipient[]>([]);
+  const [waGroupName, setWaGroupName] = useState('');
   const [waSavedContacts, setWaSavedContacts] = useState<WhatsAppSavedContact[]>(() =>
     whatsappService.getSettings().savedContacts
   );
@@ -263,9 +267,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
     try {
       const res = await whatsappService.pickContactFromDevice();
       if (res.success && res.phone) {
-        setWaPhone(res.phone);
-        if (res.name && !waRecipientName) {
-          setWaRecipientName(res.name);
+        if (waIsGroupDispatch) {
+          handleToggleRecipient(res.name || res.phone, res.phone);
+        } else {
+          setWaPhone(res.phone);
+          if (res.name && !waRecipientName) {
+            setWaRecipientName(res.name);
+          }
         }
         const updated = whatsappService.addSavedContact(res.name || '', res.phone);
         setWaSavedContacts(updated);
@@ -285,6 +293,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
       setContactPickerTarget('task');
       setIsContactPickerOpen(true);
       showWaBanner('تم فتح دفتر الأرقام المحفوظة');
+    }
+  };
+
+  const handleToggleRecipient = (name: string, phone: string, employeeId?: string, role?: string) => {
+    const norm = normalizeWhatsAppPhone(phone);
+    if (!norm) return;
+    const exists = waRecipients.some((r) => normalizeWhatsAppPhone(r.phone) === norm);
+    if (exists) {
+      setWaRecipients((prev) => prev.filter((r) => normalizeWhatsAppPhone(r.phone) !== norm));
+      showWaBanner(`تمت إزالة ${name} من المكلفين`);
+    } else {
+      setWaRecipients((prev) => [...prev, { name: name.trim() || phone, phone, employeeId, role }]);
+      showWaBanner(`✓ تمت إضافة ${name} إلى المكلفين`);
     }
   };
 
@@ -320,13 +341,17 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   const handleSelectContactFromModal = (contact: { name?: string; phone: string; employeeId?: string }) => {
     if (contactPickerTarget === 'task') {
-      setWaPhone(contact.phone);
-      if (contact.name) {
-        setWaRecipientName(contact.name);
-      }
-      if (contact.employeeId) {
-        setSelectedEmployeeId(contact.employeeId);
-        setSelectedEmployeeName(contact.name || '');
+      if (waIsGroupDispatch) {
+        handleToggleRecipient(contact.name || contact.phone, contact.phone, contact.employeeId);
+      } else {
+        setWaPhone(contact.phone);
+        if (contact.name) {
+          setWaRecipientName(contact.name);
+        }
+        if (contact.employeeId) {
+          setSelectedEmployeeId(contact.employeeId);
+          setSelectedEmployeeName(contact.name || '');
+        }
       }
     } else {
       setEmpFormPhone(contact.phone);
@@ -526,6 +551,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setWaCustomMessage('');
     setWaAutoTrigger(true);
     setWaIncludeAttachments(true);
+    setWaIsGroupDispatch(false);
+    setWaRecipients([]);
+    setWaGroupName('');
     setSelectedEmployeeId('');
     setSelectedEmployeeName('');
     setEditingTask(null);
@@ -555,6 +583,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setWaCustomMessage(task.whatsapp?.customMessage || '');
     setWaAutoTrigger(task.whatsapp?.autoTriggerAtDueTime !== false);
     setWaIncludeAttachments(task.whatsapp?.includeAttachmentsLinks !== false);
+    setWaIsGroupDispatch(Boolean(task.whatsapp?.isGroupDispatch));
+    setWaRecipients(
+      task.whatsapp?.recipients && task.whatsapp.recipients.length > 0
+        ? [...task.whatsapp.recipients]
+        : (task.assignees ? [...task.assignees] : [])
+    );
+    setWaGroupName(task.whatsapp?.groupName || '');
     setIsAddModalOpen(true);
   };
 
@@ -720,26 +755,44 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
 
     if (waEnabled) {
-      const normalized = normalizeWhatsAppPhone(waPhone);
-      if (!normalized || normalized.length < 8) {
-        alert('يرجى إدخال رقم واتساب صحيح مع رمز الدولة (مثال: 01012345678 أو 201012345678).');
-        return;
+      if (waIsGroupDispatch) {
+        if (waRecipients.length === 0) {
+          alert('يرجى تحديد أو إضافة مستلم واحد على الأقل للمهمة الجماعية.');
+          return;
+        }
+      } else {
+        const normalized = normalizeWhatsAppPhone(waPhone);
+        if (!normalized || normalized.length < 8) {
+          alert('يرجى إدخال رقم واتساب صحيح مع رمز الدولة (مثال: 01012345678 أو 201012345678).');
+          return;
+        }
       }
     }
 
-    const whatsappPayload = waEnabled && waPhone.trim()
+    const whatsappPayload = waEnabled
       ? {
           enabled: true,
-          phoneNumber: normalizeWhatsAppPhone(waPhone),
-          recipientName: waRecipientName.trim() || undefined,
+          phoneNumber: waIsGroupDispatch
+            ? (waRecipients[0]?.phone ? normalizeWhatsAppPhone(waRecipients[0].phone) : normalizeWhatsAppPhone(waPhone))
+            : normalizeWhatsAppPhone(waPhone),
+          recipientName: waIsGroupDispatch
+            ? (waGroupName.trim() || waRecipients.map((r) => r.name).join('، '))
+            : (waRecipientName.trim() || undefined),
           customMessage: waCustomMessage.trim() || undefined,
           autoTriggerAtDueTime: waAutoTrigger,
           includeAttachmentsLinks: waIncludeAttachments,
+          recipients: waRecipients,
+          isGroupDispatch: waIsGroupDispatch,
+          groupName: waGroupName.trim() || undefined,
           lastSentAt: editingTask?.whatsapp?.lastSentAt,
           lastSendStatus: editingTask?.whatsapp?.lastSendStatus,
           lastSendError: editingTask?.whatsapp?.lastSendError,
         }
       : undefined;
+
+    const groupAssignedName = waIsGroupDispatch && waRecipients.length > 0
+      ? (waGroupName.trim() || `${waRecipients.length} موظفين مكلفين`)
+      : (selectedEmployeeName || undefined);
 
     const hasVideoAtt = attachments.some((a) =>
       (a.type && a.type.toLowerCase().startsWith('video/')) ||
@@ -764,7 +817,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         attachments,
         whatsapp: whatsappPayload,
         employeeId: selectedEmployeeId || undefined,
-        employeeName: selectedEmployeeName || undefined,
+        employeeName: groupAssignedName,
+        assignees: waIsGroupDispatch && waRecipients.length > 0 ? waRecipients : undefined,
       });
     } else {
       onAddTask({
@@ -785,7 +839,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         attachments: attachments.length > 0 ? attachments : undefined,
         whatsapp: whatsappPayload,
         employeeId: selectedEmployeeId || undefined,
-        employeeName: selectedEmployeeName || undefined,
+        employeeName: groupAssignedName,
+        assignees: waIsGroupDispatch && waRecipients.length > 0 ? waRecipients : undefined,
       });
 
       // Clear any filter or search so the newly added task is immediately visible in the list
@@ -1535,16 +1590,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           )}
 
                           {/* Scheduled WhatsApp Badge */}
-                          {task.whatsapp?.enabled && task.whatsapp.phoneNumber && (
+                          {task.whatsapp?.enabled && (task.whatsapp.phoneNumber || (task.whatsapp.recipients && task.whatsapp.recipients.length > 0)) && (
                             <div className="inline-flex flex-wrap items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs mt-1 ml-1">
                               <MessageCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span>
-                                واتساب في الموعد ←{' '}
-                                <strong className="text-white" dir="ltr">
-                                  {task.whatsapp.recipientName ||
-                                    formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber)}
-                                </strong>
-                              </span>
+                              {task.whatsapp.isGroupDispatch || (task.whatsapp.recipients && task.whatsapp.recipients.length > 1) ? (
+                                <span>
+                                  واتساب جماعي 👥 ←{' '}
+                                  <strong className="text-white">
+                                    {task.whatsapp.groupName || `${task.whatsapp.recipients?.length || task.assignees?.length} مكلفين`}
+                                  </strong>
+                                </span>
+                              ) : (
+                                <span>
+                                  واتساب في الموعد ←{' '}
+                                  <strong className="text-white" dir="ltr">
+                                    {task.whatsapp.recipientName ||
+                                      formatWhatsAppDisplayPhone(task.whatsapp.phoneNumber)}
+                                  </strong>
+                                </span>
+                              )}
                               {task.whatsapp.lastSendStatus === 'sent_api' && (
                                 <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-200 text-[10px] font-bold">
                                   ✓ تم الإرسال التلقائي
@@ -2394,142 +2458,320 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
                 {waEnabled && (
                   <div className="space-y-3 pt-2 border-t border-emerald-500/20">
-                    {/* Native Phonebook Picker Action */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs font-bold text-white">
-                          دفتر الهاتف والأرقام المحفوظة:
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={handlePickPhoneContact}
-                          className="btn-lux-primary h-8 px-3 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
-                          title="فتح دفتر جهات اتصال الموبايل واختيار الرقم مباشرة دون الحاجة لكتابته"
-                        >
-                          <Smartphone className="w-3.5 h-3.5" />
-                          <span>📱 أسماء الهاتف</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setContactPickerTarget('task');
-                            setIsContactPickerOpen(true);
-                          }}
-                          className="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
-                          title="عرض دفتر الأرقام وفريق العمل والبحث السريع"
-                        >
-                          <Users className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>📋 دفتر الأرقام ({employees.length + waSavedContacts.length})</span>
-                        </button>
-                      </div>
+                    {/* Dispatch Mode Selector: Single Recipient vs Group Dispatch */}
+                    <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-900 border border-emerald-500/30">
+                      <button
+                        type="button"
+                        onClick={() => setWaIsGroupDispatch(false)}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          !waIsGroupDispatch
+                            ? 'bg-emerald-500/25 text-emerald-200 border border-emerald-500/50 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        <span>👤 تكليف فردي (مستلم واحد)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWaIsGroupDispatch(true)}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          waIsGroupDispatch
+                            ? 'bg-blue-500/25 text-blue-200 border border-blue-500/50 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>👥 تكليف جماعي (أكثر من شخص)</span>
+                      </button>
                     </div>
 
-                    {/* Quick Pick Chips (Employees + Saved Contacts) */}
-                    {(employees.length > 0 || waSavedContacts.length > 0) && (
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-semibold text-slate-300 block">
-                          ⚡ أو اختر بنقرة واحدة من فريق العمل وجهات الاتصال:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
-                          {employees
-                            .filter((e) => e.phone || e.whatsappPhone)
-                            .map((emp) => {
-                              const empPhone = emp.whatsappPhone || emp.phone || '';
-                              const isSelected =
-                                normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(empPhone);
-                              return (
-                                <button
-                                  key={`emp-chip-${emp.id}`}
-                                  type="button"
-                                  onClick={() => {
-                                    setWaPhone(empPhone);
-                                    setWaRecipientName(emp.name);
-                                    setSelectedEmployeeId(emp.id);
-                                    setSelectedEmployeeName(emp.name);
-                                  }}
-                                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                                    isSelected
-                                      ? 'bg-blue-500/30 border-blue-400 text-white shadow-sm'
-                                      : 'bg-slate-900 border-slate-700 text-blue-300 hover:border-blue-500/50'
-                                  }`}
+                    {/* Group Mode UI */}
+                    {waIsGroupDispatch ? (
+                      <div className="space-y-3 p-3 rounded-2xl bg-blue-950/20 border border-blue-500/30">
+                        {/* Group / Team Name */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                            اسم المجموعة / فريق العمل المكلف (اختياري) 🏷️
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="مثال: فريق العيادة، الطاقم الطبي، مهندسو الصيانة..."
+                            value={waGroupName}
+                            onChange={(e) => setWaGroupName(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        {/* Selected Recipients Chips */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-blue-400" />
+                              <span>المكلفون بالمهمة ({waRecipients.length}):</span>
+                            </span>
+                            {waRecipients.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setWaRecipients([])}
+                                className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                              >
+                                مسح الكل
+                              </button>
+                            )}
+                          </div>
+
+                          {waRecipients.length === 0 ? (
+                            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-amber-300/90 text-center">
+                              ⚠️ لم يتم اختيار مكلفين بعد. اختر من الأسماء أدناه أو أضف من الهاتف.
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-0.5">
+                              {waRecipients.map((r, idx) => (
+                                <span
+                                  key={`recip-${idx}`}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/20 text-blue-200 border border-blue-500/40 text-xs font-bold"
                                 >
-                                  <User className="w-3 h-3 text-blue-400" />
-                                  <span>{emp.name}</span>
-                                </button>
-                              );
-                            })}
-                          {waSavedContacts.map((contact) => (
+                                  <span>👤 {r.name}</span>
+                                  <span className="text-[10px] opacity-75 font-mono" dir="ltr">{r.phone}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setWaRecipients(waRecipients.filter((_, i) => i !== idx))}
+                                    className="w-4 h-4 rounded-full bg-blue-500/30 hover:bg-rose-500/60 flex items-center justify-center text-[11px] text-white cursor-pointer transition-colors"
+                                    title="إزالة"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Quick Add Buttons: Pick from phonebook or list */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-blue-500/20">
+                          <span className="text-[11px] font-semibold text-slate-300">
+                            إضافة مكلفين للفريق:
+                          </span>
+                          <div className="flex items-center gap-1.5">
                             <button
-                              key={contact.id}
+                              type="button"
+                              onClick={handlePickPhoneContact}
+                              className="btn-lux-primary h-8 px-3 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
+                              title="إضافة شخص من دفتر جهات اتصال الموبايل"
+                            >
+                              <Smartphone className="w-3.5 h-3.5" />
+                              <span>📱 إضافة من الهاتف</span>
+                            </button>
+                            <button
                               type="button"
                               onClick={() => {
-                                setWaPhone(contact.phone);
-                                setWaRecipientName(contact.name);
+                                setContactPickerTarget('task');
+                                setIsContactPickerOpen(true);
                               }}
-                              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
-                                normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(contact.phone)
-                                  ? 'bg-emerald-500/30 border-emerald-400 text-white shadow-sm'
-                                  : 'bg-slate-900/80 border-slate-700 text-emerald-300 hover:border-emerald-500/40'
-                              }`}
+                              className="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                             >
-                              {contact.name}
+                              <Users className="w-3.5 h-3.5 text-blue-400" />
+                              <span>📋 دفتر الأرقام</span>
                             </button>
-                          ))}
+                          </div>
+                        </div>
+
+                        {/* Multi-toggle Contact Chips */}
+                        {(employees.length > 0 || waSavedContacts.length > 0) && (
+                          <div className="space-y-1.5 pt-1">
+                            <span className="text-[10px] text-slate-400 block">
+                              انقر على أي اسم لإضافته أو إزالته من المكلفين:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+                              {employees
+                                .filter((e) => e.phone || e.whatsappPhone)
+                                .map((emp) => {
+                                  const empPhone = emp.whatsappPhone || emp.phone || '';
+                                  const isSelected = waRecipients.some(
+                                    (r) => normalizeWhatsAppPhone(r.phone) === normalizeWhatsAppPhone(empPhone)
+                                  );
+                                  return (
+                                    <button
+                                      key={`emp-chip-${emp.id}`}
+                                      type="button"
+                                      onClick={() => handleToggleRecipient(emp.name, empPhone, emp.id, emp.role)}
+                                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                        isSelected
+                                          ? 'bg-blue-500 text-white border-blue-400 shadow-sm'
+                                          : 'bg-slate-900 border-slate-700 text-blue-300 hover:border-blue-500/50'
+                                      }`}
+                                    >
+                                      <span>{isSelected ? '✓' : '+'}</span>
+                                      <span>{emp.name}</span>
+                                    </button>
+                                  );
+                                })}
+                              {waSavedContacts.map((contact) => {
+                                const isSelected = waRecipients.some(
+                                  (r) => normalizeWhatsAppPhone(r.phone) === normalizeWhatsAppPhone(contact.phone)
+                                );
+                                return (
+                                  <button
+                                    key={`saved-contact-${contact.id}`}
+                                    type="button"
+                                    onClick={() => handleToggleRecipient(contact.name, contact.phone)}
+                                    className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                      isSelected
+                                        ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm'
+                                        : 'bg-slate-900/80 border-slate-700 text-emerald-300 hover:border-emerald-500/40'
+                                    }`}
+                                  >
+                                    <span>{isSelected ? '✓' : '+'}</span>
+                                    <span>{contact.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Single Recipient Mode UI */
+                      <div className="space-y-3">
+                        {/* Native Phonebook Picker Action */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30">
+                          <div className="flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-emerald-400" />
+                            <span className="text-xs font-bold text-white">
+                              دفتر الهاتف والأرقام المحفوظة:
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={handlePickPhoneContact}
+                              className="btn-lux-primary h-8 px-3 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
+                              title="فتح دفتر جهات اتصال الموبايل واختيار الرقم مباشرة دون الحاجة لكتابته"
+                            >
+                              <Smartphone className="w-3.5 h-3.5" />
+                              <span>📱 أسماء الهاتف</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setContactPickerTarget('task');
+                                setIsContactPickerOpen(true);
+                              }}
+                              className="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="عرض دفتر الأرقام وفريق العمل والبحث السريع"
+                            >
+                              <Users className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>📋 دفتر الأرقام ({employees.length + waSavedContacts.length})</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Quick Pick Chips (Employees + Saved Contacts) */}
+                        {(employees.length > 0 || waSavedContacts.length > 0) && (
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-semibold text-slate-300 block">
+                              ⚡ أو اختر بنقرة واحدة من فريق العمل وجهات الاتصال:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-0.5">
+                              {employees
+                                .filter((e) => e.phone || e.whatsappPhone)
+                                .map((emp) => {
+                                  const empPhone = emp.whatsappPhone || emp.phone || '';
+                                  const isSelected =
+                                    normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(empPhone);
+                                  return (
+                                    <button
+                                      key={`emp-chip-${emp.id}`}
+                                      type="button"
+                                      onClick={() => {
+                                        setWaPhone(empPhone);
+                                        setWaRecipientName(emp.name);
+                                        setSelectedEmployeeId(emp.id);
+                                        setSelectedEmployeeName(emp.name);
+                                      }}
+                                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                        isSelected
+                                          ? 'bg-blue-500/30 border-blue-400 text-white shadow-sm'
+                                          : 'bg-slate-900 border-slate-700 text-blue-300 hover:border-blue-500/50'
+                                      }`}
+                                    >
+                                      <User className="w-3 h-3 text-blue-400" />
+                                      <span>{emp.name}</span>
+                                    </button>
+                                  );
+                                })}
+                              {waSavedContacts.map((contact) => (
+                                <button
+                                  key={contact.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setWaPhone(contact.phone);
+                                    setWaRecipientName(contact.name);
+                                  }}
+                                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
+                                    normalizeWhatsAppPhone(waPhone) === normalizeWhatsAppPhone(contact.phone)
+                                      ? 'bg-emerald-500/30 border-emerald-400 text-white shadow-sm'
+                                      : 'bg-slate-900/80 border-slate-700 text-emerald-300 hover:border-emerald-500/40'
+                                  }`}
+                                >
+                                  {contact.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              رقم الواتساب المستلم *
+                            </label>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="tel"
+                                dir="ltr"
+                                required={waEnabled && !waIsGroupDispatch}
+                                placeholder="01012345678 أو +2010..."
+                                value={waPhone}
+                                onChange={(e) => setWaPhone(e.target.value)}
+                                className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                              />
+                              <button
+                                type="button"
+                                disabled={!normalizeWhatsAppPhone(waPhone)}
+                                onClick={() => {
+                                  whatsappService.addSavedContact(waRecipientName, waPhone);
+                                  showWaBanner('✓ تم حفظ الرقم في جهات اتصال واتساب السريعة');
+                                }}
+                                title="حفظ الرقم للاستخدام السريع لاحقاً"
+                                className="p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/30 disabled:opacity-40 cursor-pointer shrink-0"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                              </button>
+                            </div>
+                            {waPhone.trim() && normalizeWhatsAppPhone(waPhone) && (
+                              <span className="text-[10px] text-emerald-400 font-mono mt-1 block" dir="ltr">
+                                ✓ الصيغة المعتمدة: +{normalizeWhatsAppPhone(waPhone)}
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              اسم المستلم (اختياري)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="مثال: أحمد السكرتير / العيادة"
+                              value={waRecipientName}
+                              onChange={(e) => setWaRecipientName(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                          رقم الواتساب المستلم *
-                        </label>
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="tel"
-                            dir="ltr"
-                            required={waEnabled}
-                            placeholder="01012345678 أو +2010..."
-                            value={waPhone}
-                            onChange={(e) => setWaPhone(e.target.value)}
-                            className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
-                          />
-                          <button
-                            type="button"
-                            disabled={!normalizeWhatsAppPhone(waPhone)}
-                            onClick={() => {
-                              whatsappService.addSavedContact(waRecipientName, waPhone);
-                              showWaBanner('✓ تم حفظ الرقم في جهات اتصال واتساب السريعة');
-                            }}
-                            title="حفظ الرقم للاستخدام السريع لاحقاً"
-                            className="p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/30 disabled:opacity-40 cursor-pointer shrink-0"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                          </button>
-                        </div>
-                        {waPhone.trim() && normalizeWhatsAppPhone(waPhone) && (
-                          <span className="text-[10px] text-emerald-400 font-mono mt-1 block" dir="ltr">
-                            ✓ الصيغة المعتمدة: +{normalizeWhatsAppPhone(waPhone)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                          اسم المستلم (اختياري)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="مثال: أحمد السكرتير / العيادة"
-                          value={waRecipientName}
-                          onChange={(e) => setWaRecipientName(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                    </div>
 
                     <div>
                       <div className="flex items-center justify-between mb-1">
@@ -2603,10 +2845,31 @@ export const TasksView: React.FC<TasksViewProps> = ({
                             </div>
                           </div>
 
-                          <div className="space-y-0.5 text-right pt-0.5">
-                            <p className="text-sm font-black text-slate-900">
-                              {getArabicHonorific(waRecipientName.trim() || employees.find((e) => e.id === selectedEmployeeId)?.name)}،
-                            </p>
+                          <div className="space-y-1 text-right pt-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-black text-slate-900">
+                                {waIsGroupDispatch
+                                  ? `السادة الأفاضل المحترمون / ${waGroupName.trim() || (waRecipients.length > 0 ? waRecipients.map((r) => r.name).join('، ') : 'فريق العمل')}،`
+                                  : `${getArabicHonorific(waRecipientName.trim() || employees.find((e) => e.id === selectedEmployeeId)?.name)}،`}
+                              </p>
+                              {waIsGroupDispatch && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                  تكليف جماعي
+                                </span>
+                              )}
+                            </div>
+                            {waIsGroupDispatch && waRecipients.length > 1 && (
+                              <div className="flex flex-wrap gap-1 pt-0.5">
+                                {waRecipients.map((r, i) => (
+                                  <span
+                                    key={i}
+                                    className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 text-[9px] font-bold border border-slate-200"
+                                  >
+                                    👤 {r.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <p className="text-[11px] font-semibold text-slate-600">
                               تحية طيبة وبعد،
                             </p>

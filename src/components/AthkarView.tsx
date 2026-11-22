@@ -661,8 +661,22 @@ export const AthkarView: React.FC = () => {
 
       {/* 4. Section Tabs (كافة أبواب أذكاري) */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-black text-slate-400">أبواب وأقسام الأذكار:</div>
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-slate-300">أبواب وأقسام الأذكار:</span>
+            <button
+              onClick={() => {
+                setSelectedCategory('custom');
+                setActiveMood(null);
+                handleOpenAddCustom();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+              title="إضافة ذكر أو دعاء مخصص جديد"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <span>+ إضافة ذكر مخصص</span>
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             {/* Auto Sequence Play Button */}
             <button
@@ -689,23 +703,24 @@ export const AthkarView: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Buttons Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {/* Tab Buttons Bar - Multi-row wrap so no category is ever hidden or truncated */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {[
             { id: 'morning', label: 'أذكار الصباح ☀️', icon: Sun },
             { id: 'evening', label: 'أذكار المساء 🌙', icon: Moon },
+            { id: 'custom', label: `أذكار مخصصة (${customAthkarCount}) ✍️`, icon: Sparkles, featured: true },
             { id: 'prayer', label: 'أذكار الصلاة 🕌', icon: Compass },
             { id: 'sleep', label: 'النوم والاستيقاظ 🛏️', icon: Bed },
             { id: 'work', label: 'العمل والبركة 💼', icon: Briefcase },
             { id: 'distress', label: 'تفريج الكرب والهم 🤲', icon: ShieldCheck },
             { id: 'ruqyah', label: 'الرقية الشرعية 🌿', icon: Sparkles },
             { id: 'quranic', label: 'أدعية قرآنية 📖', icon: BookOpen },
-            { id: 'custom', label: `أذكار مخصصة (${customAthkarCount}) ✍️`, icon: Sparkles },
             { id: 'favorites', label: `المفضلة (${favoriteIds.length}) ⭐`, icon: Heart },
             { id: 'all', label: 'كافة الأذكار 📋', icon: Sparkles },
-          ].map((tab) => {
+          ].map((tab: any) => {
             const Icon = tab.icon;
             const isActive = selectedCategory === tab.id && !activeMood;
+            const isFeaturedCustom = tab.id === 'custom';
             return (
               <button
                 key={tab.id}
@@ -713,13 +728,17 @@ export const AthkarView: React.FC = () => {
                   setSelectedCategory(tab.id as any);
                   setActiveMood(null);
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                   isActive
-                    ? 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
+                    ? (isFeaturedCustom
+                        ? 'bg-amber-500/25 text-amber-200 border-amber-500/60 shadow-md shadow-amber-500/20 ring-1 ring-amber-500/40'
+                        : 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20')
+                    : (isFeaturedCustom
+                        ? 'bg-amber-950/30 text-amber-300 border-amber-500/40 hover:bg-amber-900/40 hover:border-amber-400'
+                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700')
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className={`w-4 h-4 ${isFeaturedCustom ? 'text-amber-400' : ''}`} />
                 <span>{tab.label}</span>
               </button>
             );

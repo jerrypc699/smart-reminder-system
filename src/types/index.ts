@@ -53,6 +53,14 @@ export interface WhatsAppGlobalSettings {
   savedContacts: WhatsAppSavedContact[];
 }
 
+export interface WhatsAppRecipient {
+  id?: string;
+  name: string;
+  phone: string;
+  role?: string;
+  employeeId?: string;
+}
+
 export interface WhatsAppReminderConfig {
   enabled: boolean;
   phoneNumber: string;
@@ -63,6 +71,10 @@ export interface WhatsAppReminderConfig {
   lastSentAt?: string;
   lastSendStatus?: 'sent_api' | 'opened_app' | 'failed';
   lastSendError?: string;
+  // Multi-recipient & Group dispatch
+  recipients?: WhatsAppRecipient[];
+  isGroupDispatch?: boolean;
+  groupName?: string;
 }
 
 export interface Task {
@@ -94,6 +106,8 @@ export interface Task {
   // Employee dossier link
   employeeId?: string;
   employeeName?: string;
+  // Multiple assignees
+  assignees?: WhatsAppRecipient[];
 }
 
 export interface StoredMediaMeta {

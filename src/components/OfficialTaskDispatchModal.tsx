@@ -14,7 +14,7 @@ import html2canvas from 'html2canvas-pro';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import type { Task } from '../types';
+import type { Task, WhatsAppRecipient } from '../types';
 import {
   buildTaskWhatsAppMessage,
   formatArabicDate,
@@ -65,6 +65,28 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     task?.description?.trim() ||
     task?.title?.trim() ||
     'البدء في اتخاذ الإجراءات اللازمة فوراً وموافاتنا بالتقرير';
+
+  const isGroup = Boolean(
+    task?.whatsapp?.isGroupDispatch ||
+    (task?.whatsapp?.recipients && task.whatsapp.recipients.length > 1) ||
+    (task?.assignees && task.assignees.length > 1)
+  );
+  const recipientsList: WhatsAppRecipient[] =
+    task?.whatsapp?.recipients && task.whatsapp.recipients.length > 0
+      ? task.whatsapp.recipients
+      : task?.assignees && task.assignees.length > 0
+      ? task.assignees
+      : recipientName
+      ? [{ name: recipientName, phone: task?.whatsapp?.phoneNumber || '' }]
+      : [];
+
+  const groupDisplayName =
+    task?.whatsapp?.groupName?.trim() ||
+    (recipientsList.length > 1
+      ? recipientsList.map((r) => r.name).join('، ')
+      : recipientName || 'فريق العمل المكلف');
+
+  const [isSendingRecipientPhone, setIsSendingRecipientPhone] = useState<string | null>(null);
 
   const messageText = task ? buildTaskWhatsAppMessage(task) : '';
 
@@ -197,9 +219,9 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
       const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
       const fileName = `تكليف_رسمي_${safeTitle}_${Date.now()}.png`;
 
-      const targetPhone = task.whatsapp?.phoneNumber || '';
+      const targetPhone = (!isGroup && task.whatsapp?.phoneNumber) ? task.whatsapp.phoneNumber : '';
 
-      // 1. Direct WhatsApp Dispatch to the specific contact (bypasses app chooser & contact picker)
+      // 1. Direct WhatsApp Dispatch to the specific contact (when single recipient, bypasses app chooser)
       if (targetPhone) {
         const directRes = await whatsappService.shareImageToWhatsAppDirect({
           base64: img.base64,
@@ -214,7 +236,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
         }
       }
 
-      // Branch A: Native Android or iOS Capacitor App Fallback
+      // Branch A: Native Android or iOS Capacitor App Fallback (Ideal for Group Sharing)
       if (Capacitor.isNativePlatform()) {
         try {
           const writeRes = await Filesystem.writeFile({
@@ -225,10 +247,12 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
 
           await Share.share({
             files: [writeRes.uri],
-            dialogTitle: 'إرسال بطاقة التكليف كصورة عبر واتساب (صورة فقط)'
+            dialogTitle: isGroup
+              ? 'مشاركة بطاقة التكليف الجماعي كصورة (WhatsApp Group / الكل)'
+              : 'إرسال بطاقة التكليف كصورة عبر واتساب (صورة فقط)'
           });
 
-          displayToast('✅ تم فتح مشاركة الصورة بنجاح (صورة فقط بدون كلام)!');
+          displayToast(isGroup ? '✅ تم فتح مشاركة التكليف الجماعي بنجاح!' : '✅ تم فتح مشاركة الصورة بنجاح (صورة فقط بدون كلام)!');
           setIsSharingImage(false);
           return;
         } catch (nativeErr: any) {
@@ -302,6 +326,44 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
       displayToast('⚠️ تعذر إرسال الصورة؛ يرجى المحاولة مرة أخرى.');
     } finally {
       setIsSharingImage(false);
+    }
+  };
+
+  // 1b. Send directly to a single recipient from the group list
+  const handleSendToSingleRecipient = async (recipient: WhatsAppRecipient) => {
+    if (!recipient.phone) {
+      displayToast(`⚠️ لا يوجد رقم هاتف مسجل للمكلف ${recipient.name}`);
+      return;
+    }
+    setIsSendingRecipientPhone(recipient.phone);
+    try {
+      const img = await ensureImageReady();
+      if (!img) {
+        displayToast('⚠️ تعذر تجهيز صورة الخطاب؛ يرجى المحاولة مرة أخرى.');
+        setIsSendingRecipientPhone(null);
+        return;
+      }
+      const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `تكليف_رسمي_${safeTitle}_${Date.now()}.png`;
+
+      const directRes = await whatsappService.shareImageToWhatsAppDirect({
+        base64: img.base64,
+        fileName,
+        phone: recipient.phone,
+        caption: '',
+      });
+
+      if (directRes.success && directRes.method === 'native_direct') {
+        displayToast(`✅ تم فتح محادثة ${recipient.name} مباشرة في واتساب مع إرفاق بطاقة التكليف!`);
+      } else {
+        whatsappService.openWhatsAppChat(recipient.phone, '');
+        displayToast(`✅ تم فتح محادثة ${recipient.name} في واتساب!`);
+      }
+    } catch (e) {
+      console.warn('Error sending to single recipient:', e);
+      whatsappService.openWhatsAppChat(recipient.phone, '');
+    } finally {
+      setIsSendingRecipientPhone(null);
     }
   };
 
@@ -470,10 +532,34 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             </div>
 
             {/* 3. Salutation */}
-            <div className="space-y-1 text-right pt-1">
-              <p className="text-base sm:text-lg font-black text-slate-900">
-                {honorific}،
-              </p>
+            <div className="space-y-1.5 text-right pt-1">
+              <div className="flex items-center gap-2">
+                <p className="text-base sm:text-lg font-black text-slate-900">
+                  {isGroup
+                    ? `السادة الأفاضل المحترمون / ${groupDisplayName}،`
+                    : `${honorific}،`}
+                </p>
+                {isGroup && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                    👥 تكليف جماعي
+                  </span>
+                )}
+              </div>
+              {isGroup && recipientsList.length > 1 && (
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  <span className="text-[10px] font-bold text-slate-500 w-full mb-0.5">
+                    أعضاء الفريق المكلفون:
+                  </span>
+                  {recipientsList.map((r, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-800 text-[11px] font-bold border border-slate-200"
+                    >
+                      👤 {r.name}
+                    </span>
+                  ))}
+                </div>
+              )}
               <p className="text-xs sm:text-sm font-semibold text-slate-700">
                 تحية طيبة وبعد،
               </p>
@@ -541,10 +627,57 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             ) : (
               <>
                 <Share2 className="w-5 h-5 text-white" />
-                <span>إرسال كصورة على واتساب فوراً 📸 (صورة فقط)</span>
+                <span>
+                  {isGroup
+                    ? 'مشاركة جماعية كصورة على واتساب 📸 (WhatsApp Group / الكل)'
+                    : 'إرسال كصورة على واتساب فوراً 📸 (صورة فقط)'}
+                </span>
               </>
             )}
           </button>
+
+          {/* Sequential 1-Click Dispatch List for Group Members */}
+          {isGroup && recipientsList.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2 text-right">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  <span>إرسال فردي مباشر لكل مكلف (1-Click لكل شخص):</span>
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono font-bold">
+                  {recipientsList.length} مكلفين
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+                {recipientsList.map((recip, idx) => (
+                  <div
+                    key={`recip-dispatch-${idx}`}
+                    className="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs"
+                  >
+                    <div className="truncate text-right">
+                      <span className="font-bold text-white block truncate">{recip.name}</span>
+                      <span className="text-[10px] text-slate-400 font-mono" dir="ltr">{recip.phone}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSendToSingleRecipient(recip)}
+                      disabled={isSendingRecipientPhone === recip.phone}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
+                    >
+                      {isSendingRecipientPhone === recip.phone ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <span>إرسال</span>
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Secondary Options Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

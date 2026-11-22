@@ -48,31 +48,31 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.47.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.47.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.48.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.48.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.47.ipa
-          path: DrAbdelaziz-Reminder-v1.0.47.ipa
+          name: DrAbdelaziz-Reminder-v1.0.48.ipa
+          path: DrAbdelaziz-Reminder-v1.0.48.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.47
+      - name: Attach IPA to GitHub Release v1.0.48
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.47
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.47"
+          tag_name: v1.0.48
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.48"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.47
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.48
             
             التحديثات الجديدة:
-            - تفعيل التلاوة الصوتية المباشرة للأذكار بميزة no-referrer المباشرة لتعمل باستقلالية تامة 100% دون الحاجة لأي وسيط خارجي.
-            - تلاوة استوديو نقية بصوت الشيخ مشاري العفاسي لآية الكرسي والمعوذتين وسورة الإخلاص بالكامل.
-            - تشغيل Web App دائم على منصة GitHub Pages المستقرة بدون أي توقفات.
+            - إضافة باب وقسم «أذكار مخصصة ✍️» بارز في واجهة الأذكار مع 3 أدعية افتراضية وإمكانية إضافة وتعديل وحفظ الأذكار الخاصة بسعادة الدكتور عبد العزيز وسماعها وتكرارها.
+            - مهام داخلية مجدولة ومواعيد مخصصة وتنبيهات صوتية لكل عادة في «نظامي» (شرب الماء: توزيع ومواعيد الأكواب الـ 8 ومنبه صوتي لكل كوب، القرآن، الرياضة، المذاكرة، النوم).
+            - دعم التكليف الجماعي للمهام في واتساب لعدة أشخاص أو فريق عمل ومشاركة بطاقة التكليف الرسمية مباشرة إلى جروب واتساب أو إرسال فردي سريع بنقرة واحدة لكل مكلف.
           files: |
-            DrAbdelaziz-Reminder-v1.0.47.ipa
+            DrAbdelaziz-Reminder-v1.0.48.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,7 +84,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.47.ipa
+            DrAbdelaziz-Reminder-v1.0.48.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

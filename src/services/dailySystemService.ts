@@ -66,6 +66,15 @@ export interface BuiltInItemSchedule {
   voiceMessage?: string;
 }
 
+export interface HabitSubTaskDef {
+  id: string;
+  title: string; // e.g. "الكوب الأول", "قراءة سورة الملك", "تمرين المشي"
+  scheduledTime?: string; // "HH:mm" (24h)
+  enableVoiceAlert?: boolean;
+  voiceMessage?: string;
+  order?: number;
+}
+
 export interface ScheduledDailyItem {
   id: string;
   type: 'habit' | 'prayer' | 'adhkar' | 'task' | 'builtin';
@@ -100,6 +109,7 @@ export interface DailyRecord {
   notes: DailyNotes;
   customValues?: Record<string, number>;
   customNotes?: Record<string, string>;
+  habitSubTaskCompletions?: Record<string, Record<string, boolean>>;
 }
 
 export interface DailySettings {
@@ -116,6 +126,7 @@ export interface DailySettings {
   customHabits?: CustomHabitDef[];
   customNotePrompts?: CustomNotePrompt[];
   builtInSchedules?: Record<string, BuiltInItemSchedule>;
+  habitSubTasks?: Record<string, HabitSubTaskDef[]>;
 }
 
 export interface MonthlyReview {
@@ -174,6 +185,7 @@ export const DEFAULT_DAILY_SETTINGS: DailySettings = {
   customHabits: [],
   customNotePrompts: [],
   builtInSchedules: {},
+  habitSubTasks: {},
 };
 
 export const STORAGE_KEY = 'dr_abdelaziz_daily_system_v1';
@@ -215,6 +227,7 @@ export function createBlankDay(date: string): DailyRecord {
     notes: { good: '', block: '', tomorrow: '' },
     customValues: {},
     customNotes: {},
+    habitSubTaskCompletions: {},
   };
 }
 
@@ -245,6 +258,10 @@ export function normalizeDayRecord(raw: any, date: string): DailyRecord {
     dismissedTaskIds: Array.isArray(raw.dismissedTaskIds) ? raw.dismissedTaskIds : [],
     customValues: raw.customValues && typeof raw.customValues === 'object' ? raw.customValues : {},
     customNotes: raw.customNotes && typeof raw.customNotes === 'object' ? raw.customNotes : {},
+    habitSubTaskCompletions:
+      raw.habitSubTaskCompletions && typeof raw.habitSubTaskCompletions === 'object'
+        ? raw.habitSubTaskCompletions
+        : {},
   };
 }
 
@@ -902,6 +919,118 @@ class DailySystemService {
     return (this.settings.builtInSchedules || {})[itemKey];
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // Habit Sub-Tasks & Internal Scheduled Tasks (مهام العادات الداخلية والمواعيد المخصصة)
+  // ─────────────────────────────────────────────────────────────
+
+  public getSubTasksForHabit(habitKey: string): HabitSubTaskDef[] {
+    const list = (this.settings.habitSubTasks || {})[habitKey];
+    if (Array.isArray(list) && list.length > 0) {
+      return [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    // If water and not initialized, auto-generate default 8 cups
+    if (habitKey === 'item_water') {
+      const defs = this.generateDefaultWaterSchedule(this.settings.water || 8);
+      this.setSubTasksForHabit('item_water', defs);
+      return defs;
+    }
+    return [];
+  }
+
+  public setSubTasksForHabit(habitKey: string, subTasks: HabitSubTaskDef[]): void {
+    const current = { ...(this.settings.habitSubTasks || {}) };
+    current[habitKey] = subTasks.map((st, idx) => ({ ...st, order: st.order ?? idx }));
+    this.updateSettings({ habitSubTasks: current });
+  }
+
+  public addSubTaskToHabit(habitKey: string, def: Omit<HabitSubTaskDef, 'id'>): HabitSubTaskDef {
+    const current = this.getSubTasksForHabit(habitKey);
+    const newSubTask: HabitSubTaskDef = {
+      ...def,
+      id: `sub_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      order: current.length,
+    };
+    this.setSubTasksForHabit(habitKey, [...current, newSubTask]);
+    return newSubTask;
+  }
+
+  public updateSubTaskInHabit(habitKey: string, subTaskId: string, updates: Partial<HabitSubTaskDef>): void {
+    const current = this.getSubTasksForHabit(habitKey);
+    const updated = current.map((st) => (st.id === subTaskId ? { ...st, ...updates } : st));
+    this.setSubTasksForHabit(habitKey, updated);
+  }
+
+  public deleteSubTaskFromHabit(habitKey: string, subTaskId: string): void {
+    const current = this.getSubTasksForHabit(habitKey);
+    const filtered = current.filter((st) => st.id !== subTaskId);
+    this.setSubTasksForHabit(habitKey, filtered);
+  }
+
+  public isSubTaskCompleted(dateKey: string, habitKey: string, subTaskId: string): boolean {
+    const day = this.getDay(dateKey);
+    return Boolean(day.habitSubTaskCompletions?.[habitKey]?.[subTaskId]);
+  }
+
+  public toggleSubTaskCompletion(dateKey: string, habitKey: string, subTaskId: string): boolean {
+    const day = this.getDay(dateKey);
+    const comps = { ...(day.habitSubTaskCompletions || {}) };
+    const habitComps = { ...(comps[habitKey] || {}) };
+    const nextState = !habitComps[subTaskId];
+    habitComps[subTaskId] = nextState;
+    comps[habitKey] = habitComps;
+
+    const updates: Partial<DailyRecord> = { habitSubTaskCompletions: comps };
+
+    // If it's water, auto-sync completed count with day.water
+    if (habitKey === 'item_water') {
+      const completedCups = Object.values(habitComps).filter(Boolean).length;
+      updates.water = completedCups;
+    }
+
+    this.setDay({ ...day, ...updates });
+    return nextState;
+  }
+
+  public generateDefaultWaterSchedule(
+    targetCups: number = 8,
+    startHour: number = 7,
+    endHour: number = 22
+  ): HabitSubTaskDef[] {
+    const cups: HabitSubTaskDef[] = [];
+    const count = Math.max(1, Math.min(20, targetCups));
+    const stepHours = (endHour - startHour) / Math.max(1, count - 1);
+
+    const cupDescriptions = [
+      'عند الاستيقاظ والصباح الباكر',
+      'منتصف الصباح وبدء العمل',
+      'قبل صلاة الظهر والعيادة',
+      'بعد الظهر والغداء',
+      'فترة العصر وتجديد النشاط',
+      'قبل المساء والمغرب',
+      'بعد صلاة العشاء',
+      'قبل النوم والراحة',
+    ];
+
+    for (let i = 0; i < count; i++) {
+      const totalMinutes = Math.round(startHour * 60 + i * stepHours * 60);
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const desc = cupDescriptions[i] || `الكوب رقم ${i + 1}`;
+
+      cups.push({
+        id: `water_cup_${i + 1}`,
+        title: `كوب ${i + 1} (${desc})`,
+        scheduledTime: timeStr,
+        enableVoiceAlert: true,
+        voiceMessage: `يا دكتور عبد العزيز، تذكير بشرب كوب الماء ${i + 1} للحفاظ على ترطيب ونشاط جسمك.`,
+        order: i,
+      });
+    }
+
+    return cups;
+  }
+
   public getScheduledDailyItems(dateKey?: string): ScheduledDailyItem[] {
     const targetDateKey = dateKey || formatDateKey(new Date());
     const day = this.getDay(targetDateKey);
@@ -1027,6 +1156,43 @@ class DailySystemService {
           voiceMessage,
           isCompleted,
           sourceId: t.id,
+        });
+      }
+    });
+
+    // 6. Habit Sub-Tasks & Internal Scheduled Tasks (مهام العادات الداخلية)
+    const habitSubTasks = this.settings.habitSubTasks || {};
+    const habitCompletions = day.habitSubTaskCompletions || {};
+    const parentCategoryLabels: Record<string, string> = {
+      item_quran: 'القرآن الكريم',
+      item_sport: 'الرياضة والحركة',
+      item_study: 'التعلّم والمذاكرة',
+      item_sleep: 'النوم والراحة',
+      item_water: 'شرب الماء',
+      item_food: 'الغذاء الصحي',
+      ...builtInLabels,
+    };
+
+    Object.entries(habitSubTasks).forEach(([habitKey, subList]) => {
+      if (Array.isArray(subList)) {
+        subList.forEach((sub) => {
+          if (sub.scheduledTime && sub.enableVoiceAlert !== false) {
+            const isCompleted = Boolean(habitCompletions[habitKey]?.[sub.id]);
+            const pLabel = parentCategoryLabels[habitKey] || habitKey;
+            const voiceMessage =
+              sub.voiceMessage?.trim() ||
+              `يا دكتور عبد العزيز، حان الآن موعد ${pLabel} - ${sub.title}.`;
+            items.push({
+              id: `sub_${habitKey}_${sub.id}`,
+              type: 'habit',
+              title: `${pLabel}: ${sub.title}`,
+              scheduledTime: sub.scheduledTime,
+              enableVoiceAlert: true,
+              voiceMessage,
+              isCompleted,
+              sourceId: `${habitKey}:${sub.id}`,
+            });
+          }
         });
       }
     });

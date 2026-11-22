@@ -48,6 +48,7 @@ import {
   dailySystemService,
   DailyRecord,
   DailySettings,
+  HabitSubTaskDef,
   MonthlyReview,
   calculateScore,
   isMinDay,
@@ -465,6 +466,272 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     setTimeout(() => {
       audioService.speakAlert(text, { volume: 1.0 });
     }, 600);
+  };
+
+  // ── Habit Sub-Tasks & Internal Scheduled Tasks State ──────────────
+  const [subTaskModal, setSubTaskModal] = useState<{
+    habitKey: string;
+    habitLabel: string;
+    subTask?: HabitSubTaskDef;
+  } | null>(null);
+  const [subTaskTitle, setSubTaskTitle] = useState('');
+  const [subTaskTime, setSubTaskTime] = useState('');
+  const [subTaskEnableVoice, setSubTaskEnableVoice] = useState(true);
+  const [subTaskVoiceMessage, setSubTaskVoiceMessage] = useState('');
+  const [expandedSubTasks, setExpandedSubTasks] = useState<Record<string, boolean>>({
+    item_water: true,
+    item_quran: true,
+    item_sport: false,
+    item_study: false,
+    item_sleep: false,
+  });
+
+  const handleOpenAddSubTask = (habitKey: string, habitLabel: string) => {
+    setSubTaskModal({ habitKey, habitLabel });
+    setSubTaskTitle('');
+    setSubTaskTime('');
+    setSubTaskEnableVoice(true);
+    setSubTaskVoiceMessage(`يا دكتور عبد العزيز، حان الآن موعد ${habitLabel}.`);
+  };
+
+  const handleOpenEditSubTask = (habitKey: string, habitLabel: string, st: HabitSubTaskDef) => {
+    setSubTaskModal({ habitKey, habitLabel, subTask: st });
+    setSubTaskTitle(st.title);
+    setSubTaskTime(st.scheduledTime || '');
+    setSubTaskEnableVoice(st.enableVoiceAlert !== false);
+    setSubTaskVoiceMessage(st.voiceMessage || `يا دكتور عبد العزيز، حان الآن موعد ${habitLabel} - ${st.title}.`);
+  };
+
+  const handleSaveSubTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subTaskModal) return;
+    const titleVal = subTaskTitle.trim();
+    if (!titleVal) return;
+
+    if (subTaskModal.subTask) {
+      dailySystemService.updateSubTaskInHabit(subTaskModal.habitKey, subTaskModal.subTask.id, {
+        title: titleVal,
+        scheduledTime: subTaskTime.trim() || undefined,
+        enableVoiceAlert: subTaskEnableVoice,
+        voiceMessage: subTaskVoiceMessage.trim() || undefined,
+      });
+      showToast(`✓ تم تحديث المهمة الداخلية «${titleVal}» بنجاح`);
+    } else {
+      dailySystemService.addSubTaskToHabit(subTaskModal.habitKey, {
+        title: titleVal,
+        scheduledTime: subTaskTime.trim() || undefined,
+        enableVoiceAlert: subTaskEnableVoice,
+        voiceMessage: subTaskVoiceMessage.trim() || undefined,
+      });
+      showToast(`✓ تمت إضافة المهمة الداخلية «${titleVal}» بنجاح`);
+    }
+    setSubTaskModal(null);
+  };
+
+  const handleToggleSubTask = (habitKey: string, subTaskId: string) => {
+    const isNowDone = dailySystemService.toggleSubTaskCompletion(currentDateKey, habitKey, subTaskId);
+    if (isNowDone) {
+      audioService.playChime('click', 0.4);
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(35);
+      }
+    }
+  };
+
+  const handleGenerateWaterSchedule = () => {
+    const defs = dailySystemService.generateDefaultWaterSchedule(settings.water || 8);
+    dailySystemService.setSubTasksForHabit('item_water', defs);
+    showToast(`✓ تم توليد مواعيد الـ ${defs.length} أكواب بنجاح وتوزيعها على مدار اليوم!`);
+    audioService.playChime('success', 0.5);
+  };
+
+  const toggleExpandSubTasks = (habitKey: string) => {
+    setExpandedSubTasks((prev) => ({ ...prev, [habitKey]: !prev[habitKey] }));
+  };
+
+  const renderHabitSubTasks = (
+    habitKey: string,
+    habitLabel: string,
+    accentColor: 'cyan' | 'indigo' | 'emerald' | 'amber' | 'purple'
+  ) => {
+    const subTasks = dailySystemService.getSubTasksForHabit(habitKey);
+    const dayCompletions = dayRecord.habitSubTaskCompletions?.[habitKey] || {};
+    const doneCount = subTasks.filter((st) => Boolean(dayCompletions[st.id])).length;
+    const isExpanded = expandedSubTasks[habitKey] !== false;
+
+    const colorClasses = {
+      cyan: {
+        border: 'border-cyan-500/30',
+        bg: 'bg-cyan-950/20',
+        badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+        activeCheck: 'bg-cyan-500 text-slate-950 border-cyan-400 font-black',
+        text: 'text-cyan-400',
+      },
+      indigo: {
+        border: 'border-indigo-500/30',
+        bg: 'bg-indigo-950/20',
+        badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+        activeCheck: 'bg-indigo-500 text-white border-indigo-400 font-black',
+        text: 'text-indigo-400',
+      },
+      emerald: {
+        border: 'border-emerald-500/30',
+        bg: 'bg-emerald-950/20',
+        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        activeCheck: 'bg-emerald-500 text-slate-950 border-emerald-400 font-black',
+        text: 'text-emerald-400',
+      },
+      amber: {
+        border: 'border-amber-500/30',
+        bg: 'bg-amber-950/20',
+        badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+        activeCheck: 'bg-amber-500 text-slate-950 border-amber-400 font-black',
+        text: 'text-amber-400',
+      },
+      purple: {
+        border: 'border-purple-500/30',
+        bg: 'bg-purple-950/20',
+        badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        activeCheck: 'bg-purple-500 text-white border-purple-400 font-black',
+        text: 'text-purple-400',
+      },
+    }[accentColor];
+
+    return (
+      <div className={`mt-2.5 rounded-2xl border ${colorClasses.border} ${colorClasses.bg} p-3 space-y-2`}>
+        {/* Sub-Tasks Header */}
+        <div className="flex items-center justify-between text-xs">
+          <button
+            type="button"
+            onClick={() => toggleExpandSubTasks(habitKey)}
+            className="flex items-center gap-1.5 font-bold text-white hover:text-slate-200 cursor-pointer"
+          >
+            <span className="font-mono text-sm">{isExpanded ? '▾' : '▸'}</span>
+            <span>المهام والمواعيد الداخلية المجدولة</span>
+            {subTasks.length > 0 && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-black ${colorClasses.badge}`}>
+                {doneCount} / {subTasks.length} منجز
+              </span>
+            )}
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            {habitKey === 'item_water' && (
+              <button
+                type="button"
+                onClick={handleGenerateWaterSchedule}
+                className="text-[10px] px-2.5 py-1 rounded-xl bg-cyan-600/25 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/40 font-bold flex items-center gap-1 cursor-pointer transition-all"
+                title="توزيع أوقات الـ 8 أكواب تلقائياً على مدار ساعات اليوم"
+              >
+                <span>⚡ توزيع الـ 8 أكواب</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleOpenAddSubTask(habitKey, habitLabel)}
+              className="text-[10px] px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold flex items-center gap-1 cursor-pointer transition-all"
+              title={`إضافة موعد / مهمة داخلية لـ ${habitLabel}`}
+            >
+              <span>+ إضافة موعد</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Sub-Tasks List */}
+        {isExpanded && (
+          <div className="space-y-1.5 pt-1">
+            {subTasks.length === 0 ? (
+              <div className="text-center py-2 text-[11px] text-slate-400">
+                لا توجد مواعيد داخلية مخصصة بعد. اضغط «+ إضافة موعد» لتحديد وقت وتنبيه لكل جزء أو كوب.
+              </div>
+            ) : (
+              subTasks.map((st) => {
+                const isCompleted = Boolean(dayCompletions[st.id]);
+                return (
+                  <div
+                    key={st.id}
+                    className={`flex items-center justify-between p-2 rounded-xl transition-all border ${
+                      isCompleted
+                        ? 'bg-emerald-950/30 border-emerald-500/30 text-slate-300'
+                        : 'bg-slate-900/80 border-slate-800 text-white'
+                    }`}
+                  >
+                    {/* Checkbox & Title */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSubTask(habitKey, st.id)}
+                        className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 cursor-pointer transition-all text-xs ${
+                          isCompleted
+                            ? colorClasses.activeCheck
+                            : 'border-slate-600 bg-slate-800 text-transparent hover:border-slate-400'
+                        }`}
+                        title={isCompleted ? 'إلغاء الإتمام' : 'تم الإنجاز'}
+                      >
+                        ✓
+                      </button>
+
+                      <span
+                        onClick={() => handleToggleSubTask(habitKey, st.id)}
+                        className={`text-xs font-semibold cursor-pointer truncate ${
+                          isCompleted ? 'line-through text-slate-400' : 'text-slate-100'
+                        }`}
+                      >
+                        {st.title}
+                      </span>
+                    </div>
+
+                    {/* Time Badge & Controls */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {st.scheduledTime && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono font-bold flex items-center gap-1" dir="ltr">
+                          <Clock className="w-2.5 h-2.5 text-slate-400" />
+                          <span>{st.scheduledTime}</span>
+                          {st.enableVoiceAlert !== false && <span>🔊</span>}
+                        </span>
+                      )}
+
+                      {st.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              st.voiceMessage || `يا دكتور عبد العزيز، حان الآن موعد ${habitLabel} - ${st.title}.`
+                            )
+                          }
+                          className="p-1 rounded-lg text-purple-400 hover:bg-purple-500/20 cursor-pointer"
+                          title="تجربة التنبيه الصوتي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditSubTask(habitKey, habitLabel, st)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                        title="تعديل الموعد والتنبيه"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => dailySystemService.deleteSubTaskFromHabit(habitKey, st.id)}
+                        className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                        title="حذف هذا الموعد"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleSaveCustomItem = (e: React.FormEvent) => {
@@ -1568,239 +1835,248 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 </div>
 
                 {!hiddenSet.has('item_quran') && (
-                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                        <BookOpen className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white block">ورد القرآن</span>
-                          {settings.builtInSchedules?.item_quran?.scheduledTime && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              <span>{settings.builtInSchedules.item_quran.scheduledTime}</span>
-                              {settings.builtInSchedules.item_quran.enableVoiceAlert !== false && <span>🔊</span>}
-                            </span>
-                          )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          <BookOpen className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] text-slate-400">الهدف: {settings.quran} صفحات (10ن)</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white block">ورد القرآن</span>
+                            {settings.builtInSchedules?.item_quran?.scheduledTime && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                <span>{settings.builtInSchedules.item_quran.scheduledTime}</span>
+                                {settings.builtInSchedules.item_quran.enableVoiceAlert !== false && <span>🔊</span>}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400">الهدف: {settings.quran} صفحات (10ن)</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStep('quran', -1, 1)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                          {dayRecord.quran} ص
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStep('quran', 1, 1)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBuiltInSchedule('item_quran', 'ورد القرآن')}
+                          className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                            settings.builtInSchedules?.item_quran?.scheduledTime
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                          }`}
+                          title="ضبط موعد وتنبيه صوتي"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                        </button>
+                        {settings.builtInSchedules?.item_quran?.scheduledTime && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreviewVoice(
+                                settings.builtInSchedules?.item_quran?.voiceMessage ||
+                                  'يا دكتور عبد العزيز، حان الآن موعد ورد القرآن الكريم.'
+                              )
+                            }
+                            className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                            title="تجربة الصوت التنبيهي"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('item_quran')}
+                            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleStep('quran', -1, 1)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
-                        {dayRecord.quran} ص
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleStep('quran', 1, 1)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenBuiltInSchedule('item_quran', 'ورد القرآن')}
-                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                          settings.builtInSchedules?.item_quran?.scheduledTime
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
-                        }`}
-                        title="ضبط موعد وتنبيه صوتي"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                      </button>
-                      {settings.builtInSchedules?.item_quran?.scheduledTime && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePreviewVoice(
-                              settings.builtInSchedules?.item_quran?.voiceMessage ||
-                                'يا دكتور عبد العزيز، حان الآن موعد ورد القرآن الكريم.'
-                            )
-                          }
-                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
-                          title="تجربة الصوت التنبيهي"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isEditMode && (
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.hideBuiltInItem('item_quran')}
-                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {renderHabitSubTasks('item_quran', 'ورد القرآن الكريم', 'indigo')}
                   </div>
                 )}
 
                 {!hiddenSet.has('item_sport') && (
-                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <Activity className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white block">رياضة وحركة</span>
-                          {settings.builtInSchedules?.item_sport?.scheduledTime && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              <span>{settings.builtInSchedules.item_sport.scheduledTime}</span>
-                              {settings.builtInSchedules.item_sport.enableVoiceAlert !== false && <span>🔊</span>}
-                            </span>
-                          )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <Activity className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] text-slate-400">الهدف: {settings.sport} دقيقة (10ن)</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white block">رياضة وحركة</span>
+                            {settings.builtInSchedules?.item_sport?.scheduledTime && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                <span>{settings.builtInSchedules.item_sport.scheduledTime}</span>
+                                {settings.builtInSchedules.item_sport.enableVoiceAlert !== false && <span>🔊</span>}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400">الهدف: {settings.sport} دقيقة (10ن)</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStep('sport', -1, 5)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                          {dayRecord.sport} د
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStep('sport', 1, 5)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBuiltInSchedule('item_sport', 'الرياضة والحركة')}
+                          className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                            settings.builtInSchedules?.item_sport?.scheduledTime
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                          }`}
+                          title="ضبط موعد وتنبيه صوتي"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                        </button>
+                        {settings.builtInSchedules?.item_sport?.scheduledTime && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreviewVoice(
+                                settings.builtInSchedules?.item_sport?.voiceMessage ||
+                                  'يا دكتور عبد العزيز، حان الآن موعد ممارسة الرياضة والنشاط البدني.'
+                              )
+                            }
+                            className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                            title="تجربة الصوت التنبيهي"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('item_sport')}
+                            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleStep('sport', -1, 5)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
-                        {dayRecord.sport} د
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleStep('sport', 1, 5)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenBuiltInSchedule('item_sport', 'الرياضة والحركة')}
-                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                          settings.builtInSchedules?.item_sport?.scheduledTime
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
-                        }`}
-                        title="ضبط موعد وتنبيه صوتي"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                      </button>
-                      {settings.builtInSchedules?.item_sport?.scheduledTime && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePreviewVoice(
-                              settings.builtInSchedules?.item_sport?.voiceMessage ||
-                                'يا دكتور عبد العزيز، حان الآن موعد ممارسة الرياضة والنشاط البدني.'
-                            )
-                          }
-                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
-                          title="تجربة الصوت التنبيهي"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isEditMode && (
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.hideBuiltInItem('item_sport')}
-                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {renderHabitSubTasks('item_sport', 'الرياضة والحركة', 'emerald')}
                   </div>
                 )}
 
                 {!hiddenSet.has('item_study') && (
-                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <GraduationCap className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
-                          {settings.builtInSchedules?.item_study?.scheduledTime && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              <span>{settings.builtInSchedules.item_study.scheduledTime}</span>
-                              {settings.builtInSchedules.item_study.enableVoiceAlert !== false && <span>🔊</span>}
-                            </span>
-                          )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <GraduationCap className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] text-slate-400">الهدف: {settings.study} دقيقة (15ن)</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
+                            {settings.builtInSchedules?.item_study?.scheduledTime && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                <span>{settings.builtInSchedules.item_study.scheduledTime}</span>
+                                {settings.builtInSchedules.item_study.enableVoiceAlert !== false && <span>🔊</span>}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400">الهدف: {settings.study} دقيقة (15ن)</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStep('study', -1, 15)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                          {dayRecord.study} د
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStep('study', 1, 15)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBuiltInSchedule('item_study', 'التعلّم والمذاكرة')}
+                          className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                            settings.builtInSchedules?.item_study?.scheduledTime
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                          }`}
+                          title="ضبط موعد وتنبيه صوتي"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                        </button>
+                        {settings.builtInSchedules?.item_study?.scheduledTime && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreviewVoice(
+                                settings.builtInSchedules?.item_study?.voiceMessage ||
+                                  'يا دكتور عبد العزيز، حان الآن موعد وقت التعلّم والمذاكرة.'
+                              )
+                            }
+                            className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                            title="تجربة الصوت التنبيهي"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('item_study')}
+                            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleStep('study', -1, 15)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
-                        {dayRecord.study} د
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleStep('study', 1, 15)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenBuiltInSchedule('item_study', 'التعلّم والمذاكرة')}
-                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                          settings.builtInSchedules?.item_study?.scheduledTime
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
-                        }`}
-                        title="ضبط موعد وتنبيه صوتي"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                      </button>
-                      {settings.builtInSchedules?.item_study?.scheduledTime && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePreviewVoice(
-                              settings.builtInSchedules?.item_study?.voiceMessage ||
-                                'يا دكتور عبد العزيز، حان الآن موعد وقت التعلّم والمذاكرة.'
-                            )
-                          }
-                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
-                          title="تجربة الصوت التنبيهي"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isEditMode && (
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.hideBuiltInItem('item_study')}
-                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {renderHabitSubTasks('item_study', 'التعلّم والمذاكرة', 'amber')}
                   </div>
                 )}
               </div>
@@ -1832,160 +2108,166 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 </div>
 
                 {!hiddenSet.has('item_sleep') && (
-                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                        <Moon className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white block">النوم والراحة</span>
-                          {settings.builtInSchedules?.item_sleep?.scheduledTime && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              <span>{settings.builtInSchedules.item_sleep.scheduledTime}</span>
-                              {settings.builtInSchedules.item_sleep.enableVoiceAlert !== false && <span>🔊</span>}
-                            </span>
-                          )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                          <Moon className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] text-slate-400">الهدف: {settings.sleep} ساعات (4ن)</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white block">النوم والراحة</span>
+                            {settings.builtInSchedules?.item_sleep?.scheduledTime && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                <span>{settings.builtInSchedules.item_sleep.scheduledTime}</span>
+                                {settings.builtInSchedules.item_sleep.enableVoiceAlert !== false && <span>🔊</span>}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400">الهدف: {settings.sleep} ساعات (4ن)</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStep('sleep', -1, 0.5)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                          {dayRecord.sleep} س
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStep('sleep', 1, 0.5)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBuiltInSchedule('item_sleep', 'موعد النوم والراحة')}
+                          className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                            settings.builtInSchedules?.item_sleep?.scheduledTime
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                          }`}
+                          title="ضبط موعد وتنبيه صوتي للنوم"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                        </button>
+                        {settings.builtInSchedules?.item_sleep?.scheduledTime && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreviewVoice(
+                                settings.builtInSchedules?.item_sleep?.voiceMessage ||
+                                  'يا دكتور عبد العزيز، حان الآن موعد النوم والراحة للحفاظ على صحتك ونشاطك.'
+                              )
+                            }
+                            className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                            title="تجربة الصوت التنبيهي"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('item_sleep')}
+                            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleStep('sleep', -1, 0.5)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
-                        {dayRecord.sleep} س
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleStep('sleep', 1, 0.5)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenBuiltInSchedule('item_sleep', 'موعد النوم والراحة')}
-                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                          settings.builtInSchedules?.item_sleep?.scheduledTime
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
-                        }`}
-                        title="ضبط موعد وتنبيه صوتي للنوم"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                      </button>
-                      {settings.builtInSchedules?.item_sleep?.scheduledTime && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePreviewVoice(
-                              settings.builtInSchedules?.item_sleep?.voiceMessage ||
-                                'يا دكتور عبد العزيز، حان الآن موعد النوم والراحة للحفاظ على صحتك ونشاطك.'
-                            )
-                          }
-                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
-                          title="تجربة الصوت التنبيهي"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isEditMode && (
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.hideBuiltInItem('item_sleep')}
-                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {renderHabitSubTasks('item_sleep', 'النوم والراحة', 'purple')}
                   </div>
                 )}
 
                 {!hiddenSet.has('item_water') && (
-                  <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                        <Droplets className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white block">شرب الماء</span>
-                          {settings.builtInSchedules?.item_water?.scheduledTime && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              <span>{settings.builtInSchedules.item_water.scheduledTime}</span>
-                              {settings.builtInSchedules.item_water.enableVoiceAlert !== false && <span>🔊</span>}
-                            </span>
-                          )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                          <Droplets className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] text-slate-400">الهدف: {settings.water} أكواب (3ن)</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white block">شرب الماء</span>
+                            {settings.builtInSchedules?.item_water?.scheduledTime && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                <span>{settings.builtInSchedules.item_water.scheduledTime}</span>
+                                {settings.builtInSchedules.item_water.enableVoiceAlert !== false && <span>🔊</span>}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400">الهدف: {settings.water} أكواب (3ن)</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStep('water', -1, 1)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                          {dayRecord.water} كوب
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStep('water', 1, 1)}
+                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBuiltInSchedule('item_water', 'شرب الماء والترطيب')}
+                          className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                            settings.builtInSchedules?.item_water?.scheduledTime
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                          }`}
+                          title="ضبط موعد وتنبيه صوتي لشرب الماء"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                        </button>
+                        {settings.builtInSchedules?.item_water?.scheduledTime && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreviewVoice(
+                                settings.builtInSchedules?.item_water?.voiceMessage ||
+                                  'يا دكتور عبد العزيز، تذكير لشرب كوب من الماء للحفاظ على ترطيب ونشاط جسمك.'
+                              )
+                            }
+                            className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
+                            title="تجربة الصوت التنبيهي"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => dailySystemService.hideBuiltInItem('item_water')}
+                            className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleStep('water', -1, 1)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
-                        {dayRecord.water} كوب
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleStep('water', 1, 1)}
-                        className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenBuiltInSchedule('item_water', 'شرب الماء والترطيب')}
-                        className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                          settings.builtInSchedules?.item_water?.scheduledTime
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
-                        }`}
-                        title="ضبط موعد وتنبيه صوتي لشرب الماء"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                      </button>
-                      {settings.builtInSchedules?.item_water?.scheduledTime && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePreviewVoice(
-                              settings.builtInSchedules?.item_water?.voiceMessage ||
-                                'يا دكتور عبد العزيز، تذكير لشرب كوب من الماء للحفاظ على ترطيب ونشاط جسمك.'
-                            )
-                          }
-                          className="p-1.5 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer"
-                          title="تجربة الصوت التنبيهي"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isEditMode && (
-                        <button
-                          type="button"
-                          onClick={() => dailySystemService.hideBuiltInItem('item_water')}
-                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {renderHabitSubTasks('item_water', 'شرب الماء والترطيب', 'cyan')}
                   </div>
                 )}
 
@@ -3774,6 +4056,160 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 >
                   {editingItemId ? 'حفظ التعديلات ✓' : 'حفظ وإضافة إلى نظامي ✓'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Habit Sub-Task / Internal Scheduled Item Modal */}
+      {subTaskModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setSubTaskModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">
+                    {subTaskModal.subTask ? 'تعديل مهمة داخلية مجدولة' : 'إضافة مهمة داخلية مجدولة'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">{subTaskModal.habitLabel}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubTaskModal(null)}
+                className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSubTask} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  اسم المهمة الداخلية / الكوب *
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={subTaskTitle}
+                  onChange={(e) => setSubTaskTitle(e.target.value)}
+                  placeholder={
+                    subTaskModal.habitKey === 'item_water'
+                      ? 'مثال: كوب 1 (عند الاستيقاظ والصباح الباكر)'
+                      : subTaskModal.habitKey === 'item_quran'
+                      ? 'مثال: ورد الفجر (سورة البقرة 5 صفحات)'
+                      : subTaskModal.habitKey === 'item_sport'
+                      ? 'مثال: المشي الرياضي الصباحي (20 دقيقة)'
+                      : 'مثال: جلسة المذاكرة الأولى'
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  وقت التنبيه اليومي ⏰
+                </label>
+                <input
+                  type="time"
+                  value={subTaskTime}
+                  onChange={(e) => setSubTaskTime(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:border-cyan-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  حدد الوقت المخصص لهذه المهمة لتنبيهك في موعدها الدقيق بالصوت والمنبه.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span className="text-xs font-bold text-slate-300">تفعيل التنبيه الصوتي للدكتور عبد العزيز 🔊</span>
+                <input
+                  type="checkbox"
+                  checked={subTaskEnableVoice}
+                  onChange={(e) => setSubTaskEnableVoice(e.target.checked)}
+                  className="w-4 h-4 accent-cyan-500 rounded cursor-pointer"
+                />
+              </div>
+
+              {subTaskEnableVoice && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                    الرسالة الصوتية للتنبيه
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={subTaskVoiceMessage}
+                      onChange={(e) => setSubTaskVoiceMessage(e.target.value)}
+                      placeholder={`يا دكتور عبد العزيز، حان الآن موعد ${subTaskModal.habitLabel} - ${subTaskTitle || 'المهمة'}.`}
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePreviewVoice(
+                          subTaskVoiceMessage ||
+                            `يا دكتور عبد العزيز، حان الآن موعد ${subTaskModal.habitLabel} - ${subTaskTitle}.`
+                        )
+                      }
+                      className="px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                      title="استمع إلى التنبيه الصوتي الآن"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>تجربة</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                {subTaskModal.subTask ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('هل ترغب حقاً في حذف هذه المهمة الداخلية؟')) {
+                        dailySystemService.deleteSubTaskFromHabit(
+                          subTaskModal.habitKey,
+                          subTaskModal.subTask!.id
+                        );
+                        setSubTaskModal(null);
+                        showToast(`تم حذف المهمة بنجاح`);
+                      }
+                    }}
+                    className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    حذف المهمة
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSubTaskModal(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+                  >
+                    {subTaskModal.subTask ? 'تحديث المهمة ✓' : 'إضافة المهمة ✓'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

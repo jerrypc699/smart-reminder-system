@@ -33,12 +33,54 @@ class AthkarStorageService {
   }
 
   // 2. Custom Athkar CRUD
+  private readonly DEFAULT_CUSTOM_ATHKAR: AthkarItem[] = [
+    {
+      id: 'custom-seed-1',
+      category: 'custom',
+      title: 'دعاء ذي النون لتفريج الكرب والهم',
+      text: 'لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ.',
+      count: 40,
+      reward: 'لم يدعُ به رجل مسلم في شيء قط إلا استجاب الله له وفرج همه.',
+      reference: 'سورة الأنبياء: 87 / سنن الترمذي وصححه الألباني',
+      mood: 'distress',
+      isCustom: true,
+    },
+    {
+      id: 'custom-seed-2',
+      category: 'custom',
+      title: 'الصلاة الإبراهيمية المباركة على النبي ﷺ',
+      text: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ، كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ، إِنَّكَ حَمِيدٌ مَجِيدٌ، اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ، كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ، إِنَّكَ حَمِيدٌ مَجِيدٌ.',
+      count: 10,
+      reward: 'تكفى همك ويغفر ذنبك ويصلي الله عليك بها عشراً ويرفعك بها عشر درجات.',
+      reference: 'صحيح البخاري ومسلم',
+      mood: 'guidance',
+      isCustom: true,
+    },
+    {
+      id: 'custom-seed-3',
+      category: 'custom',
+      title: 'دعاء الرزق والعلم والعمل المتقبل',
+      text: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلاً مُتَقَبَّلاً.',
+      count: 7,
+      reward: 'دعاء جامع للبركة في الرزق والعلم والتوفيق الإلهي في جميع الأعمال.',
+      reference: 'سنن ابن ماجه وصححه الألباني',
+      mood: 'gratitude',
+      isCustom: true,
+    },
+  ];
+
   public getCustomAthkar(): AthkarItem[] {
     try {
       const data = localStorage.getItem(this.CUSTOM_ATHKAR_KEY);
-      return data ? JSON.parse(data) : [];
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      // Seed default custom athkar so Dr. Abdelaziz immediately sees custom door in action
+      localStorage.setItem(this.CUSTOM_ATHKAR_KEY, JSON.stringify(this.DEFAULT_CUSTOM_ATHKAR));
+      return this.DEFAULT_CUSTOM_ATHKAR;
     } catch {
-      return [];
+      return this.DEFAULT_CUSTOM_ATHKAR;
     }
   }
 

@@ -159,14 +159,14 @@
     {
       "title": "اعمال السيستم",
       "description": "السلام عليكم\nيارب تكون بخير\nبخصوص تعديلات اعمال   السيستم\n¤ متابعه كل موظف بحدا ( مثال اسامه مع شغل ) استلام شيكات ، تأمينات ، الخ )\nالفديو ؛ مش يشتغل علطول ، وعاوز اسمى الفديوهات ،\n* تنسيق رساله الواتس اب من شكل احترافي\nوالاكسل شيت مش بيرفع من المشبك ، ورقم الموبايل لازم اكتبه منول،\nتحياتي\n\n* كذلك  قيام الليل ضيفتها او صلاه الضحى يكون ليها وقت لتنبيه ، وايكونه نفس الصلوات الاساسيه.\n* الاذكار \nمحتاج اضيف تحتها اذكار ، مثل اذكار الصباح والمساء والتوقيت.\n*ميعاد النوم ، وشرب المايه ، يكون ف ميعاد احدد.\n* كذلك التعليم ، والرياضه ، وورد القرأن ، بيكون في ميعاد يحدد وتتبيه.\n* كذلك ؛ الشغل أعمال( ملف لتنميه الأعمال، ملف لمتابعه تقارير )",
-      "dueDate": "2026-11-12",
-      "dueTime": "13:43",
+      "dueDate": "2026-11-21",
+      "dueTime": "12:31",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اعمال السيستم.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "tts",
+      "audioMode": "custom",
       "attachments": [],
       "whatsapp": {
         "enabled": true,
@@ -174,7 +174,7 @@
         "recipientName": "التستاذ الفاضل احمد الجيار",
         "autoTriggerAtDueTime": true,
         "includeAttachmentsLinks": true,
-        "lastSentAt": "2026-11-12T12:29:19.860Z",
+        "lastSentAt": "2026-11-21T09:02:43.931Z",
         "lastSendStatus": "opened_app"
       },
       "id": "task-1794483515605-7t2dt",
@@ -183,7 +183,10 @@
       "lastDueAlarmAt": "2026-11-21T09:02:43.903Z",
       "lastRemindedAt": "2026-11-21T09:02:43.903Z",
       "customAudioId": "media_1794370989995_3er5u",
-      "customAudioName": "824"
+      "customAudioName": "824",
+      "completedAt": "2026-11-21T18:59:28.865Z",
+      "isArchived": false,
+      "archivedAt": "2026-11-21T18:59:28.865Z"
     },
     {
       "title": "ملف التامينات",
@@ -876,15 +879,15 @@
       "title": "اجتماع  بخصوص مشروع الضبعه",
       "description": "موقف الاعاشات\nموقف السكن والمواصلات\nموقف شركة النقل\nموقف الرد على المكالمات وتنسيقها \nدراسه اسعار مرتبات العمالة \nورقه الضد",
       "dueDate": "2026-11-21",
-      "dueTime": "09:00",
+      "dueTime": "12:22",
       "priority": "medium",
       "category": "work",
       "reminderMinutesBefore": 5,
       "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: اجتماع  بخصوص مشروع الضبعه.  يرجى المتابعة الآن.",
       "repeat": "none",
-      "audioMode": "tts",
+      "audioMode": "custom",
       "id": "task-1795191185537-gncbn",
-      "status": "pending",
+      "status": "completed",
       "createdAt": "2026-11-20T16:13:05.537Z",
       "lastRemindedAt": "2026-11-21T06:55:02.903Z",
       "customAudioId": "media_1794463026056_m0xhu",
@@ -896,7 +899,10 @@
         "recipientName": "احمد الجيار طاقه",
         "autoTriggerAtDueTime": true,
         "includeAttachmentsLinks": true
-      }
+      },
+      "completedAt": "2026-11-21T17:03:17.684Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T17:03:17.684Z"
     },
     {
       "title": "بخصوص الامن",
@@ -985,8 +991,184 @@
         "includeAttachmentsLinks": true
       },
       "id": "task-1795277678211-94y0a",
+      "status": "completed",
+      "createdAt": "2026-11-21T16:14:38.211Z",
+      "description": "بحبك ❤\nيمكن الكلام ما بيعبّرش عن كل اللي جوايا، بس حبيت أقولك إنك أجمل حاجة في حياتي، ووجودك جنبي هو اللي مدّي أيامي معنى. ربنا يخليكي ليا وما يحرمنيش منك أبدًا.",
+      "attachments": [],
+      "completedAt": "2026-11-21T19:22:05.613Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T19:22:05.613Z"
+    },
+    {
+      "title": "مهام الاجتماع",
+      "description": "بشكرك جدا على السيستم",
+      "dueDate": "2026-11-21",
+      "dueTime": "19:07",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: مهام الاجتماع.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201018282280",
+        "recipientName": "احمد الجيار طاقه",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true,
+        "lastSentAt": "2026-11-21T17:07:33.186Z",
+        "lastSendStatus": "opened_app"
+      },
+      "id": "task-1795280401678-f5z3i",
+      "status": "completed",
+      "createdAt": "2026-11-21T17:00:01.678Z",
+      "attachments": [],
+      "lastDueAlarmAt": "2026-11-21T17:07:33.155Z",
+      "lastRemindedAt": "2026-11-21T17:07:33.155Z",
+      "completedAt": "2026-11-21T19:21:58.138Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T19:21:58.138Z"
+    },
+    {
+      "title": "رسالة شكر واتساب لأحمد الجيار",
+      "description": "أحمد، بشكرك جدًا على مجهوداتك الفترة اللي فاتت بخصوص السيستم. وصلنا بيه للآليات والنتائج اللي كنا عاوزينها، وبقى بينظم وقتي وأعمالي، وساعدني كتير في نمو عقلي وفكري. مشكور جدًا، وربنا يبارك فيك.",
+      "dueDate": "2026-11-21",
+      "dueTime": "19:59",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 0,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: رسالة شكر واتساب لأحمد الجيار.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201018282280",
+        "recipientName": "أحمد الجيار",
+        "customMessage": "أحمد، بشكرك جدًا على مجهوداتك الفترة اللي فاتت بخصوص السيستم. وصلنا بيه للآليات والنتائج اللي كنا عاوزينها، وبقى بينظم وقتي وأعمالي، وساعدني كتير في نمو عقلي وفكري. مشكور جدًا، وربنا يبارك فيك.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795283956331-cu9ee",
+      "status": "completed",
+      "createdAt": "2026-11-21T17:59:16.331Z",
+      "completedAt": "2026-11-21T19:21:55.933Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T19:21:55.933Z"
+    },
+    {
+      "title": "رسالة واتساب لأحمد الهواري — الجيم بكرة",
+      "description": "أحمد، بكرة الجيم عندنا الساعة ستة، اعمل حسابك — بعد صلاة الفجر مباشرة هنروح الجيم.",
+      "dueDate": "2026-11-21",
+      "dueTime": "20:05",
+      "priority": "urgent",
+      "category": "work",
+      "reminderMinutesBefore": 0,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: رسالة واتساب لأحمد الهواري — الجيم بكرة. هذه المهمة عاجلة جداً. يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201001474368",
+        "recipientName": "أحمد الهواري",
+        "customMessage": "أحمد، بكرة الجيم عندنا الساعة ستة، اعمل حسابك — بعد صلاة الفجر مباشرة هنروح الجيم.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795284240158-4dhdi",
+      "status": "completed",
+      "createdAt": "2026-11-21T18:04:00.158Z",
+      "completedAt": "2026-11-21T19:21:51.929Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T19:21:51.929Z"
+    },
+    {
+      "title": "صلاة قيام الليل",
+      "dueDate": "2026-11-22",
+      "dueTime": "04:00",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: صلاة قيام الليل.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "id": "task-1795288261773-kmkwj",
       "status": "pending",
-      "createdAt": "2026-11-21T16:14:38.211Z"
+      "createdAt": "2026-11-21T19:11:01.773Z"
+    },
+    {
+      "title": "إرسال واتساب إلى أحمد أسعد",
+      "description": "أحمد، بكرة الساعة ٦:٣٠ الصبح تكون عندي في دمياط الجديدة عشان نسافر لطنطا.",
+      "dueDate": "2026-11-21",
+      "dueTime": "21:13",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 0,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: إرسال واتساب إلى أحمد أسعد.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201004617179",
+        "recipientName": "أحمد أسعد",
+        "customMessage": "أحمد، بكرة الساعة ٦:٣٠ الصبح تكون عندي في دمياط الجديدة عشان نسافر لطنطا.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795288373406-3j71w",
+      "status": "completed",
+      "createdAt": "2026-11-21T19:12:53.406Z",
+      "completedAt": "2026-11-21T19:21:50.099Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T19:21:50.099Z"
+    },
+    {
+      "title": "مهام العمل",
+      "description": "أحمد، بكرة متابعة ملف التأمينات ومتابعة ملف تسجيل تشييد وبناء، وتكون عندي الصبح الساعة ٦:٣٠ عشان نروح طنطا.",
+      "dueDate": "2026-11-21",
+      "dueTime": "21:15",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: مهام العمل.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201004617179",
+        "recipientName": "أحمد أسعد",
+        "customMessage": "أحمد، بكرة متابعة ملف التأمينات ومتابعة ملف تسجيل تشييد وبناء، وتكون عندي الصبح الساعة ٦:٣٠ عشان نروح طنطا.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795288588596-bozjr",
+      "status": "completed",
+      "createdAt": "2026-11-21T19:16:28.596Z",
+      "completedAt": "2026-11-21T19:21:46.435Z",
+      "isArchived": true,
+      "archivedAt": "2026-11-21T19:21:46.435Z"
+    },
+    {
+      "title": "طلب اللوجو واسم شركة الأمن المقترحة من طلال",
+      "description": "محتاج اللوجو واسم شركة الأمن المقترحة اللي هنبدأ نفكر فيها عشان ناخد الإجراء. أول ما تشوف الرسالة ابعتهالي على طول.",
+      "dueDate": "2026-11-21",
+      "dueTime": "21:35",
+      "priority": "medium",
+      "category": "work",
+      "reminderMinutesBefore": 5,
+      "voiceMessage": "يا دكتور عبد العزيز، تنبيه لمهمة عمل: طلب اللوجو واسم شركة الأمن المقترحة من طلال.  يرجى المتابعة الآن.",
+      "repeat": "none",
+      "audioMode": "tts",
+      "whatsapp": {
+        "enabled": true,
+        "phoneNumber": "201550040803",
+        "recipientName": "طلال استشادى",
+        "customMessage": "محتاج اللوجو واسم شركة الأمن المقترحة اللي هنبدأ نفكر فيها عشان ناخد الإجراء. أول ما تشوف الرسالة ابعتهالي على طول.",
+        "autoTriggerAtDueTime": true,
+        "includeAttachmentsLinks": true
+      },
+      "id": "task-1795289624953-h314s",
+      "status": "pending",
+      "createdAt": "2026-11-21T19:33:44.953Z"
     }
   ],
   "employees": [
@@ -2011,7 +2193,7 @@
       "builtInSchedules": {}
     }
   },
-  "updatedAt": "2026-11-22T02:27:28.409Z",
+  "updatedAt": "2026-11-22T02:53:25.800Z",
   "seeded": true,
   "prayerSettings": {
     "cityName": "القاهرة",
@@ -2077,7 +2259,7 @@
     "ca_1794860692985_cv10",
     "ch_1794860163532_k3vu"
   ],
-  "sourceDevice": "Mobile",
+  "sourceDevice": "PC",
   "athkar": {
     "customAthkar": [
       {
@@ -2112,6 +2294,14 @@
         "count": 1,
         "id": "custom-dhikr-1795256896347-ial4",
         "isCustom": true
+      },
+      {
+        "category": "custom",
+        "title": "دخول اى مكان",
+        "text": "اللهم افتح ابواب رحمتك",
+        "count": 1,
+        "id": "custom-dhikr-1795280252885-zdsl",
+        "isCustom": true
       }
     ],
     "favorites": [
@@ -2126,7 +2316,7 @@
     "totalTasbeeh": 210,
     "dailyTasbeeh": {
       "count": 0,
-      "date": "2026-11-21"
+      "date": "2026-11-22"
     },
     "customPresets": [],
     "progress": {

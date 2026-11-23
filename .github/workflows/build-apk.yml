@@ -53,32 +53,35 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.50.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.51.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.50.apk
-          path: DrAbdelaziz-Reminder-v1.0.50.apk
+          name: DrAbdelaziz-Reminder-v1.0.51.apk
+          path: DrAbdelaziz-Reminder-v1.0.51.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.50
+      - name: Create or Update GitHub Release v1.0.51
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.50
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.50"
+          tag_name: v1.0.51
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.51"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.50
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.51
             
             التحديثات الجديدة:
-            - نطق اسم المهمة صراحة ووضوحاً في التنبيه الصوتي عند حلول موعد المهمة (يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة])
-            - ربط التنبيهات اللحظية المباشرة في أندرويد والويب ببرمجية النطق الصوتي الفصيح فور استلام المنبه
-            - ترقية نصوص التنبيهات في الإشعارات والمنبه العتادي لتتضمن دائماً اسم المهمة صراحة
+            - إضافة خيار تحديد نوع نغمة التنبيه الصوتي لكل مهمة عند إنشائها أو تعديلها:
+              1) رنة التنبيه العادية: نغمة منبه د. عبد العزيز الرسمية بدون قراءة صوتية للاسم
+              2) نطق اسم المهمة: نداء بالاسم فصيحاً بالذكاء الاصطناعي (يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة])
+              3) صوت المرفقات: تشغيل مقطع الفيديو أو الملف الصوتي المرفق بالمهمة كمنبه رسمي عند حلول الموعد
+            - دعم تشغيل المرفقات الصوتية والفيديو في المنبه العتادي لأندرويد وشاشات القفل
+            - تمييز نوع نغمة التنبيه المختارة ببطاقة وشارة واضحة على كل مهمة
           files: |
-            DrAbdelaziz-Reminder-v1.0.50.apk
+            DrAbdelaziz-Reminder-v1.0.51.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -91,7 +94,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.50.apk
+            DrAbdelaziz-Reminder-v1.0.51.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
             app-debug.apk

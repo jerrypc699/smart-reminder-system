@@ -13,6 +13,7 @@ import {
   Sparkles,
   AlertTriangle,
   X,
+  Bell,
   FileAudio,
   Music,
   UploadCloud,
@@ -569,7 +570,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setCategory(task.category);
     setReminderMinutesBefore(task.reminderMinutesBefore);
     setVoiceMessage(task.voiceMessage || '');
-    setAudioMode(task.audioMode || (task.customAudioId ? 'custom' : 'tts'));
+    setAudioMode(task.audioMode || (task.customAudioId ? 'attachment' : 'tts'));
     setCustomAudioId(task.customAudioId || '');
     setCustomAudioName(task.customAudioName || '');
     setTaskCloudUrl(task.cloudUrl || '');
@@ -812,10 +813,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
         reminderMinutesBefore,
         voiceMessage: finalVoiceMessage,
         audioMode,
-        customAudioId: audioMode === 'custom' ? customAudioId : undefined,
-        customAudioName: audioMode === 'custom' ? customAudioName : undefined,
-        customMediaType: hasVideoAtt ? 'video' : (audioMode === 'custom' ? editingTask.customMediaType : undefined),
-        cloudUrl: audioMode === 'custom' ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
+        customAudioId: (audioMode === 'attachment' || audioMode === 'custom') ? customAudioId : undefined,
+        customAudioName: (audioMode === 'attachment' || audioMode === 'custom') ? customAudioName : undefined,
+        customMediaType: hasVideoAtt ? 'video' : ((audioMode === 'attachment' || audioMode === 'custom') ? editingTask.customMediaType : undefined),
+        cloudUrl: (audioMode === 'attachment' || audioMode === 'custom') ? (taskCloudUrl || editingTask.cloudUrl) : undefined,
         attachments,
         whatsapp: whatsappPayload,
         employeeId: selectedEmployeeId || undefined,
@@ -834,10 +835,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
         voiceMessage: finalVoiceMessage,
         repeat: 'none',
         audioMode,
-        customAudioId: audioMode === 'custom' ? customAudioId : undefined,
-        customAudioName: audioMode === 'custom' ? customAudioName : undefined,
+        customAudioId: (audioMode === 'attachment' || audioMode === 'custom') ? customAudioId : undefined,
+        customAudioName: (audioMode === 'attachment' || audioMode === 'custom') ? customAudioName : undefined,
         customMediaType: hasVideoAtt ? 'video' : undefined,
-        cloudUrl: audioMode === 'custom' ? taskCloudUrl : undefined,
+        cloudUrl: (audioMode === 'attachment' || audioMode === 'custom') ? taskCloudUrl : undefined,
         attachments: attachments.length > 0 ? attachments : undefined,
         whatsapp: whatsappPayload,
         employeeId: selectedEmployeeId || undefined,
@@ -1583,13 +1584,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
                             </p>
                           )}
 
-                          {/* Custom Audio Badge if attached */}
-                          {task.customAudioName && (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs mt-1">
-                              <FileAudio className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                              <span>تنبيه صوتي مخصص: {task.customAudioName}</span>
-                            </div>
-                          )}
+                          {/* Audio Mode Badge */}
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs mt-1 border border-slate-700/60 bg-slate-800/40">
+                            {task.audioMode === 'chime' ? (
+                              <div className="flex items-center gap-1.5 text-amber-300">
+                                <Bell className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span>نغمة التنبيه: رنة عادية 🔔</span>
+                              </div>
+                            ) : (task.audioMode === 'attachment' || task.audioMode === 'custom') ? (
+                              <div className="flex items-center gap-1.5 text-purple-300">
+                                <FileAudio className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                <span>نغمة التنبيه: صوت المرفقات 🎬 🎵 {task.customAudioName ? `(${task.customAudioName})` : ''}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 text-emerald-300">
+                                <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>نغمة التنبيه: نطق اسم المهمة 🗣️</span>
+                              </div>
+                            )}
+                          </div>
 
                           {/* Scheduled WhatsApp Badge */}
                           {task.whatsapp?.enabled && (task.whatsapp.phoneNumber || (task.whatsapp.recipients && task.whatsapp.recipients.length > 0)) && (
@@ -2227,38 +2240,74 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
               {/* Audio Reminder Mode Selector */}
               <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-3">
-                <label className="block text-xs font-semibold text-slate-300">
-                  طريقة التنبيه الصوتي عند حلول الموعد
-                </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-300">
+                    نغمة وصوت تنبيه المهمة عند حلول الموعد
+                  </label>
+                  <span className="text-[10.5px] text-slate-400 font-medium">اختياري للدكتور</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAudioMode('chime')}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      audioMode === 'chime'
+                        ? 'bg-amber-600 text-white shadow-md ring-1 ring-amber-400'
+                        : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+                    }`}
+                  >
+                    <Bell className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+                    <span>رنة التنبيه العادية 🔔</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setAudioMode('tts')}
-                    className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       audioMode === 'tts'
-                        ? 'bg-emerald-600 text-white shadow-md'
+                        ? 'bg-emerald-600 text-white shadow-md ring-1 ring-emerald-400'
                         : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
                     }`}
                   >
-                    <Volume2 className="w-3.5 h-3.5" />
-                    <span>نطق عربي ذكي (TTS)</span>
+                    <Volume2 className="w-3.5 h-3.5 shrink-0 text-emerald-300" />
+                    <span>نطق اسم المهمة 🗣️</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setAudioMode('custom')}
-                    className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      audioMode === 'custom'
-                        ? 'bg-purple-600 text-white shadow-md'
+                    onClick={() => setAudioMode('attachment')}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      audioMode === 'attachment' || audioMode === 'custom'
+                        ? 'bg-purple-600 text-white shadow-md ring-1 ring-purple-400'
                         : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
                     }`}
                   >
-                    <FileAudio className="w-3.5 h-3.5" />
-                    <span>ملف وسائط (فيديو / صوت)</span>
+                    <FileAudio className="w-3.5 h-3.5 shrink-0 text-purple-300" />
+                    <span>صوت المرفقات 🎬 🎵</span>
                   </button>
                 </div>
 
-                {audioMode === 'custom' && (
+                {/* Sub-text explanation */}
+                <div className="text-[11px] text-slate-300 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 leading-relaxed">
+                  {audioMode === 'chime' && (
+                    <span className="text-amber-300 block">
+                      🔔 <strong>رنة التنبيه العادية:</strong> إطلاق نغمة ومنبه د. عبد العزيز الرسمي فقط بدون قراءة صوتية لاسم المهمة.
+                    </span>
+                  )}
+                  {audioMode === 'tts' && (
+                    <span className="text-emerald-300 block">
+                      🗣️ <strong>نطق اسم المهمة:</strong> نداء وتنبيه باسم المهمة بصوت فصيح بالذكاء الاصطناعي («يا دكتور عبد العزيز: حان الآن موعد مهمة...»).
+                    </span>
+                  )}
+                  {(audioMode === 'attachment' || audioMode === 'custom') && (
+                    <span className="text-purple-300 block">
+                      🎬 <strong>صوت المرفقات:</strong> تشغيل صوت مقطع الفيديو المرفق أو الملف الصوتي المسجل/المرفوع كمنبه رسمي للمهمة.
+                    </span>
+                  )}
+                </div>
+
+                {(audioMode === 'attachment' || audioMode === 'custom') && (
                   <div className="space-y-2 pt-2 border-t border-slate-700">
                     <div className="flex items-center gap-2">
                       <select

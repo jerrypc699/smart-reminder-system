@@ -26,6 +26,7 @@ import { whatsappService, buildTaskWhatsAppMessage, formatWhatsAppDisplayPhone }
 import type { 
   Task, 
   TaskStatus,
+  TaskAudioMode,
   PrayerSettings, 
   AudioSettings, 
   ActiveAlert,
@@ -529,13 +530,14 @@ export function App() {
     return unsub;
   }, []);
 
-  // Dedicated Voice Alert Trigger for Tasks (Plays recorded voice note, audio recording, voiceMessage TTS, or doctor chime)
+  // Dedicated Voice Alert Trigger for Tasks (Supports: chime only, tts speak task title, or attachment video/audio alarm)
   const handleTriggerTaskVoiceAlert = async (params: {
     taskId?: string;
     title?: string;
     voiceMessage?: string;
     audioUrl?: string;
     customAudioId?: string;
+    audioMode?: TaskAudioMode;
   }) => {
     try {
       audioService.initAudioContext();
@@ -572,6 +574,24 @@ export function App() {
         }
       }
 
+      // Detect audio attachment if any
+      const audioAtt = task?.attachments?.find((a) =>
+        (a.type && a.type.toLowerCase().startsWith('audio/')) ||
+        (a.name && /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(a.name))
+      );
+      let resolvedAudioAttUrl: string | undefined = undefined;
+      if (audioAtt) {
+        resolvedAudioAttUrl = audioAtt.cloudUrl;
+        if (!resolvedAudioAttUrl) {
+          const { taskAttachmentService } = await import('./services/taskAttachmentService');
+          resolvedAudioAttUrl = (await taskAttachmentService.getAttachmentUrl(audioAtt)) || undefined;
+        }
+      }
+
+      // Determine effective audio mode: 'chime' (رنة عادية فقط) | 'tts' (نطق اسم المهمة) | 'attachment' (صوت المرفقات)
+      const effectiveAudioMode: TaskAudioMode =
+        params.audioMode || task?.audioMode || (resolvedVideoUrl || resolvedAudioAttUrl || audioUrl || customAudioId ? 'attachment' : 'tts');
+
       // Switch to tasks tab so the user sees the active task
       setActiveTab('tasks');
 
@@ -587,8 +607,8 @@ export function App() {
         taskId: params.taskId || task?.id,
         mediaType: isVideo ? 'video' : undefined,
         videoUrl: isVideo ? resolvedVideoUrl : undefined,
-        audioName: videoAtt?.name || task?.customAudioName,
-        isCustomAudio: !isVideo && !!(audioUrl || customAudioId),
+        audioName: videoAtt?.name || audioAtt?.name || task?.customAudioName,
+        isCustomAudio: !isVideo && !!(audioUrl || customAudioId || resolvedAudioAttUrl),
         canSnooze: true,
         ...(waActive && task?.whatsapp
           ? {
@@ -607,30 +627,40 @@ export function App() {
           : {}),
       });
 
-      // If it's a video alarm with a valid URL, the video plays automatically at full alarm volume in the modal!
-      if (isVideo && resolvedVideoUrl) {
-        return;
-      }
-
-      // 1. If there is a cloud audio URL (uploaded recorded voice note), play it immediately!
-      if (audioUrl) {
-        await audioService.playCustomAudio(audioUrl, audioSettings.masterVolume);
-        return;
-      }
-
-      // 2. If there is an indexedDB audio (recorded locally on this device), play it!
-      if (customAudioId) {
-        const localBlobUrl = await audioStorageService.getAudioObjectUrl(customAudioId, audioUrl);
-        if (localBlobUrl) {
-          await audioService.playCustomAudio(localBlobUrl, audioSettings.masterVolume);
+      // 1. ATTACHMENT MODE: Play attached video / audio file if requested or present
+      if (effectiveAudioMode === 'attachment' || effectiveAudioMode === 'custom') {
+        if (isVideo && resolvedVideoUrl) {
+          // Video alarm plays automatically at full alarm volume in the modal!
           return;
         }
+        if (resolvedAudioAttUrl) {
+          await audioService.playCustomAudio(resolvedAudioAttUrl, audioSettings.masterVolume);
+          return;
+        }
+        if (audioUrl) {
+          await audioService.playCustomAudio(audioUrl, audioSettings.masterVolume);
+          return;
+        }
+        if (customAudioId) {
+          const localBlobUrl = await audioStorageService.getAudioObjectUrl(customAudioId, audioUrl);
+          if (localBlobUrl) {
+            await audioService.playCustomAudio(localBlobUrl, audioSettings.masterVolume);
+            return;
+          }
+        }
+        // Fallback to chime if no attachment was found
+        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+        return;
       }
 
-      // 3. Play luxury doctor task alert chime
-      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+      // 2. CHIME MODE: Only play luxury doctor alert tone without speaking the task name
+      if (effectiveAudioMode === 'chime') {
+        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+        return;
+      }
 
-      // 4. Speak the recorded voice message or personalized title alert - GUARANTEED TO PROMINENTLY SAY TASK NAME!
+      // 3. TTS MODE (Default): Play chime then speak the task name prominently
+      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
       if (audioSettings.enableTts) {
         const cleanTitle = (taskTitle || task?.title || 'عمل').trim();
         let textToSpeak = '';
@@ -778,20 +808,30 @@ export function App() {
       }
       recentMediaTriggersRef.current.set(dedupeKey, nowMs);
 
-      // Handle Task with Attached Video
-      if (params.taskId || params.actionType === 'task_video') {
-        const taskId = params.taskId || params.scheduledId?.replace('task_video_', '');
+      // Handle Task with Attached Video or Audio / Custom Media Alarm
+      if (params.taskId || params.actionType === 'task_video' || params.actionType === 'task_media') {
+        const taskId = params.taskId || params.scheduledId?.replace('task_video_', '').replace('task_media_', '');
         const allTasks = taskService.getTasks();
         const task = taskId ? allTasks.find((t) => t.id === taskId) : null;
         const videoAtt = task?.attachments?.find((a) =>
           (a.type && a.type.toLowerCase().startsWith('video/')) ||
           (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
         );
+        const audioAtt = task?.attachments?.find((a) =>
+          (a.type && a.type.toLowerCase().startsWith('audio/')) ||
+          (a.name && /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(a.name))
+        );
 
-        let resolvedVideoUrl = params.cloudUrl || videoAtt?.cloudUrl || task?.cloudUrl;
-        if (!resolvedVideoUrl && videoAtt) {
+        const isVideo = !!videoAtt || params.isVideo || task?.customMediaType === 'video';
+
+        let resolvedMediaUrl = params.cloudUrl || videoAtt?.cloudUrl || audioAtt?.cloudUrl || task?.cloudUrl;
+        const targetAtt = videoAtt || audioAtt;
+        if (!resolvedMediaUrl && targetAtt) {
           const { taskAttachmentService } = await import('./services/taskAttachmentService');
-          resolvedVideoUrl = (await taskAttachmentService.getAttachmentUrl(videoAtt)) || undefined;
+          resolvedMediaUrl = (await taskAttachmentService.getAttachmentUrl(targetAtt)) || undefined;
+        }
+        if (!resolvedMediaUrl && task?.customAudioId) {
+          resolvedMediaUrl = (await audioStorageService.getMediaObjectUrl(task.customAudioId, task.cloudUrl)) || undefined;
         }
 
         // Boost native volume on Android to ensure loud alarm playback
@@ -801,24 +841,25 @@ export function App() {
 
         setActiveTab('tasks');
         const waActive = !!(task?.whatsapp?.enabled && task.whatsapp.phoneNumber);
-        const displayName = videoAtt?.name || task?.customAudioName || 'مقطع فيديو المهمة';
+        const displayName = videoAtt?.name || audioAtt?.name || task?.customAudioName || (isVideo ? 'مقطع فيديو المهمة' : 'ملف صوت المهمة');
         const displayTitle = task?.title || params.title || 'مهمة عمل';
 
         setActiveAlert({
-          id: `alert-task-video-${task?.id || taskId || Date.now()}-${nowMs}`,
+          id: `alert-task-media-${task?.id || taskId || Date.now()}-${nowMs}`,
           type: 'task',
           title: `يا دكتور عبد العزيز: ${displayTitle}`,
           message:
             task?.description ||
             task?.voiceMessage ||
             params.description ||
-            `حان الآن موعد المهمة وتشغيل مقطع الفيديو المرفق (${displayName}) كمنبه رسمي.`,
+            `حان الآن موعد المهمة وتشغيل المرفق (${displayName}) كمنبه رسمي.`,
           priority: task?.priority || 'high',
           timestamp: new Date(nowMs).toISOString(),
           taskId: task?.id || taskId,
-          mediaType: 'video',
-          videoUrl: resolvedVideoUrl || undefined,
+          mediaType: isVideo ? 'video' : undefined,
+          videoUrl: isVideo ? (resolvedMediaUrl || undefined) : undefined,
           audioName: displayName,
+          isCustomAudio: !isVideo && !!resolvedMediaUrl,
           canSnooze: true,
           ...(waActive && task?.whatsapp
             ? {
@@ -836,6 +877,11 @@ export function App() {
               }
             : {}),
         });
+
+        if (!isVideo && resolvedMediaUrl && !audioSettings.soundMuted) {
+          audioService.initAudioContext();
+          audioService.playCustomAudio(resolvedMediaUrl, audioSettings.masterVolume);
+        }
         return;
       }
 
@@ -949,6 +995,7 @@ export function App() {
           voiceMessage: extra.voiceMessage,
           audioUrl: extra.cloudUrl,
           customAudioId: extra.customAudioId,
+          audioMode: extra.audioMode,
         });
       } else if (extra?.type === 'pre_azan') {
         audioService.initAudioContext();
@@ -1300,6 +1347,7 @@ export function App() {
               voiceMessage: task.voiceMessage,
               audioUrl: task.cloudUrl,
               customAudioId: task.customAudioId,
+              audioMode: task.audioMode,
             });
           }
         } else if (shouldTriggerPreReminder) {
@@ -1479,18 +1527,66 @@ export function App() {
   // Preview individual task audio
   const handlePreviewTaskAudio = async (task: Task) => {
     audioService.initAudioContext();
-    if (task.cloudUrl) {
-      audioService.playCustomAudio(task.cloudUrl, audioSettings.masterVolume);
+
+    // 1. Chime Mode: Only play official doctor alert chime, no speech
+    if (task.audioMode === 'chime') {
+      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
       return;
     }
-    if (task.customAudioId) {
-      const url = await audioStorageService.getAudioObjectUrl(task.customAudioId, task.cloudUrl);
-      if (url) {
-        audioService.playCustomAudio(url, audioSettings.masterVolume);
+
+    // 2. Attachment Mode: Play attached video / audio or custom audio
+    if (task.audioMode === 'attachment' || task.audioMode === 'custom') {
+      const audioAtt = task.attachments?.find((a) =>
+        (a.type && a.type.toLowerCase().startsWith('audio/')) ||
+        (a.name && /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(a.name))
+      );
+      const videoAtt = task.attachments?.find((a) =>
+        (a.type && a.type.toLowerCase().startsWith('video/')) ||
+        (a.name && /\.(mp4|mov|webm|m4v|mkv|3gp|avi)$/i.test(a.name))
+      );
+
+      if (audioAtt) {
+        let url = audioAtt.cloudUrl;
+        if (!url) {
+          const { taskAttachmentService } = await import('./services/taskAttachmentService');
+          url = (await taskAttachmentService.getAttachmentUrl(audioAtt)) || undefined;
+        }
+        if (url) {
+          audioService.playCustomAudio(url, audioSettings.masterVolume);
+          return;
+        }
+      }
+
+      if (videoAtt) {
+        let url = videoAtt.cloudUrl;
+        if (!url) {
+          const { taskAttachmentService } = await import('./services/taskAttachmentService');
+          url = (await taskAttachmentService.getAttachmentUrl(videoAtt)) || undefined;
+        }
+        if (url) {
+          audioService.playCustomAudio(url, audioSettings.masterVolume);
+          return;
+        }
+      }
+
+      if (task.cloudUrl) {
+        audioService.playCustomAudio(task.cloudUrl, audioSettings.masterVolume);
         return;
       }
+      if (task.customAudioId) {
+        const url = await audioStorageService.getAudioObjectUrl(task.customAudioId, task.cloudUrl);
+        if (url) {
+          audioService.playCustomAudio(url, audioSettings.masterVolume);
+          return;
+        }
+      }
+
+      // Fallback if no attachment file is linked
+      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
+      return;
     }
 
+    // 3. TTS Mode (Default): Play chime then pronounce task name clearly
     audioService.playDoctorTaskAlert(audioSettings.masterVolume);
     if (audioSettings.enableTts) {
       const cleanTitle = task.title.trim();

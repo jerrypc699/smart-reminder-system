@@ -3,7 +3,7 @@ export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'snoozed';
 export type TaskRepeat = 'none' | 'daily' | 'workdays' | 'weekly';
 
-export type TaskAudioMode = 'tts' | 'custom' | 'record' | 'none';
+export type TaskAudioMode = 'tts' | 'chime' | 'attachment' | 'custom' | 'record' | 'none';
 export type MediaType = 'audio' | 'video';
 
 export interface TaskAttachment {
@@ -228,17 +228,17 @@ export interface ActiveAlert {
   whatsappAutoSentError?: string;
 }
 
-export type AthkarCategory = 
+export type AthkarCategory =
   | 'all'
-  | 'morning' 
-  | 'evening' 
-  | 'prayer' 
-  | 'sleep' 
-  | 'wake' 
-  | 'ruqyah' 
-  | 'work' 
-  | 'distress' 
-  | 'quranic' 
+  | 'morning'
+  | 'evening'
+  | 'prayer'
+  | 'sleep'
+  | 'wake'
+  | 'ruqyah'
+  | 'work'
+  | 'distress'
+  | 'quranic'
   | 'custom'
   | 'favorites';
 

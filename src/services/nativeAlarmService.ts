@@ -27,10 +27,27 @@ export function isVideoAttachment(att: any): boolean {
   return false;
 }
 
+export function isAudioAttachment(att: any): boolean {
+  if (!att) return false;
+  if (typeof att.type === 'string' && att.type.toLowerCase().startsWith('audio/')) return true;
+  if (typeof att.name === 'string' && /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(att.name)) return true;
+  return false;
+}
+
 export function isTaskWithVideo(task: Task): boolean {
   if (!task) return false;
   if (task.customMediaType === 'video') return true;
   if (task.attachments && task.attachments.some(isVideoAttachment)) return true;
+  return false;
+}
+
+export function isTaskWithAttachmentMedia(task: Task): boolean {
+  if (!task) return false;
+  if (isTaskWithVideo(task)) return true;
+  if (task.audioMode === 'attachment' || task.audioMode === 'custom') {
+    if (task.customAudioId || task.cloudUrl) return true;
+    if (task.attachments && task.attachments.some(isAudioAttachment)) return true;
+  }
   return false;
 }
 
@@ -398,7 +415,8 @@ export class NativeAlarmService {
                 title: taskTitle,
                 voiceMessage: taskBody,
                 customAudioId: task.customAudioId || '',
-                cloudUrl: task.cloudUrl || ''
+                cloudUrl: task.cloudUrl || '',
+                audioMode: task.audioMode || 'tts',
               }
             });
           }
@@ -436,7 +454,8 @@ export class NativeAlarmService {
                 title: taskTitle,
                 voiceMessage: taskBody,
                 customAudioId: task.customAudioId || '',
-                cloudUrl: task.cloudUrl || ''
+                cloudUrl: task.cloudUrl || '',
+                audioMode: task.audioMode || 'tts',
               }
             });
           }
@@ -464,7 +483,8 @@ export class NativeAlarmService {
                   title: task.title,
                   voiceMessage: task.voiceMessage || '',
                   customAudioId: task.customAudioId || '',
-                  cloudUrl: task.cloudUrl || ''
+                  cloudUrl: task.cloudUrl || '',
+                  audioMode: task.audioMode || 'tts',
                 }
               });
             }
@@ -528,12 +548,14 @@ export class NativeAlarmService {
       const nativeAlarms: NativeScheduledAlarmPayload[] = [];
       const iosNotifications: any[] = [];
 
-      // 1. Process Tasks with attached video files (or video media type)
+      // 1. Process Tasks with attached video files or attachment audio mode
       for (const task of effectiveTasks) {
         if (task.status === 'completed' || task.isArchived) continue;
-        if (!isTaskWithVideo(task)) continue;
+        if (!isTaskWithAttachmentMedia(task)) continue;
 
         const videoAtt = task.attachments?.find(isVideoAttachment);
+        const audioAtt = !videoAtt ? task.attachments?.find(isAudioAttachment) : undefined;
+        const isVideo = !!videoAtt || task.customMediaType === 'video';
         const baseHash = Math.abs(NativeAlarmService.getNumericIdForTask(task.id));
         const alarmId = 25000 + (baseHash % 4900);
 
@@ -547,45 +569,45 @@ export class NativeAlarmService {
         }
 
         if (triggerAtMs > now.getTime()) {
-          const mediaName = videoAtt?.name || task.customAudioName || 'مقطع فيديو المهمة';
-          const cloudUrl = videoAtt?.cloudUrl || task.cloudUrl || '';
+          const mediaName = videoAtt?.name || audioAtt?.name || task.customAudioName || (isVideo ? 'مقطع فيديو المهمة' : 'ملف صوت المهمة');
+          const cloudUrl = videoAtt?.cloudUrl || audioAtt?.cloudUrl || task.cloudUrl || '';
 
           nativeAlarms.push({
             alarmId,
             triggerAtMs,
-            scheduledId: `task_video_${task.id}`,
-            mediaId: videoAtt?.id || task.customAudioId || task.id,
+            scheduledId: isVideo ? `task_video_${task.id}` : `task_media_${task.id}`,
+            mediaId: videoAtt?.id || audioAtt?.id || task.customAudioId || task.id,
             mediaName,
-            mediaType: 'video',
+            mediaType: isVideo ? 'video' : 'audio',
             title: task.title,
-            description: task.description || task.voiceMessage || 'منبه موعد مهمة عمل مع مقطع فيديو مرفق',
+            description: task.description || task.voiceMessage || (isVideo ? 'منبه موعد مهمة عمل مع مقطع فيديو مرفق' : 'منبه موعد مهمة عمل مع ملف صوتي مرفق'),
             cloudUrl,
-            isVideo: true,
+            isVideo,
             taskId: task.id,
-            attachmentId: videoAtt?.id,
-            actionType: 'task_video',
+            attachmentId: videoAtt?.id || audioAtt?.id,
+            actionType: isVideo ? 'task_video' : 'task_media',
           });
 
           iosNotifications.push({
             id: alarmId,
-            title: `🎬 منبه فيديو المهمة: ${task.title}`,
-            body: task.voiceMessage || task.description || `يا دكتور عبد العزيز: حان موعد المهمة وتشغيل فيديو ${mediaName}`,
+            title: isVideo ? `🎬 منبه فيديو المهمة: ${task.title}` : `🎵 منبه صوت المهمة: ${task.title}`,
+            body: task.voiceMessage || task.description || `يا دكتور عبد العزيز: حان موعد المهمة وتشغيل ${mediaName}`,
             schedule: {
               at: new Date(triggerAtMs),
               allowWhileIdle: true,
             },
             channelId: 'dr_abdelaziz_media_v9',
             sound: 'dr_abdelaziz_task_alert.mp3',
-            actionTypeId: 'TASK_VIDEO_ACTION',
+            actionTypeId: isVideo ? 'TASK_VIDEO_ACTION' : 'TASK_ACTION',
             foreground: true,
             extra: {
-              type: 'task_video',
+              type: isVideo ? 'task_video' : 'task_media',
               taskId: task.id,
-              attachmentId: videoAtt?.id,
+              attachmentId: videoAtt?.id || audioAtt?.id,
               title: task.title,
               mediaName,
               cloudUrl,
-              isVideo: true,
+              isVideo,
             },
           });
         }

@@ -660,30 +660,13 @@ export function App() {
       }
 
       // 3. TTS MODE (Default): Play chime then speak the task name prominently
-      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
       if (audioSettings.enableTts) {
-        const cleanTitle = (taskTitle || task?.title || 'عمل').trim();
-        let textToSpeak = '';
-
-        if (voiceMsg && voiceMsg.trim()) {
-          const cleanMsg = voiceMsg.trim().replace(/^يا دكتور عبد العزيز[،:]?\s*/, '').trim();
-          if (cleanMsg.includes(cleanTitle)) {
-            textToSpeak = `يا دكتور عبد العزيز: ${cleanMsg}`;
-          } else {
-            textToSpeak = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. ${cleanMsg}`;
-          }
-        } else {
-          textToSpeak = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. يرجى المتابعة والتنفيذ الآن.`;
-        }
-
-        setTimeout(() => {
-          audioService.speakAlert(textToSpeak, {
-            volume: audioSettings.masterVolume,
-            rate: audioSettings.ttsRate,
-            pitch: audioSettings.ttsPitch,
-            voiceURI: audioSettings.ttsVoiceURI,
-          });
-        }, 1200);
+        audioService.speakTaskAlert(taskTitle || task?.title || 'عمل', voiceMsg, {
+          volume: audioSettings.masterVolume,
+          playChimeFirst: true,
+        });
+      } else {
+        audioService.playDoctorTaskAlert(audioSettings.masterVolume);
       }
     } catch (err) {
       console.warn('handleTriggerTaskVoiceAlert error:', err);
@@ -1587,29 +1570,13 @@ export function App() {
     }
 
     // 3. TTS Mode (Default): Play chime then pronounce task name clearly
-    audioService.playDoctorTaskAlert(audioSettings.masterVolume);
     if (audioSettings.enableTts) {
-      const cleanTitle = task.title.trim();
-      let msg = '';
-      if (task.voiceMessage && task.voiceMessage.trim()) {
-        const cleanMsg = task.voiceMessage.trim().replace(/^يا دكتور عبد العزيز[،:]?\s*/, '').trim();
-        if (cleanMsg.includes(cleanTitle)) {
-          msg = `يا دكتور عبد العزيز: ${cleanMsg}`;
-        } else {
-          msg = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. ${cleanMsg}`;
-        }
-      } else {
-        msg = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. يرجى المتابعة والتنفيذ الآن.`;
-      }
-
-      setTimeout(() => {
-        audioService.speakAlert(msg, {
-          volume: audioSettings.masterVolume,
-          rate: audioSettings.ttsRate,
-          pitch: audioSettings.ttsPitch,
-          voiceURI: audioSettings.ttsVoiceURI,
-        });
-      }, 1200);
+      audioService.speakTaskAlert(task.title, task.voiceMessage, {
+        volume: audioSettings.masterVolume,
+        playChimeFirst: true,
+      });
+    } else {
+      audioService.playDoctorTaskAlert(audioSettings.masterVolume);
     }
   };
 

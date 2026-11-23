@@ -48,34 +48,31 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.51.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.51.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.52.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.52.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.51.ipa
-          path: DrAbdelaziz-Reminder-v1.0.51.ipa
+          name: DrAbdelaziz-Reminder-v1.0.52.ipa
+          path: DrAbdelaziz-Reminder-v1.0.52.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.51
+      - name: Attach IPA to GitHub Release v1.0.52
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.51
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.51"
+          tag_name: v1.0.52
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.52"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.51
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.52
             
             التحديثات الجديدة:
-            - إضافة خيار تحديد نوع نغمة التنبيه الصوتي لكل مهمة عند إنشائها أو تعديلها:
-              1) رنة التنبيه العادية: نغمة منبه د. عبد العزيز الرسمية بدون قراءة صوتية للاسم
-              2) نطق اسم المهمة: نداء بالاسم فصيحاً بالذكاء الاصطناعي (يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة])
-              3) صوت المرفقات: تشغيل مقطع الفيديو أو الملف الصوتي المرفق بالمهمة كمنبه رسمي عند حلول الموعد
-            - دعم تشغيل المرفقات الصوتية والفيديو في المنبه العتادي وشاشات القفل
-            - تمييز نوع نغمة التنبيه المختارة ببطاقة وشارة واضحة على كل مهمة
+            - إصلاح جذري لنطق اسم المهمة بصوت عالي وواضح فور حلول الموعد
+            - تزويد التطبيق بمحرك نطق صوتي متقدم بتقنية البث الصوتي الفصيح المباشر (Google TTS Audio Streaming)
+            - تشغيل رنة التنبيه العذبة متبوعة فوراً بقراءة صريحة لاسم المهمة: «يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة]»
           files: |
-            DrAbdelaziz-Reminder-v1.0.51.ipa
+            DrAbdelaziz-Reminder-v1.0.52.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,7 +84,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.51.ipa
+            DrAbdelaziz-Reminder-v1.0.52.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

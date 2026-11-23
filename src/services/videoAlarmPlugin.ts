@@ -80,6 +80,8 @@ export interface VideoAlarmPluginInterface {
     share?: boolean;
   }): Promise<{ success: boolean; savedToDownloads: boolean; fileName: string }>;
   boostVolumeForAlarm?(): Promise<void>;
+  speakText?(options: { text: string }): Promise<{ success: boolean }>;
+  stopSpeech?(): Promise<void>;
   pickContact(): Promise<{
     success: boolean;
     name?: string;

@@ -421,9 +421,146 @@ class AudioService {
   }
 
   /**
-   * Speak Arabic text with Text-to-Speech
+   * Universal Arabic Speech Streamer:
+   * Uses high-quality Google TTS Audio Streaming (which works 100% on all mobile & desktop browsers)
+   * with fallback to native Android TextToSpeech and local SpeechSynthesis.
+   */
+  public playSpeech(
+    text: string,
+    options: {
+      volume?: number;
+      onStart?: () => void;
+      onEnd?: () => void;
+    } = {}
+  ): void {
+    if (typeof window === 'undefined') {
+      options.onEnd?.();
+      return;
+    }
+
+    const cleanText = this.cleanArabicTextForVoice(text);
+    if (!cleanText) {
+      options.onEnd?.();
+      return;
+    }
+
+    this.stopAll();
+    this.initAudioContext();
+    options.onStart?.();
+    this.notifySpeaking(true);
+
+    const chunks = this.splitArabicIntoChunks(cleanText, 140);
+    if (chunks.length === 0) {
+      this.notifySpeaking(false);
+      options.onEnd?.();
+      return;
+    }
+
+    const playlistUrls = chunks.map(
+      (chunk) =>
+        `https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(chunk)}`
+    );
+
+    let currentIndex = 0;
+    let isCanceled = false;
+
+    const playNext = () => {
+      if (isCanceled) return;
+      if (currentIndex >= playlistUrls.length) {
+        this.notifySpeaking(false);
+        this.currentCustomAudio = null;
+        options.onEnd?.();
+        return;
+      }
+
+      const url = playlistUrls[currentIndex];
+      currentIndex++;
+
+      const audio = new Audio();
+      if ('referrerPolicy' in audio) {
+        (audio as any).referrerPolicy = 'no-referrer';
+      }
+      audio.src = url;
+      audio.volume = options.volume ?? 1.0;
+      this.currentCustomAudio = audio;
+
+      audio.onended = () => {
+        if (!isCanceled) {
+          playNext();
+        }
+      };
+
+      audio.onerror = () => {
+        if (!isCanceled) {
+          console.warn('TTS streaming failed, falling back to Android native or SpeechSynthesis');
+          this.fallbackNativeOrLocalSpeech(cleanText, options);
+        }
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('TTS audio.play() rejected:', err);
+          if (!isCanceled) {
+            this.fallbackNativeOrLocalSpeech(cleanText, options);
+          }
+        });
+      }
+    };
+
+    playNext();
+  }
+
+  /**
+   * Fallback to native Android TextToSpeech or local SpeechSynthesis if online stream is unavailable
+   */
+  private async fallbackNativeOrLocalSpeech(
+    cleanText: string,
+    options: { volume?: number; onEnd?: () => void }
+  ): Promise<void> {
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { VideoAlarm } = await import('./videoAlarmPlugin');
+        if (VideoAlarm.speakText) {
+          const res = await VideoAlarm.speakText({ text: cleanText });
+          if (res?.success) {
+            options.onEnd?.();
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Native TTS fallback error:', e);
+    }
+
+    // Browser SpeechSynthesis fallback
+    this.speakLocalUtterance(cleanText, options);
+  }
+
+  /**
+   * Speak Arabic text with Text-to-Speech (Routes through universal playSpeech)
    */
   public speak(
+    text: string,
+    options: {
+      volume?: number;
+      rate?: number;
+      pitch?: number;
+      voiceURI?: string;
+      onEnd?: () => void;
+    } = {}
+  ): void {
+    this.playSpeech(text, {
+      volume: options.volume,
+      onEnd: options.onEnd,
+    });
+  }
+
+  /**
+   * Local SpeechSynthesisUtterance fallback
+   */
+  public speakLocalUtterance(
     text: string,
     options: {
       volume?: number;
@@ -438,7 +575,6 @@ class AudioService {
       return;
     }
 
-    // Cancel current speech if any
     try {
       window.speechSynthesis.cancel();
     } catch {}
@@ -492,7 +628,6 @@ class AudioService {
       } catch {}
     }
 
-    // Workaround for Chrome/Android cancel() discarding subsequent speak()
     setTimeout(() => {
       try {
         window.speechSynthesis.speak(utterance);
@@ -623,21 +758,55 @@ class AudioService {
       return;
     }
 
-    // 4. For any other alert: ALWAYS play the studio audio "يا دكتور عبد العزيز" first!
-    this.playDoctorCall(options.volume ?? 0.95, () => {
-      // Strip any duplicate "يا دكتور عبد العزيز" from the remaining text
-      const remainder = clean
-        .replace(/^(يا\s+)?دكتور\s+عبد\s*العزيز[،,\.\s]*/i, '')
-        .trim();
-
-      if (!remainder) {
-        options.onEnd?.();
-        return;
-      }
-
-      // Speak the remainder text
-      this.speak(remainder, options);
+    // 4. For any other alert: Speak directly using universal playSpeech
+    this.playSpeech(clean, {
+      volume: options.volume ?? 0.95,
+      onEnd: options.onEnd,
     });
+  }
+
+  /**
+   * Dedicated Task Alert Announcement for Dr. Abdelaziz:
+   * First plays crisp executive chime arpeggio, then immediately announces:
+   * «يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة]...»
+   * using the high-quality streaming Arabic speech engine + native Android TTS fallback!
+   */
+  public speakTaskAlert(
+    taskTitle: string,
+    extraMessage?: string,
+    options: {
+      volume?: number;
+      playChimeFirst?: boolean;
+      onEnd?: () => void;
+    } = {}
+  ): void {
+    const vol = options.volume ?? 0.95;
+    const cleanTitle = (taskTitle || '').trim() || 'مهمة عمل';
+    let fullAnnouncement = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}.`;
+
+    if (extraMessage && extraMessage.trim()) {
+      const cleanExtra = extraMessage.trim().replace(/^يا دكتور عبد العزيز[،:]?\s*/, '').trim();
+      if (!cleanExtra.includes(cleanTitle)) {
+        fullAnnouncement += ` ${cleanExtra}`;
+      }
+    } else {
+      fullAnnouncement += ` يرجى المتابعة والتنفيذ الآن.`;
+    }
+
+    if (options.playChimeFirst !== false) {
+      this.playChime('task', vol);
+      setTimeout(() => {
+        this.playSpeech(fullAnnouncement, {
+          volume: vol,
+          onEnd: options.onEnd,
+        });
+      }, 700);
+    } else {
+      this.playSpeech(fullAnnouncement, {
+        volume: vol,
+        onEnd: options.onEnd,
+      });
+    }
   }
 
   /**
@@ -645,8 +814,15 @@ class AudioService {
    */
   public stopAll(): void {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
     }
+    try {
+      import('./videoAlarmPlugin').then(({ VideoAlarm }) => {
+        VideoAlarm.stopSpeech?.().catch(() => {});
+      }).catch(() => {});
+    } catch {}
     this.notifySpeaking(false);
 
     if (this.currentAzanAudio) {

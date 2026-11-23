@@ -25,6 +25,8 @@ import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import android.speech.tts.TextToSpeech;
+import java.util.Locale;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -50,13 +52,69 @@ public class VideoAlarmPlugin extends Plugin {
 
     private static JSObject pendingLaunchPayload = null;
     private static long lastHandledLaunchTs = -1L;
+    private TextToSpeech nativeTts = null;
+    private boolean nativeTtsReady = false;
 
     @Override
     public void load() {
         super.load();
+        initNativeTts();
         if (getActivity() != null && getActivity().getIntent() != null) {
             handleIncomingIntent(getActivity().getIntent());
         }
+    }
+
+    private void initNativeTts() {
+        try {
+            nativeTts = new TextToSpeech(getContext(), status -> {
+                if (status == TextToSpeech.SUCCESS && nativeTts != null) {
+                    try {
+                        int res = nativeTts.setLanguage(new Locale("ar"));
+                        nativeTtsReady = (res != TextToSpeech.LANG_MISSING_DATA && res != TextToSpeech.LANG_NOT_SUPPORTED);
+                    } catch (Exception e) {
+                        nativeTtsReady = true;
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Log.w("VideoAlarmPlugin", "initNativeTts error: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void speakText(PluginCall call) {
+        String text = call.getString("text", "");
+        if (text == null || text.trim().isEmpty()) {
+            call.resolve();
+            return;
+        }
+
+        try {
+            if (nativeTts != null) {
+                nativeTts.stop();
+                nativeTts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "task_speech_" + System.currentTimeMillis());
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                call.resolve(ret);
+                return;
+            }
+        } catch (Exception e) {
+            Log.w("VideoAlarmPlugin", "speakText error: " + e.getMessage());
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("success", false);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void stopSpeech(PluginCall call) {
+        try {
+            if (nativeTts != null) {
+                nativeTts.stop();
+            }
+        } catch (Exception ignored) {}
+        call.resolve();
     }
 
     private void handleIncomingIntent(Intent intent) {

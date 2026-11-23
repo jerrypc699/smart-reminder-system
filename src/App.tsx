@@ -476,10 +476,11 @@ export function App() {
     return unsub;
   }, []);
 
-  // Save settings on change
+  // Save settings on change and reschedule native prayer alarms immediately
   useEffect(() => {
     try {
       localStorage.setItem(PRAYER_SETTINGS_KEY, JSON.stringify(prayerSettings));
+      NativeAlarmService.schedulePrayers(prayerSettings).catch(console.warn);
     } catch (e) {
       console.warn(e);
     }

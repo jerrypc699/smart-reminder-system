@@ -75,10 +75,10 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     task?.whatsapp?.recipients && task.whatsapp.recipients.length > 0
       ? task.whatsapp.recipients
       : task?.assignees && task.assignees.length > 0
-      ? task.assignees
-      : recipientName
-      ? [{ name: recipientName, phone: task?.whatsapp?.phoneNumber || '' }]
-      : [];
+        ? task.assignees
+        : recipientName
+          ? [{ name: recipientName, phone: task?.whatsapp?.phoneNumber || '' }]
+          : [];
 
   const groupDisplayName =
     task?.whatsapp?.groupName?.trim() ||
@@ -107,7 +107,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
       if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
         try {
           await (document as any).fonts.ready;
-        } catch {}
+        } catch { }
       }
       await new Promise((res) => setTimeout(res, 250));
       if (isCancelled || !cardRef.current) return;
@@ -177,7 +177,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
       if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
         try {
           await (document as any).fonts.ready;
-        } catch {}
+        } catch { }
       }
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,

@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.0.48';
+export const APP_VERSION = '1.0.49';
 export const APP_BUILD = 48;
 export const APP_RELEASE_DATE = '22 نوفمبر 2026';
 export const APP_VERSION_LABEL = `v${APP_VERSION} (Build ${APP_BUILD})`;

@@ -45,6 +45,8 @@ export const CITY_PRESETS: CityPreset[] = [
   { name: 'نيويورك', country: 'أمريكا', latitude: 40.7128, longitude: -74.006, method: 'NorthAmerica' },
 ];
 
+export const PRAYER_SETTINGS_KEY = 'smart_reminder_prayer_settings_v1';
+
 export const DEFAULT_PRAYER_SETTINGS: PrayerSettings = {
   cityName: 'القاهرة',
   countryName: 'مصر',
@@ -60,6 +62,39 @@ export const DEFAULT_PRAYER_SETTINGS: PrayerSettings = {
 };
 
 export class PrayerService {
+  /**
+   * Get active prayer settings from localStorage or fallback to defaults
+   */
+  public getSettings(): PrayerSettings {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = localStorage.getItem(PRAYER_SETTINGS_KEY);
+        if (saved) {
+          return { ...DEFAULT_PRAYER_SETTINGS, ...JSON.parse(saved) };
+        }
+      }
+    } catch (e) {
+      console.warn('[PrayerService] getSettings error:', e);
+    }
+    return DEFAULT_PRAYER_SETTINGS;
+  }
+
+  /**
+   * Save prayer settings to localStorage
+   */
+  public saveSettings(partial: Partial<PrayerSettings>): PrayerSettings {
+    const current = this.getSettings();
+    const updated: PrayerSettings = { ...current, ...partial };
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(PRAYER_SETTINGS_KEY, JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.warn('[PrayerService] saveSettings error:', e);
+    }
+    return updated;
+  }
+
   /**
    * Get Prayer Calculation Parameters based on settings
    */
@@ -105,7 +140,8 @@ export class PrayerService {
   /**
    * Calculate prayer times for today (Including Duha & Qiyam Al-Layl)
    */
-  public getPrayerTimes(date: Date = new Date(), settings: PrayerSettings = DEFAULT_PRAYER_SETTINGS) {
+  public getPrayerTimes(date: Date = new Date(), customSettings?: PrayerSettings) {
+    const settings = customSettings || this.getSettings();
     const coordinates = new Coordinates(settings.latitude, settings.longitude);
     const params = this.getParameters(settings);
     const prayerTimes = new PrayerTimes(coordinates, date, params);
@@ -135,11 +171,19 @@ export class PrayerService {
       const hours = isNaN(qhH) ? 2 : qhH;
       const mins = isNaN(qhM) ? 30 : qhM;
 
-      tonightQiyam = new Date(hours < 12 ? tomorrow : date);
-      tonightQiyam.setHours(hours, mins, 0, 0);
+      if (hours < 12) {
+        tonightQiyam = new Date(tomorrow);
+        tonightQiyam.setHours(hours, mins, 0, 0);
 
-      todayEarlyQiyam = new Date(date);
-      todayEarlyQiyam.setHours(hours, mins, 0, 0);
+        todayEarlyQiyam = new Date(date);
+        todayEarlyQiyam.setHours(hours, mins, 0, 0);
+      } else {
+        tonightQiyam = new Date(date);
+        tonightQiyam.setHours(hours, mins, 0, 0);
+
+        todayEarlyQiyam = new Date(date);
+        todayEarlyQiyam.setHours(0, 0, 0, 0);
+      }
     } else {
       const tonightDuration = tomorrowFajr.getTime() - prayerTimes.maghrib.getTime();
       tonightQiyam = new Date(prayerTimes.maghrib.getTime() + Math.round(tonightDuration * (2 / 3)));
@@ -150,8 +194,6 @@ export class PrayerService {
       const lastNightDuration = prayerTimes.fajr.getTime() - yesterdayPrayerTimes.maghrib.getTime();
       todayEarlyQiyam = new Date(yesterdayPrayerTimes.maghrib.getTime() + Math.round(lastNightDuration * (2 / 3)));
     }
-
-
 
     const prayers: { id: PrayerId; arabicName: string; time: Date }[] = [
       { id: 'fajr', arabicName: 'الفجر', time: prayerTimes.fajr },
@@ -166,12 +208,10 @@ export class PrayerService {
 
     // Find next prayer
     let nextPrayerIndex = -1;
-    let isEarlyMorningQiyam = false;
+    // Early morning before Fajr when early Qiyam has not yet arrived
+    const isEarlyMorningQiyam = now < prayerTimes.fajr && now < todayEarlyQiyam;
 
-    // Special case: early morning before Fajr when Qiyam has not yet arrived
-    if (now < todayEarlyQiyam) {
-      isEarlyMorningQiyam = true;
-    } else {
+    if (!isEarlyMorningQiyam) {
       for (let i = 0; i < prayers.length; i++) {
         if (prayers[i].time > now) {
           nextPrayerIndex = i;
@@ -181,14 +221,17 @@ export class PrayerService {
     }
 
     const prayerInfos: PrayerInfo[] = prayers.map((p, index) => {
-      const isPassed = p.time <= now;
-      const isNext = !isEarlyMorningQiyam && index === nextPrayerIndex;
+      const isCurrentQiyam = isEarlyMorningQiyam && p.id === 'qiyam';
+      const displayTime = isCurrentQiyam ? todayEarlyQiyam : p.time;
+      const isPassed = isCurrentQiyam ? false : displayTime <= now;
+      const isNext = isCurrentQiyam || (!isEarlyMorningQiyam && index === nextPrayerIndex);
+
       return {
         id: p.id,
         arabicName: p.arabicName,
-        time: p.time,
-        timeString: this.formatTime24h(p.time),
-        formatted12h: this.formatTime12h(p.time),
+        time: displayTime,
+        timeString: this.formatTime24h(displayTime),
+        formatted12h: this.formatTime12h(displayTime),
         isNext,
         isPassed,
       };

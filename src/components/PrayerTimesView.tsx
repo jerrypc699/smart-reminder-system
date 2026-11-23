@@ -26,9 +26,10 @@ import {
   Edit3
 } from 'lucide-react';
 import { PrayerInfo, PrayerSettings, PrayerId, CityPreset } from '../types';
-import { CITY_PRESETS } from '../services/prayerService';
+import { CITY_PRESETS, prayerService } from '../services/prayerService';
 import { weatherService, WeatherData } from '../services/weatherService';
 import { mobileBackgroundService } from '../services/mobileBackgroundService';
+import { NativeAlarmService } from '../services/nativeAlarmService';
 
 interface PrayerTimesViewProps {
   prayerTimes: PrayerInfo[];
@@ -104,6 +105,7 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
   // Custom Time Editing for Duha & Qiyam Al-Layl
   const [editingPrayerTarget, setEditingPrayerTarget] = useState<'duha' | 'qiyam' | null>(null);
   const [customTimeInput, setCustomTimeInput] = useState<string>('');
+  const [actionToast, setActionToast] = useState<string>('');
 
   // Push Notifications State
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -1153,20 +1155,25 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (editingPrayerTarget === 'duha') {
-                    setPrayerSettings((prev) => ({
-                      ...prev,
-                      duhaTimeMode: 'auto',
-                      duhaCustomTime: undefined,
-                    }));
-                  } else {
-                    setPrayerSettings((prev) => ({
-                      ...prev,
-                      qiyamTimeMode: 'auto',
-                      qiyamCustomTime: undefined,
-                    }));
-                  }
+                  const targetLabel = editingPrayerTarget === 'duha' ? 'صلاة الضحى' : 'قيام الليل والتهجد';
+                  const updated: PrayerSettings = editingPrayerTarget === 'duha'
+                    ? {
+                        ...prayerSettings,
+                        duhaTimeMode: 'auto',
+                        duhaCustomTime: undefined,
+                      }
+                    : {
+                        ...prayerSettings,
+                        qiyamTimeMode: 'auto',
+                        qiyamCustomTime: undefined,
+                      };
+
+                  setPrayerSettings(updated);
+                  prayerService.saveSettings(updated);
+                  NativeAlarmService.schedulePrayers(updated).catch(console.warn);
                   setEditingPrayerTarget(null);
+                  setActionToast(`✓ تم استرجاع التوقيت الشرعي التلقائي لـ ${targetLabel} وبرمجة منبه الهاتف بنجاح 🔄`);
+                  setTimeout(() => setActionToast(''), 4500);
                 }}
                 className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
               >
@@ -1177,20 +1184,25 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
                 type="button"
                 onClick={() => {
                   if (!customTimeInput) return;
-                  if (editingPrayerTarget === 'duha') {
-                    setPrayerSettings((prev) => ({
-                      ...prev,
-                      duhaTimeMode: 'custom',
-                      duhaCustomTime: customTimeInput,
-                    }));
-                  } else {
-                    setPrayerSettings((prev) => ({
-                      ...prev,
-                      qiyamTimeMode: 'custom',
-                      qiyamCustomTime: customTimeInput,
-                    }));
-                  }
+                  const targetLabel = editingPrayerTarget === 'duha' ? 'صلاة الضحى' : 'قيام الليل والتهجد';
+                  const updated: PrayerSettings = editingPrayerTarget === 'duha'
+                    ? {
+                        ...prayerSettings,
+                        duhaTimeMode: 'custom',
+                        duhaCustomTime: customTimeInput,
+                      }
+                    : {
+                        ...prayerSettings,
+                        qiyamTimeMode: 'custom',
+                        qiyamCustomTime: customTimeInput,
+                      };
+
+                  setPrayerSettings(updated);
+                  prayerService.saveSettings(updated);
+                  NativeAlarmService.schedulePrayers(updated).catch(console.warn);
                   setEditingPrayerTarget(null);
+                  setActionToast(`✓ تم ضبط توقيت ${targetLabel} على الساعة ${customTimeInput} وبرمجة منبه الهاتف بنجاح 🔔`);
+                  setTimeout(() => setActionToast(''), 4500);
                 }}
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
               >
@@ -1198,6 +1210,23 @@ export const PrayerTimesView: React.FC<PrayerTimesViewProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Action Feedback Toast */}
+      {actionToast && (
+        <div className="fixed top-20 left-4 right-4 z-50 max-w-md mx-auto p-4 rounded-2xl bg-emerald-600 text-white font-bold text-xs shadow-2xl shadow-emerald-950/60 border border-emerald-400/40 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />
+            <span className="leading-relaxed">{actionToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionToast('')}
+            className="p-1.5 rounded-xl hover:bg-emerald-700/80 text-emerald-100 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
-import type { Task, ScheduledMedia } from '../types';
+import type { Task, ScheduledMedia, PrayerSettings } from '../types';
+import { prayerService } from './prayerService';
 import {
   VideoAlarm,
   type NativeScheduledAlarmPayload,
@@ -206,9 +207,9 @@ export class NativeAlarmService {
   }
 
   /**
-   * Schedule Cairo prayer times and 5-min pre-alerts for 3 days in advance (IDs 1000 - 1999)
+   * Schedule prayer times, custom Duha & Qiyam, and pre-alerts for 3 days in advance (IDs 1000 - 1999)
    */
-  public static async schedulePrayers(): Promise<void> {
+  public static async schedulePrayers(customSettings?: PrayerSettings): Promise<void> {
     if (!this.isNative()) return;
     try {
       const pending = await LocalNotifications.getPending();
@@ -219,8 +220,7 @@ export class NativeAlarmService {
         });
       }
 
-      const coordinates = new Coordinates(CAIRO_LAT, CAIRO_LNG);
-      const params = CalculationMethod.Egyptian();
+      const settings: PrayerSettings = customSettings || prayerService.getSettings();
       const notificationsToSchedule: any[] = [];
       const now = new Date();
       let notifId = 1000;
@@ -230,34 +230,52 @@ export class NativeAlarmService {
         const targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + dayOffset);
 
-        const prayerTimes = new PrayerTimes(coordinates, targetDate, params);
+        const prayerCalc = prayerService.getPrayerTimes(targetDate, settings);
 
-        const tomorrow = new Date(targetDate);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowPrayerTimes = new PrayerTimes(coordinates, tomorrow, params);
-        const nightDuration = tomorrowPrayerTimes.fajr.getTime() - prayerTimes.maghrib.getTime();
-        const qiyamDate = new Date(prayerTimes.maghrib.getTime() + Math.round(nightDuration * (2 / 3)));
-        const duhaDate = new Date(prayerTimes.sunrise.getTime() + 20 * 60 * 1000);
+        // Find prayer objects (strictly respecting custom Duha & Qiyam timings)
+        const fajrTime = prayerCalc.prayers.find(p => p.id === 'fajr')?.time;
+        const duhaTime = prayerCalc.prayers.find(p => p.id === 'duha')?.time;
+        const dhuhrTime = prayerCalc.prayers.find(p => p.id === 'dhuhr')?.time;
+        const asrTime = prayerCalc.prayers.find(p => p.id === 'asr')?.time;
+        const maghribTime = prayerCalc.prayers.find(p => p.id === 'maghrib')?.time;
+        const ishaTime = prayerCalc.prayers.find(p => p.id === 'isha')?.time;
+        const qiyamTime = prayerCalc.prayers.find(p => p.id === 'qiyam')?.time;
 
-        const prayers = [
-          { id: 'fajr', name: 'الفجر', date: prayerTimes.fajr, isAzan: true },
-          { id: 'duha', name: 'صلاة الضحى', date: duhaDate, isAzan: false },
-          { id: 'dhuhr', name: 'الظهر', date: prayerTimes.dhuhr, isAzan: true },
-          { id: 'asr', name: 'العصر', date: prayerTimes.asr, isAzan: true },
-          { id: 'maghrib', name: 'المغرب', date: prayerTimes.maghrib, isAzan: true },
-          { id: 'isha', name: 'العشاء', date: prayerTimes.isha, isAzan: true },
-          { id: 'qiyam', name: 'صلاة قيام الليل والتهجد', date: qiyamDate, isAzan: false }
+        const dayPrayers = [
+          { id: 'fajr', name: 'الفجر', date: fajrTime, isAzan: true },
+          { id: 'duha', name: 'صلاة الضحى', date: duhaTime, isAzan: false },
+          { id: 'dhuhr', name: 'الظهر', date: dhuhrTime, isAzan: true },
+          { id: 'asr', name: 'العصر', date: asrTime, isAzan: true },
+          { id: 'maghrib', name: 'المغرب', date: maghribTime, isAzan: true },
+          { id: 'isha', name: 'العشاء', date: ishaTime, isAzan: true },
+          { id: 'qiyam', name: 'صلاة قيام الليل والتهجد', date: qiyamTime, isAzan: false }
         ];
 
-        for (const p of prayers) {
-          // 1. Pre-Azan Voice Alert (5 minutes before main prayers)
-          if (p.isAzan) {
-            const preDate = new Date(p.date.getTime() - 5 * 60 * 1000);
+        // For day 0 (today): if early morning Qiyam is today before Fajr and still in the future, include it!
+        if (dayOffset === 0 && prayerCalc.nextPrayer.id === 'qiyam') {
+          const earlyQiyamDate = prayerCalc.nextPrayer.time;
+          if (earlyQiyamDate.getTime() > now.getTime() && (!qiyamTime || earlyQiyamDate.getTime() !== qiyamTime.getTime())) {
+            dayPrayers.push({
+              id: 'qiyam_early',
+              name: 'صلاة قيام الليل والتهجد',
+              date: earlyQiyamDate,
+              isAzan: false
+            });
+          }
+        }
+
+        for (const p of dayPrayers) {
+          if (!p.date) continue;
+
+          // 1. Pre-Azan Voice Alert (if enabled in settings)
+          if (settings.enablePreAzanAlert) {
+            const preMins = settings.preAzanReminderMinutes || 5;
+            const preDate = new Date(p.date.getTime() - preMins * 60 * 1000);
             if (preDate.getTime() > now.getTime()) {
               notificationsToSchedule.push({
                 id: preNotifId++,
                 title: `اقترب موعد صلاة ${p.name} ⏳`,
-                body: `يا دكتور عبد العزيز، باقي 5 دقائق على موعد أذان ${p.name} حسب توقيت القاهرة.`,
+                body: `يا دكتور عبد العزيز، باقي ${preMins} دقائق على موعد ${p.name} بتوقيت ${settings.cityName}.`,
                 schedule: {
                   at: preDate,
                   allowWhileIdle: true
@@ -276,17 +294,20 @@ export class NativeAlarmService {
 
           // 2. Full Main Azan / Sunnah Prayer Alarm (Exact prayer time)
           if (p.date.getTime() > now.getTime()) {
+            const isDuha = p.id === 'duha';
+            const isQiyam = p.id === 'qiyam' || p.id === 'qiyam_early';
+
             const notifTitle = p.isAzan
               ? `حان الآن موعد أذان ${p.name} 🕌`
-              : p.id === 'duha'
+              : isDuha
               ? `حان الآن موعد صلاة الضحى ☀️`
               : `حان موعد صلاة قيام الليل والتهجد 🌌`;
 
             const notifBody = p.isAzan
-              ? `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${p.name} حسب توقيت القاهرة. تقبل الله منا ومنكم.`
-              : p.id === 'duha'
-              ? `يا دكتور عبد العزيز، حان موعد صلاة الضحى (صلاة الأوابين). ركعتان تجزئان عن صدقة يومك.`
-              : `يا دكتور عبد العزيز، الثلث الأخير من الليل وموعد قيام الليل واستجابة الدعاء. تقبل الله طاعتكم.`;
+              ? `الله أكبر.. يا دكتور عبد العزيز حان موعد صلاة ${p.name} بتوقيت ${settings.cityName}. تقبل الله منا ومنكم.`
+              : isDuha
+              ? `يا دكتور عبد العزيز، حان موعد صلاة الضحى (صلاة الأوابين) حسب توقيتك المخصص. ركعتان تجزئان عن صدقة يومك.`
+              : `يا دكتور عبد العزيز، حان موعد قيام الليل والتهجد واستجابة الدعاء حسب توقيتك المخصص. تقبل الله طاعتكم.`;
 
             notificationsToSchedule.push({
               id: notifId++,
@@ -313,7 +334,7 @@ export class NativeAlarmService {
         await LocalNotifications.schedule({
           notifications: notificationsToSchedule
         });
-        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} prayer and pre-azan alerts.`);
+        console.log(`[NativeAlarmService] Scheduled ${notificationsToSchedule.length} prayer and pre-azan alerts for ${settings.cityName}.`);
       }
     } catch (err) {
       console.error('[NativeAlarmService] schedulePrayers error:', err);

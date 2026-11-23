@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Calendar,
   CheckCircle2,
@@ -42,13 +42,19 @@ import {
   ChevronUp,
   Layers,
   ListFilter,
+  Film,
+  Video,
+  Play,
+  UploadCloud,
+  FolderPlus,
 } from 'lucide-react';
-import { Task } from '../types';
+import { Task, StoredMediaMeta } from '../types';
 import {
   dailySystemService,
   DailyRecord,
   DailySettings,
   HabitSubTaskDef,
+  SportVideoItem,
   MonthlyReview,
   calculateScore,
   isMinDay,
@@ -64,6 +70,9 @@ import {
 } from '../services/dailySystemService';
 import { audioService } from '../services/audioService';
 import { taskAttachmentService, formatAttachmentSize } from '../services/taskAttachmentService';
+import { audioStorageService } from '../services/audioStorageService';
+import { vercelCloudSync } from '../services/vercelCloudSync';
+import { VideoPlayerModal, VideoPreviewData } from './VideoPlayerModal';
 import { PdfExportModal } from './PdfExportModal';
 import { ImageLightboxModal } from './ImageLightboxModal';
 
@@ -151,6 +160,16 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   const [reportTasksFilter, setReportTasksFilter] = useState<'all' | 'month' | 'completed' | 'pending' | 'urgent'>('all');
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+
+  // Sports Videos States (Just like Media!)
+  const [activeSportVideo, setActiveSportVideo] = useState<VideoPreviewData | null>(null);
+  const [isUploadingSportVideo, setIsUploadingSportVideo] = useState<boolean>(false);
+  const [sportVideoUploadMsg, setSportVideoUploadMsg] = useState<string | null>(null);
+  const [isPickMediaModalOpen, setIsPickMediaModalOpen] = useState<boolean>(false);
+  const [editingSportVideoId, setEditingSportVideoId] = useState<string | null>(null);
+  const [renameSportVideoInput, setRenameSportVideoInput] = useState<string>('');
+  const [isSportVideosExpanded, setIsSportVideosExpanded] = useState<boolean>(true);
+  const sportVideoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Toast feedback
   const [toastMsg, setToastMsg] = useState<string>('');
@@ -727,6 +746,354 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   </div>
                 );
               })
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // --- Sports Videos Helpers & Section ---
+  const formatVideoDuration = (seconds?: number): string => {
+    if (!seconds || seconds <= 0) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleUploadSportVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingSportVideo(true);
+    setSportVideoUploadMsg('جاري حفظ ملف الفيديو واستخراج الخصائص...');
+
+    try {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      const meta = await audioStorageService.saveMediaFile(file, cleanName, 'custom');
+
+      const added = dailySystemService.addSportVideo({
+        id: meta.id,
+        name: meta.name,
+        mediaId: meta.id,
+        cloudUrl: meta.cloudUrl,
+        duration: meta.duration,
+        size: meta.size,
+        thumbnail: meta.thumbnail,
+        createdAt: meta.createdAt,
+      });
+
+      // Background upload to Vercel Cloud Sync for multi-device sync
+      vercelCloudSync
+        .uploadMediaFile(file, meta.name, undefined, 'media')
+        .then((cloudUrl) => {
+          if (cloudUrl) {
+            dailySystemService.updateSportVideo(added.id, { cloudUrl });
+          }
+        })
+        .catch((err) => {
+          console.warn('Sport video background cloud sync skipped/failed:', err);
+        });
+
+      showToast(`✓ تم حفظ فيديو التمرين "${meta.name}" بنجاح!`);
+      audioService.playChime('success', 0.5);
+    } catch (err: any) {
+      console.error('Error uploading sport video:', err);
+      showToast('تعذر حفظ الفيديو، يرجى المحاولة مرة أخرى.');
+      audioService.playChime('click', 0.5);
+    } finally {
+      setIsUploadingSportVideo(false);
+      setSportVideoUploadMsg(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handlePickMediaVideo = (media: StoredMediaMeta) => {
+    const list = dailySystemService.getSportVideos();
+    const already = list.find((v) => v.mediaId === media.id);
+    if (already) {
+      showToast('هذا الفيديو مضاف بالفعل في قائمة الرياضة');
+      return;
+    }
+
+    dailySystemService.addSportVideo({
+      id: `sport_vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name: media.name,
+      mediaId: media.id,
+      cloudUrl: media.cloudUrl,
+      duration: media.duration,
+      size: media.size,
+      thumbnail: media.thumbnail,
+      createdAt: new Date().toISOString(),
+    });
+
+    showToast(`✓ تمت إضافة "${media.name}" من مكتبة الوسائط بنجاح!`);
+    audioService.playChime('click', 0.4);
+    setIsPickMediaModalOpen(false);
+  };
+
+  const handlePlaySportVideo = async (video: SportVideoItem) => {
+    let playUrl: string | null = video.cloudUrl || null;
+    if (video.mediaId) {
+      try {
+        const objUrl = await audioStorageService.getMediaObjectUrl(video.mediaId, video.cloudUrl);
+        if (objUrl) playUrl = objUrl;
+      } catch (e) {
+        console.warn('Error loading media object url:', e);
+      }
+    }
+
+    if (!playUrl) {
+      showToast('عذراً، لم نتمكن من تشغيل هذا الفيديو (الملف غير متاح حالياً)');
+      audioService.playChime('click', 0.4);
+      return;
+    }
+
+    setActiveSportVideo({
+      url: playUrl,
+      title: video.name,
+      size: video.size,
+    });
+  };
+
+  const handleDeleteSportVideo = (video: SportVideoItem) => {
+    dailySystemService.deleteSportVideo(video.id);
+    showToast(`تم حذف فيديو "${video.name}" من قائمة الرياضة`);
+    audioService.playChime('click', 0.3);
+  };
+
+  const handleSaveRenameSportVideo = (id: string) => {
+    const newName = renameSportVideoInput.trim();
+    if (newName) {
+      dailySystemService.updateSportVideo(id, { name: newName });
+      showToast('✓ تم تعديل اسم الفيديو');
+      audioService.playChime('click', 0.3);
+    }
+    setEditingSportVideoId(null);
+  };
+
+  const handleAddVideoTimeToSport = (video: SportVideoItem) => {
+    const mins = Math.max(5, Math.ceil((video.duration || 600) / 60));
+    handleStep('sport', 1, mins);
+    showToast(`✓ تم احتساب ${mins} دقيقة تمرين في سجلك اليومي! أحسنت يا دكتور! 💪`);
+    audioService.playChime('success', 0.6);
+  };
+
+  const renderSportVideosSection = () => {
+    const sportVideos = dailySystemService.getSportVideos();
+
+    return (
+      <div className="mt-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-3 space-y-3 transition-all">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsSportVideosExpanded((prev) => !prev)}
+            className="flex items-center gap-2 text-right group cursor-pointer"
+          >
+            <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 group-hover:scale-105 transition-transform">
+              <Film className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-emerald-300">
+                  فيديوهات التمارين والرياضة
+                </span>
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">
+                  {sportVideos.length} فيديو
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 block">
+                تدرّب مع مقاطعك مباشرة واحتسب وقتها تلقائياً باليوم
+              </span>
+            </div>
+            <div className="text-emerald-400 mr-1">
+              {isSportVideosExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 mr-auto">
+            <label
+              className={`px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer shadow-md shadow-emerald-950/40 transition-all ${
+                isUploadingSportVideo ? 'opacity-60 pointer-events-none' : ''
+              }`}
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>{isUploadingSportVideo ? 'جاري الرفع...' : 'رفع فيديو'}</span>
+              <input
+                ref={sportVideoFileInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleUploadSportVideo}
+                className="hidden"
+                disabled={isUploadingSportVideo}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setIsPickMediaModalOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+              title="اختيار من مقاطع الفيديو الموجودة في مكتبة الوسائط"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+              <span>من الوسائط</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Upload Status Feedback */}
+        {isUploadingSportVideo && sportVideoUploadMsg && (
+          <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2 animate-pulse">
+            <div className="w-4 h-4 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin shrink-0" />
+            <span>{sportVideoUploadMsg}</span>
+          </div>
+        )}
+
+        {/* Video Cards Grid */}
+        {isSportVideosExpanded && (
+          <div className="space-y-2 pt-1">
+            {sportVideos.length === 0 ? (
+              <div className="text-center py-5 px-3 rounded-xl border border-dashed border-emerald-500/20 bg-slate-950/40">
+                <Video className="w-8 h-8 text-emerald-400/40 mx-auto mb-1.5" />
+                <p className="text-xs text-slate-300 font-bold mb-0.5">
+                  لا توجد فيديوهات تمارين مضافة بعد
+                </p>
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto mb-3">
+                  يمكنك رفع مقاطع تمارينك المفضلة مباشرة أو إدراجها من مكتبة الوسائط لتشغيلها والتدرب معها!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => sportVideoFileInputRef.current?.click()}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>رفع أول فيديو تمرين</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {sportVideos.map((vid) => {
+                  const estMins = Math.max(5, Math.ceil((vid.duration || 600) / 60));
+                  const isEditingThis = editingSportVideoId === vid.id;
+
+                  return (
+                    <div
+                      key={vid.id}
+                      className="p-2.5 rounded-xl bg-slate-950/70 border border-emerald-500/20 hover:border-emerald-500/40 transition-all flex flex-col justify-between gap-2"
+                    >
+                      {/* Top Info */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => handlePlaySportVideo(vid)}
+                            className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center text-emerald-300 shrink-0 cursor-pointer transition-transform hover:scale-105"
+                            title="تشغيل الفيديو"
+                          >
+                            <Play className="w-4 h-4 fill-emerald-300" />
+                          </button>
+
+                          <div className="min-w-0 flex-1">
+                            {isEditingThis ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={renameSportVideoInput}
+                                  onChange={(e) => setRenameSportVideoInput(e.target.value)}
+                                  className="w-full px-2 py-0.5 text-xs rounded bg-slate-900 border border-emerald-500 text-white focus:outline-none"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveRenameSportVideo(vid.id);
+                                    if (e.key === 'Escape') setEditingSportVideoId(null);
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveRenameSportVideo(vid.id)}
+                                  className="p-1 rounded bg-emerald-500/30 text-emerald-200 hover:bg-emerald-500/50 text-[10px] font-bold"
+                                >
+                                  حفظ
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-bold text-white truncate block">
+                                  {vid.name}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                              {vid.duration ? (
+                                <span className="font-mono text-emerald-400/90 font-bold">
+                                  {formatVideoDuration(vid.duration)}
+                                </span>
+                              ) : null}
+                              {vid.size ? (
+                                <>
+                                  <span>•</span>
+                                  <span>{formatAttachmentSize(vid.size)}</span>
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Edit & Delete actions */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isEditingThis) {
+                                handleSaveRenameSportVideo(vid.id);
+                              } else {
+                                setEditingSportVideoId(vid.id);
+                                setRenameSportVideoInput(vid.name);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors"
+                            title="إعادة تسمية الفيديو"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSportVideo(vid)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            title="حذف هذا الفيديو من قائمة الرياضة"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bottom Quick Actions */}
+                      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-800/80">
+                        <button
+                          type="button"
+                          onClick={() => handlePlaySportVideo(vid)}
+                          className="flex-1 py-1 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Play className="w-3 h-3 fill-emerald-300" />
+                          <span>تشغيل وتمرين</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddVideoTimeToSport(vid)}
+                          className="py-1 px-2 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          title="إضافة مدة هذا التمرين إلى هدف الرياضة اليومي"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>+ احتساب ({estMins} د)</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -1995,6 +2362,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       </div>
                     </div>
                     {renderHabitSubTasks('item_sport', 'الرياضة والحركة', 'emerald')}
+                    {renderSportVideosSection()}
                   </div>
                 )}
 
@@ -4345,6 +4713,122 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
       {/* Lightbox Preview for Image Attachments */}
       <ImageLightboxModal image={previewImage} onClose={() => setPreviewImage(null)} />
+
+      {/* Video Player Modal for Sports Videos */}
+      <VideoPlayerModal video={activeSportVideo} onClose={() => setActiveSportVideo(null)} />
+
+      {/* Pick Video from Media Library Modal */}
+      {isPickMediaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 rounded-3xl p-5 shadow-2xl space-y-4 text-right">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
+                  <Film className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">إضافة فيديو من مكتبة الوسائط</h3>
+                  <p className="text-[11px] text-slate-400">اختر فيديو تمرين من مقاطعك المحفوظة</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPickMediaModalOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
+              {(() => {
+                const storedVideos = audioStorageService.getMetaRegistry().filter((m: StoredMediaMeta) => m.mediaType === 'video');
+                const existingMediaIds = new Set((dailySystemService.getSportVideos() || []).map((v) => v.mediaId));
+
+                if (storedVideos.length === 0) {
+                  return (
+                    <div className="text-center py-8 px-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                      <Film className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-300 mb-1">
+                        لا توجد مقاطع فيديو في مكتبة الوسائط
+                      </p>
+                      <p className="text-[11px] text-slate-500 mb-3">
+                        يمكنك رفع فيديو جديد مباشرة من قسم الرياضة
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPickMediaModalOpen(false);
+                          sportVideoFileInputRef.current?.click();
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>رفع فيديو الآن</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return storedVideos.map((m) => {
+                  const isAlreadyAdded = existingMediaIds.has(m.id);
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 flex items-center justify-between gap-2 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                          <Film className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-white block truncate">{m.name}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {formatVideoDuration(m.duration)} {m.size ? `• ${formatAttachmentSize(m.size)}` : ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={isAlreadyAdded}
+                        onClick={() => handlePickMediaVideo(m)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1 transition-all ${
+                          isAlreadyAdded
+                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-md shadow-emerald-900/40'
+                        }`}
+                      >
+                        {isAlreadyAdded ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>مضاف</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>إضافة للرياضة</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsPickMediaModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

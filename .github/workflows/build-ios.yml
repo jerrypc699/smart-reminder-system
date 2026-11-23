@@ -48,31 +48,34 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.52.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.52.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.53.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.53.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.52.ipa
-          path: DrAbdelaziz-Reminder-v1.0.52.ipa
+          name: DrAbdelaziz-Reminder-v1.0.53.ipa
+          path: DrAbdelaziz-Reminder-v1.0.53.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.52
+      - name: Attach IPA to GitHub Release v1.0.53
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.52
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.52"
+          tag_name: v1.0.53
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.53"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.52
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.53
             
             التحديثات الجديدة:
-            - إصلاح جذري لنطق اسم المهمة بصوت عالي وواضح فور حلول الموعد
-            - تزويد التطبيق بمحرك نطق صوتي متقدم بتقنية البث الصوتي الفصيح المباشر (Google TTS Audio Streaming)
-            - تشغيل رنة التنبيه العذبة متبوعة فوراً بقراءة صريحة لاسم المهمة: «يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة]»
+            - إضافة قسم «فيديوهات التمارين والرياضة» داخل نظامي تحت بند الرياضة والحركة
+            - إمكانية رفع مقاطع فيديو التمارين مباشرة وحفظها محلياً وسحابياً
+            - إمكانية اختيار مقاطع الفيديو من مكتبة الوسائط وإدراجها بضغطة زر
+            - مشغل فيديو داخلي بدقة فائقة لمشاهدة التمارين والتدرّب معها مباشرة داخل التطبيق
+            - إمكانية إعادة تسمية فيديوهات الرياضة وحذفها بكل سهولة
+            - زر احتساب وقت التمرين تلقائياً وإضافته للدقائق المنجزة اليومية
           files: |
-            DrAbdelaziz-Reminder-v1.0.52.ipa
+            DrAbdelaziz-Reminder-v1.0.53.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,7 +87,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.52.ipa
+            DrAbdelaziz-Reminder-v1.0.53.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

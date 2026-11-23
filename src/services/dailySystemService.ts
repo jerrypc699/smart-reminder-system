@@ -93,6 +93,17 @@ export interface CustomNotePrompt {
   placeholder?: string;
 }
 
+export interface SportVideoItem {
+  id: string;
+  name: string;
+  mediaId?: string; // linked to audioStorageService ID
+  cloudUrl?: string;
+  duration?: number;
+  size?: number;
+  thumbnail?: string;
+  createdAt: string;
+}
+
 export interface DailyRecord {
   date: string; // YYYY-MM-DD
   prayers: DailyPrayers;
@@ -127,6 +138,7 @@ export interface DailySettings {
   customNotePrompts?: CustomNotePrompt[];
   builtInSchedules?: Record<string, BuiltInItemSchedule>;
   habitSubTasks?: Record<string, HabitSubTaskDef[]>;
+  sportVideos?: SportVideoItem[];
 }
 
 export interface MonthlyReview {
@@ -186,6 +198,7 @@ export const DEFAULT_DAILY_SETTINGS: DailySettings = {
   customNotePrompts: [],
   builtInSchedules: {},
   habitSubTasks: {},
+  sportVideos: [],
 };
 
 export const STORAGE_KEY = 'dr_abdelaziz_daily_system_v1';
@@ -749,7 +762,42 @@ class DailySystemService {
       customHabits: [...(this.settings.customHabits || [])],
       customNotePrompts: [...(this.settings.customNotePrompts || [])],
       builtInSchedules: { ...(this.settings.builtInSchedules || {}) },
+      sportVideos: [...(this.settings.sportVideos || [])],
     };
+  }
+
+  public getSportVideos(): SportVideoItem[] {
+    return this.settings.sportVideos || [];
+  }
+
+  public addSportVideo(
+    video: Omit<SportVideoItem, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
+  ): SportVideoItem {
+    const newVideo: SportVideoItem = {
+      id: video.id || `sport_vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name: video.name,
+      mediaId: video.mediaId,
+      cloudUrl: video.cloudUrl,
+      duration: video.duration,
+      size: video.size,
+      thumbnail: video.thumbnail,
+      createdAt: video.createdAt || new Date().toISOString(),
+    };
+    const list = [...(this.settings.sportVideos || []), newVideo];
+    this.updateSettings({ sportVideos: list });
+    return newVideo;
+  }
+
+  public updateSportVideo(id: string, updates: Partial<SportVideoItem>): void {
+    const list = (this.settings.sportVideos || []).map((v) =>
+      v.id === id ? { ...v, ...updates } : v
+    );
+    this.updateSettings({ sportVideos: list });
+  }
+
+  public deleteSportVideo(id: string): void {
+    const list = (this.settings.sportVideos || []).filter((v) => v.id !== id);
+    this.updateSettings({ sportVideos: list });
   }
 
   public updateSettings(newSettings: Partial<DailySettings>) {

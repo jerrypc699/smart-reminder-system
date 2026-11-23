@@ -7,16 +7,21 @@ import {
   dailySystemService,
   calculateScore,
   calculateMonthStats,
+  calculatePeriodStats,
+  parseDateKey,
+  isMinDay,
   CATEGORIES_LIST,
 } from './dailySystemService';
 import { formatAttachmentSize } from './taskAttachmentService';
 
 export interface PdfReportOptions {
   reportTitle: string;
-  scope: 'comprehensive' | 'daily_and_tasks' | 'tasks_only';
+  scope: 'comprehensive' | 'daily_and_tasks' | 'tasks_only' | 'specific_day' | 'date_range';
   selectedTasks: Task[];
   currentDateKey: string;
   currentMonthKey: string;
+  startDateKey?: string;
+  endDateKey?: string;
   includeDailySystemStats: boolean;
   includeReflections: boolean;
   includeAttachmentsDetails: boolean;
@@ -228,16 +233,20 @@ export async function generateExecutivePdfReport(
   // Daily System HTML Block
   let systemSummaryHtml = '';
   if (showSystemSection) {
-    if (scope === 'daily_and_tasks') {
+    if (scope === 'daily_and_tasks' || scope === 'specific_day') {
+      const targetDateKey = currentDateKey;
+      const targetDayRecord = dailySystemService.getDay(targetDateKey);
+      const targetDayScore = calculateScore(targetDayRecord, settings);
+
       const pdfCats = [
         ...CATEGORIES_LIST,
-        ...(dayScore.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'عادات مخصصة', max: dayScore.maxByCat.custom }] : []),
+        ...(targetDayScore.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'عادات مخصصة', max: targetDayScore.maxByCat.custom }] : []),
       ];
       const catBarsHtml = pdfCats
         .map(({ key, label, max }) => {
-          const effectiveMax = dayScore.maxByCat?.[key] ?? max;
+          const effectiveMax = targetDayScore.maxByCat?.[key] ?? max;
           if (!effectiveMax || effectiveMax <= 0) return '';
-          const val = Math.round(dayScore.c[key] || 0);
+          const val = Math.round(targetDayScore.c[key] || 0);
           const pct = Math.round((val / effectiveMax) * 100);
           return `
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
@@ -254,8 +263,8 @@ export async function generateExecutivePdfReport(
       systemSummaryHtml = `
         <div style="margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: #f8fafc; border: 1px solid #cbd5e1;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-            <h3 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #0f172a;">📊 ملخص التزام نظامي ليوم (${escapeHtml(currentDateKey)})</h3>
-            <span style="padding: 3px 10px; border-radius: 99px; background: #d1fae5; color: #047857; font-size: 11px; font-weight: 800;">النتيجة: ${dayScore.total} / 100 نقطة</span>
+            <h3 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #0f172a;">📊 ملخص التزام نظامي ليوم (${escapeHtml(targetDateKey)})</h3>
+            <span style="padding: 3px 10px; border-radius: 99px; background: #d1fae5; color: #047857; font-size: 11px; font-weight: 800;">النتيجة: ${targetDayScore.total} / 100 نقطة</span>
           </div>
           <div style="display: flex; gap: 16px; align-items: flex-start;">
             <div style="flex: 1;">${catBarsHtml}</div>
@@ -263,25 +272,146 @@ export async function generateExecutivePdfReport(
               <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                 <div style="flex: 1; padding: 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0;">
                   <div style="font-size: 9.5px; color: #64748b;">القرآن</div>
-                  <div style="font-size: 13px; font-weight: 800; color: #4338ca;">${dayRecord.quran} صفحة</div>
+                  <div style="font-size: 13px; font-weight: 800; color: #4338ca;">${targetDayRecord.quran} صفحة</div>
                 </div>
                 <div style="flex: 1; padding: 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0;">
                   <div style="font-size: 9.5px; color: #64748b;">الرياضة</div>
-                  <div style="font-size: 13px; font-weight: 800; color: #059669;">${dayRecord.sport} دقيقة</div>
+                  <div style="font-size: 13px; font-weight: 800; color: #059669;">${targetDayRecord.sport} دقيقة</div>
                 </div>
               </div>
               <div style="display: flex; gap: 8px;">
                 <div style="flex: 1; padding: 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0;">
                   <div style="font-size: 9.5px; color: #64748b;">التعلّم</div>
-                  <div style="font-size: 13px; font-weight: 800; color: #7c3aed;">${dayRecord.study} دقيقة</div>
+                  <div style="font-size: 13px; font-weight: 800; color: #7c3aed;">${targetDayRecord.study} دقيقة</div>
                 </div>
                 <div style="flex: 1; padding: 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0;">
                   <div style="font-size: 9.5px; color: #64748b;">النوم والماء</div>
-                  <div style="font-size: 12px; font-weight: 800; color: #0284c7;">${dayRecord.sleep}س • ${dayRecord.water} كوب</div>
+                  <div style="font-size: 12px; font-weight: 800; color: #0284c7;">${targetDayRecord.sleep}س • ${targetDayRecord.water} كوب</div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      `;
+    } else if (scope === 'date_range') {
+      const sDate = options.startDateKey || currentDateKey;
+      const eDate = options.endDateKey || currentDateKey;
+      const periodStats = calculatePeriodStats(sDate, eDate, allDays, settings);
+
+      const pdfCats = [
+        ...CATEGORIES_LIST,
+        ...(periodStats.logged[0]?.s.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'عادات مخصصة', max: periodStats.logged[0]?.s.maxByCat.custom }] : []),
+      ];
+
+      const catBarsHtml = pdfCats
+        .map(({ key, label }) => {
+          const pct = Math.round(periodStats.cats[key] || 0);
+          return `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+              <span style="width: 72px; font-size: 10px; font-weight: 700; color: #334155;">${escapeHtml(label)}</span>
+              <div style="flex: 1; height: 7px; border-radius: 99px; background: #e2e8f0; overflow: hidden;">
+                <div style="width: ${pct}%; height: 100%; background: #059669; border-radius: 99px;"></div>
+              </div>
+              <span style="width: 34px; font-size: 10px; font-weight: 800; color: #0f172a; text-align: left;">${pct}%</span>
+            </div>
+          `;
+        })
+        .join('');
+
+      const periodDaysRows = periodStats.logged
+        .slice(0, 31)
+        .map((item, idx) => {
+          const rowBg = idx % 2 === 1 ? '#f8fafc' : '#ffffff';
+          const dt = parseDateKey(item.id);
+          const dayName = dt.toLocaleDateString('ar-EG', { weekday: 'short' });
+          const isMin = isMinDay(item.d, settings);
+
+          return `
+            <tr style="background: ${rowBg}; font-size: 10px; text-align: center;">
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0; font-weight: 700; color: #1e293b;">
+                ${escapeHtml(item.id)} (${escapeHtml(dayName)})
+              </td>
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0; font-weight: 800; color: ${item.s.total >= 70 ? '#047857' : '#b45309'};">
+                ${item.s.total} / 100
+              </td>
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0; color: #4338ca; font-weight: 700;">
+                ${item.d.quran > 0 ? `${item.d.quran} ص` : '—'}
+              </td>
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0; color: #059669; font-weight: 700;">
+                ${item.d.sport > 0 ? `${item.d.sport} د` : '—'}
+              </td>
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0; color: #7c3aed; font-weight: 700;">
+                ${item.d.study > 0 ? `${item.d.study} د` : '—'}
+              </td>
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0; color: #0284c7; font-weight: 600;">
+                ${item.d.water || 0} ك • ${item.d.sleep || 0}س
+              </td>
+              <td style="padding: 5px 6px; border: 1px solid #e2e8f0;">
+                ${isMin ? '<span style="color: #059669; font-weight: 700;">✓ التزام تام</span>' : '<span style="color: #64748b;">عادي</span>'}
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      const daysTableHtml = periodStats.logged.length > 0 ? `
+        <div style="margin-top: 10px;">
+          <h4 style="margin: 0 0 6px 0; font-size: 11px; font-weight: 800; color: #0f172a;">سجل أيام الفترة بالتفصيل (${periodStats.logged.length} يوم مسجل):</h4>
+          <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+            <thead>
+              <tr style="background: #1e293b; color: #ffffff;">
+                <th style="padding: 5px 6px; border: 1px solid #334155;">التاريخ</th>
+                <th style="padding: 5px 6px; border: 1px solid #334155;">النقاط</th>
+                <th style="padding: 5px 6px; border: 1px solid #334155;">القرآن</th>
+                <th style="padding: 5px 6px; border: 1px solid #334155;">الرياضة</th>
+                <th style="padding: 5px 6px; border: 1px solid #334155;">التعلّم</th>
+                <th style="padding: 5px 6px; border: 1px solid #334155;">الماء والنوم</th>
+                <th style="padding: 5px 6px; border: 1px solid #334155;">الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${periodDaysRows}
+            </tbody>
+          </table>
+        </div>
+      ` : '';
+
+      systemSummaryHtml = `
+        <div style="margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: #f8fafc; border: 1px solid #cbd5e1;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #0f172a;">
+              📅 مؤشرات أداء الفترة (${escapeHtml(periodStats.startDate)} إلى ${escapeHtml(periodStats.endDate)})
+            </h3>
+            <span style="padding: 3px 10px; border-radius: 99px; background: #d1fae5; color: #047857; font-size: 11px; font-weight: 800;">
+              متوسط الالتزام: ${Math.round(periodStats.avg)} / 100 (${periodStats.n} يوم مسجل من ${periodStats.totalDays})
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
+              <div style="font-size: 9px; color: #64748b;">صلوات بوقتها</div>
+              <div style="font-size: 13px; font-weight: 900; color: #059669;">${Math.round(periodStats.onTime)}%</div>
+            </div>
+            <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
+              <div style="font-size: 9px; color: #64748b;">إجمالي القرآن</div>
+              <div style="font-size: 13px; font-weight: 900; color: #4338ca;">${periodStats.quran} ص</div>
+            </div>
+            <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
+              <div style="font-size: 9px; color: #64748b;">إجمالي الرياضة</div>
+              <div style="font-size: 13px; font-weight: 900; color: #059669;">${periodStats.sportMin} د</div>
+            </div>
+            <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
+              <div style="font-size: 9px; color: #64748b;">ساعات التعلّم</div>
+              <div style="font-size: 13px; font-weight: 900; color: #7c3aed;">${periodStats.studyH.toFixed(1)}س</div>
+            </div>
+            <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
+              <div style="font-size: 9px; color: #64748b;">أيام الحد الأدنى</div>
+              <div style="font-size: 13px; font-weight: 900; color: #d97706;">${periodStats.minDays} يوم</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 8px;">${catBarsHtml}</div>
+          ${daysTableHtml}
         </div>
       `;
     } else {
@@ -343,7 +473,7 @@ export async function generateExecutivePdfReport(
   // Reflections Block (optional)
   let reflectionsHtml = '';
   if (includeReflections && scope !== 'tasks_only') {
-    const notesPairs = scope === 'daily_and_tasks'
+    const notesPairs = (scope === 'daily_and_tasks' || scope === 'specific_day')
       ? [
         { label: 'أبرز إنجازات اليوم', val: dayRecord.notes.good },
         { label: 'المعوقات', val: dayRecord.notes.block },
@@ -473,7 +603,12 @@ export async function generateExecutivePdfReport(
       doc.addImage(imgData, 'JPEG', 0, 0, pageWidthMm, renderedH, undefined, 'FAST');
     }
 
-    const fileName = `تقرير_${scope === 'tasks_only' ? 'مهام_العمل' : 'نظامي'}_${getLocalDateStr(now)}.pdf`;
+    let fileNameScope = 'نظامي';
+    if (scope === 'tasks_only') fileNameScope = 'مهام_العمل';
+    else if (scope === 'specific_day' || scope === 'daily_and_tasks') fileNameScope = `يوم_${currentDateKey}`;
+    else if (scope === 'date_range') fileNameScope = `فترة_${options.startDateKey || 'بدء'}_إلى_${options.endDateKey || 'انتهاء'}`;
+
+    const fileName = `تقرير_${fileNameScope}_${getLocalDateStr(now)}.pdf`;
 
     if (NativeAlarmService.isAndroidNative()) {
       const dataUri = doc.output('datauristring');

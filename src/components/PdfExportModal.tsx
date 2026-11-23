@@ -13,11 +13,14 @@ import {
   Award,
   Briefcase,
   AlertCircle,
-  Users
+  Users,
+  Calendar,
+  Layers,
 } from 'lucide-react';
 import type { Task, Employee } from '../types';
 import { getLocalDateStr, NativeAlarmService } from '../services/nativeAlarmService';
 import { generateExecutivePdfReport } from '../services/pdfReportService';
+import { dailySystemService, calculateScore, formatDateKey } from '../services/dailySystemService';
 
 interface PdfExportModalProps {
   isOpen: boolean;
@@ -25,7 +28,9 @@ interface PdfExportModalProps {
   tasks: Task[];
   currentDateKey?: string;
   currentMonthKey?: string;
-  defaultScope?: 'comprehensive' | 'daily_and_tasks' | 'tasks_only';
+  defaultScope?: 'comprehensive' | 'daily_and_tasks' | 'tasks_only' | 'specific_day' | 'date_range';
+  initialStartDateKey?: string;
+  initialEndDateKey?: string;
   employees?: Employee[];
   initialEmployeeId?: string;
 }
@@ -39,11 +44,23 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   currentDateKey = getLocalDateStr(),
   currentMonthKey = getLocalDateStr().slice(0, 7),
   defaultScope = 'comprehensive',
+  initialStartDateKey,
+  initialEndDateKey,
   employees = [],
   initialEmployeeId,
 }) => {
-  const [scope, setScope] = useState<'comprehensive' | 'daily_and_tasks' | 'tasks_only'>(defaultScope);
+  const [scope, setScope] = useState<'comprehensive' | 'daily_and_tasks' | 'tasks_only' | 'specific_day' | 'date_range'>(defaultScope);
   const [reportTitle, setReportTitle] = useState('التقرير الشامل — نظامي اليومي ومهام العمل');
+  const [selectedDayKey, setSelectedDayKey] = useState<string>(currentDateKey);
+  const [startDateKey, setStartDateKey] = useState<string>(() => {
+    if (initialStartDateKey) return initialStartDateKey;
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return getLocalDateStr(d);
+  });
+  const [endDateKey, setEndDateKey] = useState<string>(initialEndDateKey || currentDateKey);
+  const [rangePreset, setRangePreset] = useState<'last7' | 'last14' | 'this_week' | 'this_month' | 'last_month' | 'custom'>('last7');
+
   const [selectionMode, setSelectionMode] = useState<TaskSelectionMode>('all');
   const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState<string>(initialEmployeeId || '');
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() => new Set(tasks.map((t) => t.id)));
@@ -55,6 +72,42 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const isAndroidNative = NativeAlarmService.isAndroidNative();
+
+  const applyRangePreset = (preset: 'last7' | 'last14' | 'this_week' | 'this_month' | 'last_month') => {
+    const today = new Date();
+    const todayStr = getLocalDateStr(today);
+    let s = todayStr;
+    let e = todayStr;
+
+    if (preset === 'last7') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 6);
+      s = getLocalDateStr(past);
+    } else if (preset === 'last14') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 13);
+      s = getLocalDateStr(past);
+    } else if (preset === 'this_week') {
+      const off = (today.getDay() + 1) % 7; // Saturday first
+      const sat = new Date(today);
+      sat.setDate(sat.getDate() - off);
+      s = getLocalDateStr(sat);
+    } else if (preset === 'this_month') {
+      s = `${todayStr.slice(0, 7)}-01`;
+    } else if (preset === 'last_month') {
+      const [y, m] = todayStr.split('-').map(Number);
+      const prevM = m === 1 ? 12 : m - 1;
+      const prevY = m === 1 ? y - 1 : y;
+      const daysInPrev = new Date(prevY, prevM, 0).getDate();
+      s = `${prevY}-${String(prevM).padStart(2, '0')}-01`;
+      e = `${prevY}-${String(prevM).padStart(2, '0')}-${String(daysInPrev).padStart(2, '0')}`;
+    }
+
+    setStartDateKey(s);
+    setEndDateKey(e);
+    setRangePreset(preset);
+    setReportTitle(`تقرير أداء نظامي من (${s}) إلى (${e})`);
+  };
 
   // Sync defaults when modal opens
   useEffect(() => {
@@ -71,18 +124,28 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
       setSelectedTaskIds(new Set(empTasks.map((t) => t.id)));
       setReportTitle(emp ? `تقرير ملف الموظف: ${emp.name} — سجل المهام والمرفقات` : 'تقرير مهام الموظف');
     } else {
-      setScope(defaultScope);
+      const initialS = defaultScope === 'daily_and_tasks' ? 'specific_day' : defaultScope;
+      setScope(initialS);
       setSelectionMode('all');
       setSelectedTaskIds(new Set(tasks.map((t) => t.id)));
-      if (defaultScope === 'tasks_only') {
+
+      if (initialStartDateKey) setStartDateKey(initialStartDateKey);
+      if (initialEndDateKey) setEndDateKey(initialEndDateKey);
+      if (currentDateKey) setSelectedDayKey(currentDateKey);
+
+      if (initialS === 'tasks_only') {
         setReportTitle('تقرير سجل مهام العمل والمرفقات');
-      } else if (defaultScope === 'daily_and_tasks') {
+      } else if (initialS === 'specific_day') {
         setReportTitle(`تقرير نظامي اليومي ومهام العمل (${currentDateKey})`);
+      } else if (initialS === 'date_range') {
+        const s = initialStartDateKey || startDateKey;
+        const e = initialEndDateKey || endDateKey;
+        setReportTitle(`تقرير أداء نظامي من (${s}) إلى (${e})`);
       } else {
         setReportTitle('التقرير الشامل — نظامي اليومي ومهام العمل');
       }
     }
-  }, [isOpen, defaultScope, tasks, currentDateKey, initialEmployeeId, employees]);
+  }, [isOpen, defaultScope, tasks, currentDateKey, initialEmployeeId, employees, initialStartDateKey, initialEndDateKey]);
 
   const handleEmployeeFilterChange = (empId: string) => {
     setSelectedEmployeeFilter(empId);
@@ -153,8 +216,10 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
         reportTitle: reportTitle.trim() || 'تقرير نظامي ومهام العمل',
         scope,
         selectedTasks: selectedTasksToExport,
-        currentDateKey,
+        currentDateKey: scope === 'specific_day' ? selectedDayKey : currentDateKey,
         currentMonthKey,
+        startDateKey,
+        endDateKey,
         includeDailySystemStats,
         includeReflections,
         includeAttachmentsDetails,
@@ -231,11 +296,12 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
               <label className="block text-xs font-bold text-slate-300 mb-1.5">
                 نوع ونطاق التقرير:
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: 'comprehensive', label: 'تقرير شامل (الشهري + المهام)', icon: Award },
-                  { id: 'daily_and_tasks', label: 'اليوم المحدد + المهام', icon: FileText },
-                  { id: 'tasks_only', label: 'مهام العمل فقط', icon: Briefcase },
+                  { id: 'specific_day', label: 'يوم محدد', desc: 'تقرير يوم مخصص مفصل', icon: Calendar },
+                  { id: 'date_range', label: 'فترة زمنية محددة', desc: 'نطاق من تاريخ إلى تاريخ', icon: Layers },
+                  { id: 'comprehensive', label: 'التقرير الشهري الشامل', desc: 'الشهر كاملاً + المهام', icon: Award },
+                  { id: 'tasks_only', label: 'مهام العمل فقط', desc: 'سجل المهام والمرفقات', icon: Briefcase },
                 ].map((opt) => {
                   const Icon = opt.icon;
                   const active = scope === opt.id;
@@ -243,20 +309,182 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                     <button
                       key={opt.id}
                       type="button"
-                      onClick={() => setScope(opt.id as any)}
+                      onClick={() => {
+                        setScope(opt.id as any);
+                        if (opt.id === 'specific_day') {
+                          setReportTitle(`تقرير نظامي اليومي ومهام العمل (${selectedDayKey})`);
+                        } else if (opt.id === 'date_range') {
+                          setReportTitle(`تقرير أداء نظامي من (${startDateKey}) إلى (${endDateKey})`);
+                        } else if (opt.id === 'comprehensive') {
+                          setReportTitle('التقرير الشامل — نظامي اليومي ومهام العمل');
+                        } else if (opt.id === 'tasks_only') {
+                          setReportTitle('تقرير سجل مهام العمل والمرفقات');
+                        }
+                      }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
                         active
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm font-bold'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm font-bold ring-1 ring-emerald-500/30'
                           : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="text-[11px] leading-tight">{opt.label}</span>
+                      <span className="text-[11px] font-bold leading-tight">{opt.label}</span>
+                      <span className="text-[9.5px] text-slate-400 hidden sm:block">{opt.desc}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
+
+            {/* If Specific Day Scope */}
+            {scope === 'specific_day' && (
+              <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-2.5 animate-fade-in">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>اختر اليوم المطلوب استخراج تقريره:</span>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    {[
+                      { label: 'اليوم', offset: 0 },
+                      { label: 'أمس', offset: -1 },
+                      { label: 'أول أمس', offset: -2 },
+                    ].map((btn) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + btn.offset);
+                      const k = getLocalDateStr(d);
+                      const isSelected = selectedDayKey === k;
+                      return (
+                        <button
+                          key={btn.label}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDayKey(k);
+                            setReportTitle(`تقرير نظامي اليومي ومهام العمل (${k})`);
+                          }}
+                          className={`px-2 py-0.5 text-[10px] rounded-lg font-bold border transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {btn.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="date"
+                    value={selectedDayKey}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedDayKey(e.target.value);
+                        setReportTitle(`تقرير نظامي اليومي ومهام العمل (${e.target.value})`);
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-emerald-500/40 text-white text-xs font-mono font-bold focus:outline-none focus:border-emerald-400"
+                  />
+                  {(() => {
+                    const dRecord = dailySystemService.getDay(selectedDayKey);
+                    const dScore = calculateScore(dRecord, dailySystemService.getSettings());
+                    return (
+                      <div className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-bold flex items-center gap-2 shrink-0">
+                        <span>النتيجة: {dScore.total}/100</span>
+                        <span>•</span>
+                        <span>{dRecord.quran}ص قرآن</span>
+                        <span>•</span>
+                        <span>{dRecord.sport}د رياضة</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* If Custom Date Range Scope */}
+            {scope === 'date_range' && (
+              <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>اختر الفترة الزمنية المطلوبة للتقرير:</span>
+                  </label>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {[
+                      { id: 'last7', label: 'آخر 7 أيام' },
+                      { id: 'last14', label: 'آخر 14 يوماً' },
+                      { id: 'this_week', label: 'هذا الأسبوع' },
+                      { id: 'this_month', label: 'هذا الشهر' },
+                      { id: 'last_month', label: 'الشهر الماضي' },
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => applyRangePreset(p.id as any)}
+                        className={`px-2 py-0.5 text-[10px] rounded-lg font-bold border transition-colors cursor-pointer ${
+                          rangePreset === p.id
+                            ? 'bg-indigo-500 text-white border-indigo-400'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-400 mb-1">من تاريخ:</span>
+                    <input
+                      type="date"
+                      value={startDateKey}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setStartDateKey(e.target.value);
+                          setRangePreset('custom');
+                          setReportTitle(`تقرير أداء نظامي من (${e.target.value}) إلى (${endDateKey})`);
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-indigo-500/40 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-400 mb-1">إلى تاريخ:</span>
+                    <input
+                      type="date"
+                      value={endDateKey}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setEndDateKey(e.target.value);
+                          setRangePreset('custom');
+                          setReportTitle(`تقرير أداء نظامي من (${startDateKey}) إلى (${e.target.value})`);
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-indigo-500/40 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+                </div>
+
+                {(() => {
+                  const pStats = dailySystemService.getPeriodStats(startDateKey, endDateKey);
+                  return (
+                    <div className="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-indigo-200 text-xs flex items-center justify-between gap-2 flex-wrap">
+                      <span className="font-bold">
+                        الفترة: {pStats.totalDays} يوم ({pStats.n} يوم مسجل)
+                      </span>
+                      <span>متوسط الالتزام: {Math.round(pStats.avg)}%</span>
+                      <span>قرآن: {pStats.quran}ص</span>
+                      <span>رياضة: {pStats.sportMin}د</span>
+                      <span>صلوات في وقتها: {Math.round(pStats.onTime)}%</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Extra Report Options */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">

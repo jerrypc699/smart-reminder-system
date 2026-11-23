@@ -64,6 +64,8 @@ import {
   padZero,
   getHeatmapColor,
   calculateMonthStats,
+  calculatePeriodStats,
+  PeriodStats,
   PRAYERS_LIST,
   ADHKAR_LIST,
   CATEGORIES_LIST,
@@ -161,6 +163,20 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
+  // Custom Reports & Date Range States
+  const [reportViewMode, setReportViewMode] = useState<'range' | 'day' | 'month'>('range');
+  const [customReportDay, setCustomReportDay] = useState<string>(() => formatDateKey(new Date()));
+  const [customReportStart, setCustomReportStart] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return formatDateKey(d);
+  });
+  const [customReportEnd, setCustomReportEnd] = useState<string>(() => formatDateKey(new Date()));
+  const [customReportPreset, setCustomReportPreset] = useState<'last7' | 'last14' | 'this_week' | 'this_month' | 'last_month' | 'custom'>('last7');
+  const [pdfModalScope, setPdfModalScope] = useState<'comprehensive' | 'daily_and_tasks' | 'tasks_only' | 'specific_day' | 'date_range'>('date_range');
+  const [pdfModalStartDate, setPdfModalStartDate] = useState<string>('');
+  const [pdfModalEndDate, setPdfModalEndDate] = useState<string>('');
+
   // Sports Videos States (Just like Media!)
   const [activeSportVideo, setActiveSportVideo] = useState<VideoPreviewData | null>(null);
   const [isUploadingSportVideo, setIsUploadingSportVideo] = useState<boolean>(false);
@@ -177,6 +193,54 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 1800);
+  };
+
+  const openPdfForDay = (dayKey: string) => {
+    setCustomReportDay(dayKey);
+    setPdfModalScope('specific_day');
+    setIsPdfModalOpen(true);
+  };
+
+  const openPdfForRange = (s: string, e: string) => {
+    setPdfModalScope('date_range');
+    setPdfModalStartDate(s);
+    setPdfModalEndDate(e);
+    setIsPdfModalOpen(true);
+  };
+
+  const handleApplyReportPreset = (preset: 'last7' | 'last14' | 'this_week' | 'this_month' | 'last_month') => {
+    const today = new Date();
+    const todayStr = formatDateKey(today);
+    let s = todayStr;
+    let e = todayStr;
+
+    if (preset === 'last7') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 6);
+      s = formatDateKey(past);
+    } else if (preset === 'last14') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 13);
+      s = formatDateKey(past);
+    } else if (preset === 'this_week') {
+      const off = (today.getDay() + 1) % 7;
+      const sat = new Date(today);
+      sat.setDate(sat.getDate() - off);
+      s = formatDateKey(sat);
+    } else if (preset === 'this_month') {
+      s = `${todayStr.slice(0, 7)}-01`;
+    } else if (preset === 'last_month') {
+      const [y, m] = todayStr.split('-').map(Number);
+      const prevM = m === 1 ? 12 : m - 1;
+      const prevY = m === 1 ? y - 1 : y;
+      const daysInPrev = new Date(prevY, prevM, 0).getDate();
+      s = `${prevY}-${String(prevM).padStart(2, '0')}-01`;
+      e = `${prevY}-${String(prevM).padStart(2, '0')}-${String(daysInPrev).padStart(2, '0')}`;
+    }
+
+    setCustomReportStart(s);
+    setCustomReportEnd(e);
+    setCustomReportPreset(preset);
   };
 
   // Subscribe to service updates
@@ -1421,7 +1485,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             <button
               type="button"
-              onClick={() => setIsPdfModalOpen(true)}
+              onClick={() => {
+                setPdfModalScope(activeTab === 'day' ? 'specific_day' : 'date_range');
+                setIsPdfModalOpen(true);
+              }}
               className="btn-lux-gold flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer shrink-0"
             >
               <FileText className="w-4 h-4" strokeWidth={1.85} />
@@ -1452,7 +1519,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               }`}
             >
               <TrendingUp className="w-4 h-4" strokeWidth={1.75} />
-              <span>التقرير الشهري</span>
+              <span>التقارير والإحصائيات</span>
             </button>
 
             <button
@@ -3304,12 +3371,366 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     )}
 
         {/* ======================================================== */}
-        {/* VIEW 2: MONTH VIEW (HEATMAP & STATS) */}
+        {/* VIEW 2: MONTH & CUSTOM REPORTS VIEW */}
         {/* ======================================================== */}
         {activeTab === 'month' && (
           <div className="mt-5 space-y-5">
-            {/* Month Navigator */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
+            {/* Reports Studio Control Center */}
+            <div className="lux-card rounded-3xl p-4 sm:p-5 border border-indigo-500/30 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.07] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-white">
+                      استخراج وتخصيص التقارير
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      اختر يوماً معيناً أو حدد فترة زمنية مخصصة لعرض إحصائياتها وتصدير تقرير PDF
+                    </p>
+                  </div>
+                </div>
+
+                {/* Sub-modes Toggle */}
+                <div className="flex items-center p-1 bg-slate-950/80 border border-slate-800 rounded-2xl gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setReportViewMode('range')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportViewMode === 'range'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-900/40'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>فترة مخصصة</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setReportViewMode('day')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportViewMode === 'day'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-900/40'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>يوم محدد</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setReportViewMode('month')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportViewMode === 'month'
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md shadow-amber-900/40'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Award className="w-3.5 h-3.5" />
+                    <span>خريطة الشهر</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* MODE 1: CUSTOM DATE RANGE REPORT */}
+              {reportViewMode === 'range' && (
+                <div className="space-y-4 animate-fade-in">
+                  {/* Presets and Date Inputs */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-indigo-300">
+                        فترات سريعة جاهزة:
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          { id: 'last7', label: 'آخر 7 أيام' },
+                          { id: 'last14', label: 'آخر 14 يوماً' },
+                          { id: 'this_week', label: 'هذا الأسبوع' },
+                          { id: 'this_month', label: 'هذا الشهر' },
+                          { id: 'last_month', label: 'الشهر الماضي' },
+                        ].map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleApplyReportPreset(p.id as any)}
+                            className={`px-2.5 py-1 text-xs rounded-xl font-bold border transition-all cursor-pointer ${
+                              customReportPreset === p.id
+                                ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                                : 'bg-slate-900/90 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+                          من تاريخ:
+                        </label>
+                        <input
+                          type="date"
+                          value={customReportStart}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setCustomReportStart(e.target.value);
+                              setCustomReportPreset('custom');
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-indigo-500/30 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
+                        />
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+                          إلى تاريخ:
+                        </label>
+                        <input
+                          type="date"
+                          value={customReportEnd}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setCustomReportEnd(e.target.value);
+                              setCustomReportPreset('custom');
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-indigo-500/30 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Period Live KPIs & Table */}
+                  {(() => {
+                    const pStats = dailySystemService.getPeriodStats(customReportStart, customReportEnd);
+
+                    return (
+                      <div className="space-y-3 pt-1">
+                        {/* KPI Cards Row */}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                          <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/25 text-center">
+                            <div className="text-lg font-black text-emerald-400 font-mono">
+                              {Math.round(pStats.avg)}%
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-bold">متوسط الالتزام</div>
+                          </div>
+
+                          <div className="p-3 rounded-2xl bg-indigo-950/30 border border-indigo-500/25 text-center">
+                            <div className="text-lg font-black text-indigo-400 font-mono">
+                              {pStats.quran} ص
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-bold">إجمالي القرآن</div>
+                          </div>
+
+                          <div className="p-3 rounded-2xl bg-teal-950/30 border border-teal-500/25 text-center">
+                            <div className="text-lg font-black text-teal-400 font-mono">
+                              {pStats.sportMin} د
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-bold">إجمالي الرياضة</div>
+                          </div>
+
+                          <div className="p-3 rounded-2xl bg-purple-950/30 border border-purple-500/25 text-center">
+                            <div className="text-lg font-black text-purple-400 font-mono">
+                              {Math.round(pStats.onTime)}%
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-bold">صلوات بوقتها</div>
+                          </div>
+
+                          <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/25 text-center col-span-2 sm:col-span-1">
+                            <div className="text-lg font-black text-amber-400 font-mono">
+                              {pStats.n} / {pStats.totalDays}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-bold">أيام مسجلة</div>
+                          </div>
+                        </div>
+
+                        {/* Detailed Days Table for the period */}
+                        {pStats.logged.length > 0 && (
+                          <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                              <span>تفاصيل أيام الفترة ({pStats.logged.length} يوم مسجل):</span>
+                              <span className="text-[11px] text-slate-500 font-normal">من الأحدث للأقدم</span>
+                            </div>
+
+                            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                              {pStats.logged.map(({ id, d, s }) => {
+                                const dt = parseDateKey(id);
+                                const dayName = dt.toLocaleDateString('ar-EG', { weekday: 'short' });
+                                return (
+                                  <div
+                                    key={id}
+                                    className="p-2 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between gap-2 text-xs"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-white font-mono">{id}</span>
+                                      <span className="text-slate-400 text-[11px]">({dayName})</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-[11px]">
+                                      <span className="font-black text-emerald-400">{s.total}/100</span>
+                                      <span className="text-indigo-300">{d.quran}ص</span>
+                                      <span className="text-teal-300">{d.sport}د</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => openPdfForDay(id)}
+                                        className="text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                                        title="تصدير تقرير PDF لهذا اليوم تحديداً"
+                                      >
+                                        تقرير اليوم
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Export Action Button */}
+                        <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex-wrap">
+                          <div className="text-xs text-slate-300">
+                            تقرير فترة: <span className="font-bold text-white font-mono">{pStats.startDate}</span> إلى <span className="font-bold text-white font-mono">{pStats.endDate}</span> ({pStats.totalDays} يوم)
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openPdfForRange(pStats.startDate, pStats.endDate)}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-black shadow-lg shadow-indigo-900/40 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>تصدير تقرير PDF لهذه الفترة</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* MODE 2: SPECIFIC DAY REPORT */}
+              {reportViewMode === 'day' && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" />
+                        <span>اختر التاريخ المطلوب:</span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        {[
+                          { label: 'اليوم', offset: 0 },
+                          { label: 'أمس', offset: -1 },
+                          { label: 'أول أمس', offset: -2 },
+                        ].map((btn) => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + btn.offset);
+                          const k = formatDateKey(d);
+                          const isSelected = customReportDay === k;
+                          return (
+                            <button
+                              key={btn.label}
+                              type="button"
+                              onClick={() => setCustomReportDay(k)}
+                              className={`px-3 py-1 text-xs rounded-xl font-bold border transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                              }`}
+                            >
+                              {btn.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="date"
+                        value={customReportDay}
+                        onChange={(e) => {
+                          if (e.target.value) setCustomReportDay(e.target.value);
+                        }}
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-emerald-500/30 text-white text-xs font-mono font-bold focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Day Performance Card */}
+                  {(() => {
+                    const dayRec = dailySystemService.getDay(customReportDay);
+                    const daySc = calculateScore(dayRec, settings);
+                    const dt = parseDateKey(customReportDay);
+                    const dayName = dt.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+                    return (
+                      <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
+                        <div className="flex items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
+                          <div>
+                            <span className="text-sm font-black text-white block">{dayName}</span>
+                            <span className="text-[11px] text-emerald-300 font-mono">{customReportDay}</span>
+                          </div>
+                          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-sm">
+                            النتيجة: {daySc.total} / 100
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+                            <span className="text-xs font-bold text-slate-400 block">ورد القرآن</span>
+                            <span className="text-sm font-black text-indigo-400">{dayRec.quran} صفحة</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+                            <span className="text-xs font-bold text-slate-400 block">الرياضة</span>
+                            <span className="text-sm font-black text-emerald-400">{dayRec.sport} دقيقة</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+                            <span className="text-xs font-bold text-slate-400 block">التعلّم والمذاكرة</span>
+                            <span className="text-sm font-black text-purple-400">{dayRec.study} دقيقة</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+                            <span className="text-xs font-bold text-slate-400 block">النوم والماء</span>
+                            <span className="text-sm font-black text-cyan-400">{dayRec.sleep}س • {dayRec.water} كوب</span>
+                          </div>
+                        </div>
+
+                        {/* Export Action */}
+                        <div className="flex items-center justify-between gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentDateKey(customReportDay);
+                              setActiveTab('day');
+                            }}
+                            className="text-xs text-emerald-400 hover:underline font-bold"
+                          >
+                            فتح هذا اليوم للتعديل أو المتابعة ←
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openPdfForDay(customReportDay)}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-900/40 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>تصدير تقرير PDF لهذا اليوم</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* MODE 3 / MONTHLY VIEW: Month Navigator, Heatmap & Monthly Review */}
+            {(reportViewMode === 'month' || reportViewMode === 'range') && (
+              <>
+                {/* Month Navigator */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
               <button
                 onClick={() => navigateMonth(-1)}
                 className="p-2 sm:px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 text-xs font-bold cursor-pointer transition-colors"
@@ -3779,8 +4200,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
+      </div>
+    )}
 
         {/* ======================================================== */}
         {/* VIEW 3: SETTINGS & GOALS */}
@@ -4706,9 +5129,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
         tasks={tasks}
-        currentDateKey={currentDateKey}
+        currentDateKey={pdfModalScope === 'specific_day' ? customReportDay : currentDateKey}
         currentMonthKey={currentMonthKey}
-        defaultScope={activeTab === 'day' ? 'daily_and_tasks' : 'comprehensive'}
+        defaultScope={pdfModalScope}
+        initialStartDateKey={pdfModalStartDate || customReportStart}
+        initialEndDateKey={pdfModalEndDate || customReportEnd}
       />
 
       {/* Lightbox Preview for Image Attachments */}

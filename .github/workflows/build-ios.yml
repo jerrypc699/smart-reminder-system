@@ -48,34 +48,33 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
-          zip -r DrAbdelaziz-Reminder-v1.0.53.ipa Payload
-          cp DrAbdelaziz-Reminder-v1.0.53.ipa DrAbdelaziz-Reminder.ipa
+          zip -r DrAbdelaziz-Reminder-v1.0.54.ipa Payload
+          cp DrAbdelaziz-Reminder-v1.0.54.ipa DrAbdelaziz-Reminder.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.53.ipa
-          path: DrAbdelaziz-Reminder-v1.0.53.ipa
+          name: DrAbdelaziz-Reminder-v1.0.54.ipa
+          path: DrAbdelaziz-Reminder-v1.0.54.ipa
           retention-days: 30
 
-      - name: Attach IPA to GitHub Release v1.0.53
+      - name: Attach IPA to GitHub Release v1.0.54
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.53
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.53"
+          tag_name: v1.0.54
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.54"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.53
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.54
             
             التحديثات الجديدة:
-            - إضافة قسم «فيديوهات التمارين والرياضة» داخل نظامي تحت بند الرياضة والحركة
-            - إمكانية رفع مقاطع فيديو التمارين مباشرة وحفظها محلياً وسحابياً
-            - إمكانية اختيار مقاطع الفيديو من مكتبة الوسائط وإدراجها بضغطة زر
-            - مشغل فيديو داخلي بدقة فائقة لمشاهدة التمارين والتدرّب معها مباشرة داخل التطبيق
-            - إمكانية إعادة تسمية فيديوهات الرياضة وحذفها بكل سهولة
-            - زر احتساب وقت التمرين تلقائياً وإضافته للدقائق المنجزة اليومية
+            - إمكانية استخراج تقرير PDF ليوم محدد واختيار أي يوم من التقويم مباشرة
+            - إمكانية تحديد فترة زمنية مخصصة (من تاريخ إلى تاريخ) مع فترات سريعة جاهزة (آخر 7 أيام، 14 يوماً، هذا الأسبوع، هذا الشهر، الشهر الماضي)
+            - إضافة «استوديو استخراج وتخصيص التقارير» التفاعلي داخل تبويب التقارير والإحصائيات
+            - ملخص بياني فوري وإحصائيات مباشرة على الشاشة لليوم أو الفترة المختارة
+            - تقرير PDF متقدم للفترات يتضمن مؤشرات الأداء، ومتوسط الالتزام، وجدولاً تفصيلياً لأيام الفترة
           files: |
-            DrAbdelaziz-Reminder-v1.0.53.ipa
+            DrAbdelaziz-Reminder-v1.0.54.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,7 +86,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.53.ipa
+            DrAbdelaziz-Reminder-v1.0.54.ipa
             DrAbdelaziz-Reminder.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

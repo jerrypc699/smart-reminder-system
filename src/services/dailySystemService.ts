@@ -632,6 +632,151 @@ export function calculateMonthStats(
   return result;
 }
 
+export function getDateKeysInRange(startKey: string, endKey: string): string[] {
+  let sKey = startKey;
+  let eKey = endKey;
+  if (sKey > eKey) {
+    sKey = endKey;
+    eKey = startKey;
+  }
+  const startDate = parseDateKey(sKey);
+  const endDate = parseDateKey(eKey);
+  const keys: string[] = [];
+  const curr = new Date(startDate);
+  while (curr <= endDate) {
+    keys.push(formatDateKey(curr));
+    curr.setDate(curr.getDate() + 1);
+  }
+  return keys;
+}
+
+export interface PeriodStats {
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  n: number;
+  ids: string[];
+  logged: { id: string; d: DailyRecord; s: DayScoreResult }[];
+  avg: number;
+  cats: Record<string, number>;
+  onTime: number;
+  prayed: number;
+  adhkarPct: number;
+  quran: number;
+  sportDays: number;
+  sportMin: number;
+  studyH: number;
+  sleep: number;
+  water: number;
+  tasks: number;
+  tasksAll: number;
+  minDays: number;
+  best?: { id: string; d: DailyRecord; s: DayScoreResult };
+  worst?: { id: string; d: DailyRecord; s: DayScoreResult };
+  blocks: { id: string; t: string }[];
+}
+
+export function calculatePeriodStats(
+  startKey: string,
+  endKey: string,
+  days: Record<string, DailyRecord>,
+  S: DailySettings
+): PeriodStats {
+  const ids = getDateKeysInRange(startKey, endKey);
+  const totalDays = ids.length;
+  const logged: { id: string; d: DailyRecord; s: DayScoreResult }[] = [];
+
+  ids.forEach((id) => {
+    if (days[id]) {
+      const d = normalizeDayRecord(days[id], id);
+      if (hasData(d)) {
+        logged.push({ id, d, s: calculateScore(d, S) });
+      }
+    }
+  });
+
+  const n = logged.length;
+  const result: PeriodStats = {
+    startDate: startKey <= endKey ? startKey : endKey,
+    endDate: startKey <= endKey ? endKey : startKey,
+    totalDays,
+    n,
+    ids,
+    logged,
+    avg: 0,
+    cats: {},
+    onTime: 0,
+    prayed: 0,
+    adhkarPct: 0,
+    quran: 0,
+    sportDays: 0,
+    sportMin: 0,
+    studyH: 0,
+    sleep: 0,
+    water: 0,
+    tasks: 0,
+    tasksAll: 0,
+    minDays: 0,
+    blocks: [],
+  };
+
+  if (!n) return result;
+
+  result.avg = logged.reduce((a, x) => a + x.s.total, 0) / n;
+  CATEGORIES_LIST.forEach(({ key, max }) => {
+    const denom = logged[0]?.s.maxByCat?.[key] ?? max;
+    result.cats[key] =
+      denom > 0
+        ? (logged.reduce((a, x) => a + (x.s.c[key] || 0), 0) / n / denom) * 100
+        : 0;
+  });
+
+  let pOn = 0;
+  let pAny = 0;
+  const fardKeys = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  logged.forEach(({ d }) =>
+    fardKeys.forEach((k) => {
+      if (d.prayers[k] === 2) pOn++;
+      if (d.prayers[k] > 0) pAny++;
+    })
+  );
+
+  result.onTime = (pOn / (n * fardKeys.length)) * 100;
+  result.prayed = (pAny / (n * fardKeys.length)) * 100;
+  result.adhkarPct =
+    (logged.reduce((a, { d }) => a + (d.adhkar.sabah ? 1 : 0) + (d.adhkar.masaa ? 1 : 0), 0) /
+      (n * 2)) *
+    100;
+  result.quran = logged.reduce((a, { d }) => a + d.quran, 0);
+  result.sportDays = logged.filter(({ d }) => d.sport >= (S.sport || 10)).length;
+  result.sportMin = logged.reduce((a, { d }) => a + d.sport, 0);
+  result.studyH = logged.reduce((a, { d }) => a + d.study, 0) / 60;
+
+  const sl = logged.filter(({ d }) => d.sleep > 0);
+  result.sleep = sl.length ? sl.reduce((a, { d }) => a + d.sleep, 0) / sl.length : 0;
+
+  const wt = logged.filter(({ d }) => (d.water || 0) > 0);
+  result.water = wt.length ? wt.reduce((a, { d }) => a + (d.water || 0), 0) / wt.length : 0;
+
+  result.tasks = logged.reduce((a, { d }) => a + d.tasks.filter((t) => t.d).length, 0);
+  result.tasksAll = logged.reduce(
+    (a, { d }) => a + d.tasks.filter((t) => t.t.trim().length > 0 || t.d).length,
+    0
+  );
+  result.minDays = logged.filter(({ d }) => isMinDay(d, S)).length;
+
+  const sorted = [...logged].sort((a, b) => b.s.total - a.s.total);
+  result.best = sorted[0];
+  result.worst = sorted[sorted.length - 1];
+
+  result.blocks = logged
+    .filter(({ d }) => d.notes.block && d.notes.block.trim().length > 0)
+    .slice(-10)
+    .map(({ id, d }) => ({ id, t: d.notes.block.trim() }));
+
+  return result;
+}
+
 function doesWorkTaskApplyToDate(task: Task, dateKey: string, todayKey: string, includePendingPrevious: boolean): boolean {
   if (task.status === 'completed' || Boolean(task.isArchived)) return false;
   if (task.dueDate === dateKey) return true;
@@ -1274,6 +1419,10 @@ class DailySystemService {
         goal: '',
       }
     );
+  }
+
+  public getPeriodStats(startKey: string, endKey: string): PeriodStats {
+    return calculatePeriodStats(startKey, endKey, this.days, this.settings);
   }
 
   public setMonthReview(month: string, review: MonthlyReview) {

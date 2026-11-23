@@ -947,43 +947,46 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     const sportVideos = dailySystemService.getSportVideos();
 
     return (
-      <div className="mt-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-3 space-y-3 transition-all">
+      <div className="mt-3 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] p-4 space-y-3.5 shadow-lg relative overflow-hidden text-white transition-all">
+        {/* Soft Specular Reflection Highlight */}
+        <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
           <button
             type="button"
             onClick={() => setIsSportVideosExpanded((prev) => !prev)}
-            className="flex items-center gap-2 text-right group cursor-pointer"
+            className="flex items-center gap-2.5 text-right group cursor-pointer"
           >
-            <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 group-hover:scale-105 transition-transform">
-              <Film className="w-4 h-4" />
+            <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <Film className="w-4 h-4 text-[#F5D77F]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-emerald-300">
+                <span className="text-xs sm:text-sm font-black text-white">
                   فيديوهات التمارين والرياضة
                 </span>
-                <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 font-mono font-bold shadow-sm">
                   {sportVideos.length} فيديو
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400 block">
+              <span className="text-[11px] text-emerald-200/70 block font-medium">
                 تدرّب مع مقاطعك مباشرة واحتسب وقتها تلقائياً باليوم
               </span>
             </div>
-            <div className="text-emerald-400 mr-1">
+            <div className="text-[#F5D77F] mr-1">
               {isSportVideosExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </button>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 mr-auto">
+          <div className="flex items-center gap-2 mr-auto">
             <label
-              className={`px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer shadow-md shadow-emerald-950/40 transition-all ${
+              className={`px-3 py-1.5 rounded-xl btn-lux-gold text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md transition-all ${
                 isUploadingSportVideo ? 'opacity-60 pointer-events-none' : ''
               }`}
             >
-              <UploadCloud className="w-3.5 h-3.5" />
+              <UploadCloud className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>{isUploadingSportVideo ? 'جاري الرفع...' : 'رفع فيديو'}</span>
               <input
                 ref={sportVideoFileInputRef}
@@ -998,10 +1001,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             <button
               type="button"
               onClick={() => setIsPickMediaModalOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-emerald-200 border border-white/20 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
               title="اختيار من مقاطع الفيديو الموجودة في مكتبة الوسائط"
             >
-              <FolderPlus className="w-3.5 h-3.5" />
+              <FolderPlus className="w-3.5 h-3.5 text-[#F5D77F]" />
               <span>من الوسائط</span>
             </button>
           </div>
@@ -1045,28 +1048,28 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   return (
                     <div
                       key={vid.id}
-                      className="p-2.5 rounded-xl bg-slate-950/70 border border-emerald-500/20 hover:border-emerald-500/40 transition-all flex flex-col justify-between gap-2"
+                      className="p-3.5 rounded-2xl bg-black/40 border border-emerald-500/25 hover:border-[#D4AF37]/50 transition-all flex flex-col justify-between gap-3 shadow-md relative overflow-hidden group"
                     >
                       {/* Top Info */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <button
                             type="button"
                             onClick={() => handlePlaySportVideo(vid)}
-                            className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center text-emerald-300 shrink-0 cursor-pointer transition-transform hover:scale-105"
+                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8C5D14] border border-[#FFF4C2] hover:scale-105 flex items-center justify-center text-slate-950 shrink-0 cursor-pointer transition-transform shadow-md"
                             title="تشغيل الفيديو"
                           >
-                            <Play className="w-4 h-4 fill-emerald-300" />
+                            <Play className="w-4 h-4 fill-slate-950 ml-0.5" />
                           </button>
 
                           <div className="min-w-0 flex-1">
                             {isEditingThis ? (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1.5">
                                 <input
                                   type="text"
                                   value={renameSportVideoInput}
                                   onChange={(e) => setRenameSportVideoInput(e.target.value)}
-                                  className="w-full px-2 py-0.5 text-xs rounded bg-slate-900 border border-emerald-500 text-white focus:outline-none"
+                                  className="w-full px-2.5 py-1 text-xs rounded-xl bg-black/60 border border-[#D4AF37] text-white focus:outline-none"
                                   autoFocus
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') handleSaveRenameSportVideo(vid.id);
@@ -1076,23 +1079,23 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleSaveRenameSportVideo(vid.id)}
-                                  className="p-1 rounded bg-emerald-500/30 text-emerald-200 hover:bg-emerald-500/50 text-[10px] font-bold"
+                                  className="px-2 py-1 rounded-lg bg-[#D4AF37] text-slate-950 font-black text-[11px]"
                                 >
                                   حفظ
                                 </button>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-white truncate block">
+                                <span className="text-xs sm:text-sm font-black text-white truncate block group-hover:text-[#F5D77F] transition-colors">
                                   {vid.name}
                                 </span>
                               </div>
                             )}
 
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                            <div className="flex items-center gap-2 text-[10px] text-emerald-200/70 mt-0.5 font-mono">
                               {vid.duration ? (
-                                <span className="font-mono text-emerald-400/90 font-bold">
-                                  {formatVideoDuration(vid.duration)}
+                                <span className="font-bold text-[#F5D77F]">
+                                  ⏱️ {formatVideoDuration(vid.duration)}
                                 </span>
                               ) : null}
                               {vid.size ? (
@@ -1117,7 +1120,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                                 setRenameSportVideoInput(vid.name);
                               }
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-[#F5D77F] hover:bg-white/10 transition-colors"
                             title="إعادة تسمية الفيديو"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -1133,24 +1136,24 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Bottom Quick Actions */}
-                      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-800/80">
+                      {/* Bottom Quick Actions with Symmetrical Polish */}
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-emerald-500/20">
                         <button
                           type="button"
                           onClick={() => handlePlaySportVideo(vid)}
-                          className="flex-1 py-1 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                          className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-sm"
                         >
-                          <Play className="w-3 h-3 fill-emerald-300" />
+                          <Play className="w-3.5 h-3.5 fill-emerald-200" />
                           <span>تشغيل وتمرين</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleAddVideoTimeToSport(vid)}
-                          className="py-1 px-2 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          className="py-1.5 px-3 rounded-xl bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-[#F5D77F] border border-[#D4AF37]/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
                           title="إضافة مدة هذا التمرين إلى هدف الرياضة اليومي"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                           <span>+ احتساب ({estMins} د)</span>
                         </button>
                       </div>
@@ -1463,22 +1466,25 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
       )}
 
       {/* Header & Sub-Tabs */}
-      <div className="lux-card rounded-3xl p-5 sm:p-6">
-        <div className="flex flex-col gap-4 border-b border-white/[0.06] pb-5">
+      <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/30 shadow-[0_15px_45px_rgba(4,21,18,0.5)] relative overflow-hidden text-white">
+        {/* Soft Specular Reflection Highlight */}
+        <div className="absolute top-0 right-0 left-0 h-16 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+        <div className="flex flex-col gap-4 border-b border-emerald-500/20 pb-5 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="icon-squircle-emerald w-12 h-12 shrink-0">
-                <Award className="w-6 h-6" strokeWidth={1.75} />
+              <div className="icon-squircle-gold w-12 h-12 shrink-0 shadow-md">
+                <Award className="w-6 h-6 text-[#F5D77F]" strokeWidth={1.75} />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-white flex flex-wrap items-center gap-2 tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-black text-[#F5D77F] flex flex-wrap items-center gap-2 tracking-wide drop-shadow-[0_2px_10px_rgba(245,215,127,0.25)] font-serif">
                   نظامي اليومي
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#E7C66C] border border-[#D4AF37]/30">
-                    متابعة وتقارير
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm font-sans">
+                    متابعة وتقارير تنفيذية
                   </span>
                 </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  تتبع الصلوات، الأذكار، القرآن، الرياضة، الصحة، وكافة مهام العمل مع تصدير PDF
+                <p className="text-xs text-emerald-200/80 mt-0.5 font-medium">
+                  تتبع الصلوات، الأذكار، القرآن، الرياضة، الصحة، وكافة مهام العمل مع استوديو تقارير PDF
                 </p>
               </div>
             </div>
@@ -1489,48 +1495,48 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 setPdfModalScope(activeTab === 'day' ? 'specific_day' : 'date_range');
                 setIsPdfModalOpen(true);
               }}
-              className="btn-lux-gold flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer shrink-0"
+              className="btn-lux-gold flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black cursor-pointer shrink-0 shadow-lg"
             >
-              <FileText className="w-4 h-4" strokeWidth={1.85} />
+              <FileText className="w-4 h-4" strokeWidth={2} />
               <span>تصدير تقرير PDF</span>
             </button>
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div className="grid grid-cols-3 p-1 lux-well rounded-2xl gap-1">
+          <div className="grid grid-cols-3 p-1.5 rounded-2xl bg-black/40 border border-emerald-500/20 gap-1.5">
             <button
               onClick={() => setActiveTab('day')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                 activeTab === 'day'
-                  ? 'btn-lux-primary'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#D4AF37] via-[#ECC86D] to-[#D4AF37] text-slate-950 shadow-lg shadow-amber-500/25 border border-[#FFF2B2]'
+                  : 'text-emerald-200/70 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Calendar className="w-4 h-4" strokeWidth={1.75} />
+              <Calendar className="w-4 h-4" strokeWidth={1.85} />
               <span>اليوم</span>
             </button>
 
             <button
               onClick={() => setActiveTab('month')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                 activeTab === 'month'
-                  ? 'btn-lux-primary'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#D4AF37] via-[#ECC86D] to-[#D4AF37] text-slate-950 shadow-lg shadow-amber-500/25 border border-[#FFF2B2]'
+                  : 'text-emerald-200/70 hover:text-white hover:bg-white/5'
               }`}
             >
-              <TrendingUp className="w-4 h-4" strokeWidth={1.75} />
+              <TrendingUp className="w-4 h-4" strokeWidth={1.85} />
               <span>التقارير والإحصائيات</span>
             </button>
 
             <button
               onClick={() => setActiveTab('settings')}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'btn-lux-primary'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#D4AF37] via-[#ECC86D] to-[#D4AF37] text-slate-950 shadow-lg shadow-amber-500/25 border border-[#FFF2B2]'
+                  : 'text-emerald-200/70 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Award className="w-4 h-4" strokeWidth={1.75} />
+              <Award className="w-4 h-4" strokeWidth={1.85} />
               <span>الأهداف والتخصيص</span>
             </button>
           </div>
@@ -1542,10 +1548,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
         {activeTab === 'day' && (
           <div className="mt-5 space-y-5">
             {/* Date Bar */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-emerald-500/30 shadow-md">
               <button
                 onClick={() => navigateDay(-1)}
-                className="p-2 sm:px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 text-xs font-bold cursor-pointer transition-colors"
+                className="p-2 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1.5 text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 title="اليوم السابق"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -1554,28 +1560,29 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
               <div className="text-center">
                 <div className="text-base sm:text-lg font-black text-white flex items-center justify-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#F5D77F]" />
                   <span>
-                    {AR_DAYS[currentDateObj.getDay()]} {currentDateObj.getDate()} {AR_MONTHS[currentDateObj.getMonth()]}
+                    {AR_DAYS[currentDateObj.getDay()]}، {currentDateObj.getDate()} {AR_MONTHS[currentDateObj.getMonth()]}
                   </span>
                   {relativeDateLabel && (
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
                       {relativeDateLabel}
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  {currentDateObj.getFullYear()}
+                <span className="text-[11px] text-emerald-300/80 font-mono font-bold">
+                  {currentDateObj.getFullYear()} م
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 {currentDateKey !== todayKey && (
                   <button
                     onClick={() => {
                       setCurrentDateKey(todayKey);
                       setCurrentMonthKey(todayKey.slice(0, 7));
                     }}
-                    className="p-2 sm:px-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold cursor-pointer transition-colors"
+                    className="p-2 sm:px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold cursor-pointer transition-colors shadow-sm"
                     title="الرجوع إلى اليوم"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -1585,7 +1592,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 <button
                   onClick={() => navigateDay(1)}
-                  className="p-2 sm:px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 text-xs font-bold cursor-pointer transition-colors"
+                  className="p-2 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1.5 text-xs font-bold cursor-pointer transition-colors shadow-sm"
                   title="اليوم التالي"
                 >
                   <span className="hidden sm:inline">التالي</span>
@@ -1594,28 +1601,28 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               </div>
             </div>
 
-            {/* Quick System Customization Bar: Add Anything / Edit & Delete Mode / Reset Day */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Quick System Customization Bar */}
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => handleOpenAddModal('habit')}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 text-emerald-300" />
                 <span>إضافة بند جديد</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsEditMode((v) => !v)}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.01] ${
                   isEditMode
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/25'
-                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] text-slate-950 border-[#FFF2B2] font-black shadow-lg shadow-amber-500/25 ring-1 ring-amber-400'
+                    : 'bg-white/10 hover:bg-white/15 text-slate-200 border-white/15'
                 }`}
               >
                 <Edit3 className="w-4 h-4" />
-                <span>{isEditMode ? '✓ تم الحذف والتعديل' : 'حذف / تعديل النظام'}</span>
+                <span>{isEditMode ? '✓ تم الحفظ والخروج' : 'تعديل وحذف البنود'}</span>
               </button>
 
               <button
@@ -1626,7 +1633,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     showToast('تم تفريغ بيانات اليوم بنجاح');
                   }
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>تفريغ اليوم</span>
@@ -1634,8 +1641,8 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             </div>
 
             {hiddenSet.size > 0 && isEditMode && (
-              <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
-                <span className="text-amber-300 font-bold">
+              <div className="p-3 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/35 flex items-center justify-between gap-3 text-xs">
+                <span className="text-[#F5D77F] font-bold">
                   يوجد {hiddenSet.size} عنصر أو قسم تم حذفه/إخفاؤه من نظامك
                 </span>
                 <button
@@ -1644,36 +1651,37 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     dailySystemService.restoreAllBuiltIns();
                     showToast('تمت استعادة كافة العناصر الافتراضية ✓');
                   }}
-                  className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] cursor-pointer"
+                  className="px-3 py-1 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] text-slate-950 font-black text-[11px] cursor-pointer shadow-sm"
                 >
                   استعادة الكل ↺
                 </button>
               </div>
             )}
 
-            {/* Score Ring & Category Breakdown */}
-            <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/20 shadow-xl">
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                {/* Circular Score Gauge */}
+            {/* Score Ring & Category Breakdown Banner */}
+            <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/30 shadow-[0_15px_45px_rgba(4,21,18,0.5)] relative overflow-hidden text-white">
+              <div className="absolute top-0 right-0 left-0 h-16 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+                {/* Circular Score Gauge with gold rim */}
                 <div className="relative shrink-0 flex items-center justify-center">
                   <div
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center transition-all shadow-xl"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(212,175,55,0.3)]"
                     style={{
-                      background: `conic-gradient(#10b981 ${scoreResult.total}%, #1e293b 0%)`,
+                      background: `conic-gradient(#D4AF37 ${scoreResult.total}%, #071c18 0%)`,
                     }}
                   >
-                    <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-slate-900 flex flex-col items-center justify-center border border-slate-800 shadow-inner">
-                      <span className="text-2xl sm:text-3xl font-black text-white font-mono">
+                    <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-[#041210] flex flex-col items-center justify-center border border-[#D4AF37]/40 shadow-inner">
+                      <span className="text-2xl sm:text-3xl font-black text-[#F5D77F] font-mono drop-shadow-[0_0_10px_rgba(245,215,127,0.4)]">
                         {scoreResult.total}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-bold -mt-1">من 100</span>
+                      <span className="text-[10px] text-emerald-300/80 font-bold -mt-0.5">من 100</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Categories Horizontal Progress Bars */}
-                <div className="flex-1 w-full space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <div className="flex-1 w-full space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 text-xs">
                     {[
                       ...CATEGORIES_LIST,
                       ...(scoreResult.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'مخصص', max: scoreResult.maxByCat.custom }] : []),
@@ -1683,15 +1691,15 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       const val = scoreResult.c[key] || 0;
                       const pct = Math.round((val / effectiveMax) * 100);
                       return (
-                        <div key={key} className="flex items-center gap-2">
-                          <span className="w-14 text-slate-400 font-semibold truncate">{label}</span>
-                          <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <div key={key} className="flex items-center gap-2.5">
+                          <span className="w-16 text-emerald-200/90 font-bold truncate text-[11px]">{label}</span>
+                          <div className="flex-1 h-2.5 rounded-full bg-black/50 overflow-hidden border border-white/5">
                             <div
-                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
+                              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-[#F5D77F] rounded-full transition-all duration-500 shadow-sm"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <span className="w-8 text-left font-mono font-bold text-slate-300">
+                          <span className="w-9 text-left font-mono font-black text-[#F5D77F] text-xs">
                             {pct}%
                           </span>
                         </div>
@@ -1702,19 +1710,20 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   {/* Minimum Day Badge */}
                   <div className="pt-2">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${minDayAchieved
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                          : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
-                        }`}
+                      className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-2xl text-xs font-bold transition-all shadow-md ${
+                        minDayAchieved
+                          ? 'bg-emerald-500/20 text-[#5eead4] border border-emerald-400/40 shadow-emerald-950/40'
+                          : 'bg-amber-500/15 text-[#F5D77F] border border-amber-400/40'
+                      }`}
                     >
                       {minDayAchieved ? (
                         <>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>✓ الحد الأدنى اتحقق بنجاح لليوم</span>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                          <span>✓ الحد الأدنى اتحقق بنجاح لليوم (صلوات + أذكار + قرآن + حركة)</span>
                         </>
                       ) : (
                         <>
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <AlertTriangle className="w-4 h-4 text-[#F5D77F] shrink-0" />
                           <span>الحد الأدنى: الصلوات + الأذكار + صفحة قرآن + 10 دقائق حركة</span>
                         </>
                       )}
@@ -1787,21 +1796,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {/* Vertical Sections List (Always visible on Desktop, collapsible on Mobile) */}
                 <div
-                  className={`p-3.5 rounded-3xl bg-slate-900/90 backdrop-blur-md border border-slate-800 space-y-2 shadow-xl ${
+                  className={`p-4 rounded-3xl bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 backdrop-blur-md space-y-2.5 shadow-xl ${
                     isMobileMenuOpen ? 'block' : 'hidden lg:block'
                   }`}
                 >
-                  <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-800/80">
+                  <div className="flex items-center justify-between px-2 pb-2.5 border-b border-emerald-500/20">
                     <div className="flex items-center gap-2 text-xs font-black text-white">
-                      <ListFilter className="w-4 h-4 text-emerald-400" />
+                      <ListFilter className="w-4 h-4 text-[#F5D77F]" />
                       <span>أقسام النظام اليومي</span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-[#F5D77F] border border-emerald-500/30">
                       {systemSections.length} أقسام
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 max-h-[70vh] lg:max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 pr-0.5">
+                  <div className="space-y-1.5 max-h-[70vh] lg:max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-900/60 pr-0.5">
                     {systemSections.map((sec) => {
                       const Icon = sec.icon;
                       const isActive = selectedSection === sec.id;
@@ -1814,25 +1823,25 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             setIsMobileMenuOpen(false);
                             document.getElementById('daily-system-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           }}
-                          className={`w-full text-right p-2.5 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 border ${
+                          className={`w-full text-right p-3 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 border ${
                             isActive
-                              ? 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent border-emerald-500/40 text-white font-black shadow-md shadow-emerald-500/10 ring-1 ring-emerald-500/30'
-                              : 'bg-slate-950/40 hover:bg-slate-800/60 border-slate-800/60 text-slate-300 hover:text-white'
+                              ? 'bg-gradient-to-r from-[#D4AF37]/25 via-emerald-500/15 to-transparent border-[#D4AF37]/50 text-white font-black shadow-md shadow-emerald-950/40 ring-1 ring-[#D4AF37]/40'
+                              : 'bg-black/30 hover:bg-white/10 border-white/5 text-slate-300 hover:text-white'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div
                               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
                                 isActive
-                                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm'
-                                  : 'bg-slate-800/80 text-slate-300 border-slate-700'
+                                  ? 'bg-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-sm'
+                                  : 'bg-white/10 text-emerald-200 border-white/10'
                               }`}
                             >
                               <Icon className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
                               <span className="text-xs font-bold block truncate">{sec.label}</span>
-                              <span className="text-[10px] text-slate-400 block truncate">{sec.desc}</span>
+                              <span className="text-[10px] text-emerald-200/60 block truncate">{sec.desc}</span>
                             </div>
                           </div>
 
@@ -1840,8 +1849,8 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             <span
                               className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
                                 isActive
-                                  ? 'bg-emerald-500/30 text-emerald-200 border-emerald-500/50'
-                                  : 'bg-slate-800/80 text-slate-400 border-slate-700/60'
+                                  ? 'bg-[#D4AF37]/30 text-[#F5D77F] border-[#D4AF37]/50 font-black'
+                                  : 'bg-black/40 text-slate-400 border-white/5'
                               }`}
                             >
                               {sec.badge}
@@ -1856,7 +1865,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedSection('all')}
-                      className="w-full mt-2 py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="w-full mt-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-[#F5D77F] text-xs font-bold border border-[#D4AF37]/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>عرض كافة الأقسام معاً</span>
@@ -1869,21 +1878,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               <div id="daily-system-content" className="flex-1 w-full space-y-5 min-w-0">
                 {/* Active Section Focus Banner when a single section is selected */}
                 {selectedSection !== 'all' && (
-                  <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                  <div className="p-4 rounded-3xl bg-gradient-to-r from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg text-white">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner">
+                      <div className="icon-squircle-gold w-10 h-10 shrink-0 shadow-sm">
                         {React.createElement(systemSections.find((s) => s.id === selectedSection)?.icon || Award, {
-                          className: 'w-5 h-5',
+                          className: 'w-5 h-5 text-[#F5D77F]',
                         })}
                       </div>
                       <div>
                         <div className="text-sm font-black text-white flex items-center gap-2">
                           <span>{systemSections.find((s) => s.id === selectedSection)?.label}</span>
-                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                          <span className="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
                             {systemSections.find((s) => s.id === selectedSection)?.badge}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-[11px] text-emerald-200/70">
                           {systemSections.find((s) => s.id === selectedSection)?.desc}
                         </p>
                       </div>
@@ -1893,7 +1902,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       <button
                         type="button"
                         onClick={handlePrevSection}
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                         title="القسم السابق"
                       >
                         <ChevronRight className="w-4 h-4" />
@@ -1903,7 +1912,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedSection('all')}
-                        className="px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] text-slate-950 border border-[#FFF2B2] text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md"
                         title="عرض كافة الأقسام معاً"
                       >
                         <Layers className="w-3.5 h-3.5" />
@@ -1913,7 +1922,7 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                       <button
                         type="button"
                         onClick={handleNextSection}
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                         title="القسم التالي"
                       >
                         <span className="hidden sm:inline">التالي</span>
@@ -1925,22 +1934,28 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {/* CARD 1: PRAYERS & CUSTOM WORSHIP */}
                 {shouldShowSection('card_prayer') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Compass className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-sm font-bold text-white">الصلاة والعبادات</h3>
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <Compass className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-white">الصلاة والعبادات</h3>
+                      <p className="text-[11px] text-emerald-200/70">الصلوات المفروضة والسنن الرواتب</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleOpenAddModal('prayer')}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1 cursor-pointer"
+                      className="text-xs px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[#F5D77F] border border-[#D4AF37]/40 font-bold flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                       <span>إضافة عبادة</span>
                     </button>
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="text-xs font-mono font-black px-2.5 py-1 rounded-xl bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
                       {scoreResult.c.prayer} / {scoreResult.maxByCat.prayer} نقطة
                     </span>
                     {isEditMode && (
@@ -1967,15 +1982,15 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handlePrayerClick(k)}
-                          className={`w-full p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isOntime
-                              ? 'bg-gradient-to-tr from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-500/25 scale-102'
+                          className={`w-full p-3.5 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isOntime
+                              ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 font-black shadow-lg shadow-amber-500/25 border border-[#FFF2B2] ring-1 ring-amber-400/50 scale-[1.02]'
                               : isLate
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                                : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                                ? 'bg-amber-500/20 text-[#F5D77F] border border-amber-500/40 shadow-sm'
+                                : 'bg-black/35 text-slate-400 border border-emerald-500/15 hover:border-emerald-500/35 hover:text-white'
                             }`}
                         >
-                          <span className="font-bold text-xs sm:text-sm">{name}</span>
-                          <small className="text-[10px] mt-1 font-semibold opacity-90">
+                          <span className={`text-xs sm:text-sm ${isOntime ? 'font-black' : 'font-bold'}`}>{name}</span>
+                          <small className={`text-[10px] mt-1 font-semibold ${isOntime ? 'text-amber-950 font-black' : 'opacity-80'}`}>
                             {isOntime ? 'في وقتها 🌟' : isLate ? 'متأخرة ⏳' : 'لم تُصلّ —'}
                           </small>
                         </button>
@@ -2005,9 +2020,9 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             updateCurrentDay({ prayers: { ...dayRecord.prayers, [cp.id]: nextVal } });
                             if (nextVal === 2) audioService.playChime('success', 0.4);
                           }}
-                          className={`w-full p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isDone
-                              ? 'bg-gradient-to-tr from-teal-600 to-emerald-500 text-white border-teal-300 shadow-lg'
-                              : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                          className={`w-full p-3.5 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${isDone
+                              ? 'bg-gradient-to-r from-[#ECC86D] via-[#FFE59E] to-[#D4AF37] text-slate-950 font-black shadow-lg shadow-amber-500/25 border border-[#FFF2B2] ring-1 ring-amber-400/50 scale-[1.02]'
+                              : 'bg-black/35 text-slate-400 border border-emerald-500/15 hover:border-emerald-500/35 hover:text-white'
                             }`}
                         >
                           <span className="font-bold text-xs sm:text-sm truncate max-w-full">{cp.label}</span>
@@ -2066,31 +2081,37 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             {/* CARD 2: ADHKAR & DUA */}
             {shouldShowSection('card_adhkar') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-teal-400" />
-                    <h3 className="text-sm font-bold text-white">الأذكار والدعاء</h3>
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <Sparkles className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-white">الأذكار والدعاء</h3>
+                      <p className="text-[11px] text-emerald-200/70">أذكار الصباح والمساء والنوم والأدعية</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleOpenAddModal('adhkar')}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 font-bold flex items-center gap-1 cursor-pointer"
+                      className="text-xs px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[#F5D77F] border border-[#D4AF37]/40 font-bold flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                       <span>إضافة ذكر</span>
                     </button>
                     {onOpenAthkar && (
                       <button
                         type="button"
                         onClick={onOpenAthkar}
-                        className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer font-semibold"
+                        className="text-xs text-emerald-300 hover:text-[#F5D77F] flex items-center gap-1.5 cursor-pointer font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 transition-colors"
                       >
                         <span>قراءة الأذكار 📿</span>
                       </button>
                     )}
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                    <span className="text-xs font-mono font-black px-2.5 py-1 rounded-xl bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
                       {scoreResult.c.adhkar} / {scoreResult.maxByCat.adhkar} نقاط
                     </span>
                     {isEditMode && (
@@ -2119,15 +2140,19 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             updateCurrentDay({ adhkar: updated });
                             if (!active) audioService.playChime('click', 0.3);
                           }}
-                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer border ${active
-                              ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
-                              : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                          className={`w-full px-3.5 py-3 rounded-2xl text-xs font-bold flex flex-col items-start gap-1.5 transition-all cursor-pointer border ${active
+                              ? 'bg-gradient-to-r from-[#0d4a41] via-[#09352e] to-[#0d4a41] text-emerald-100 border border-[#D4AF37]/50 shadow-md shadow-emerald-950/40 ring-1 ring-[#D4AF37]/30'
+                              : 'bg-black/35 text-slate-400 border border-emerald-500/15 hover:border-emerald-500/35 hover:text-white'
                             }`}
                         >
-                          <div className="flex items-center gap-1.5 w-full">
-                            <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                          <div className="flex items-center gap-2 w-full">
+                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                              active ? 'bg-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-sm' : 'border-white/10 bg-white/5 text-transparent'
+                            }`}>
+                              <Check className={`w-3.5 h-3.5 ${active ? 'opacity-100 stroke-[3]' : 'opacity-0'}`} />
+                            </div>
                             <span className="truncate flex-1 text-right">{label}</span>
-                            <span className="text-[10px] opacity-75 font-mono">({pts}ن)</span>
+                            <span className="text-[10px] font-mono text-[#F5D77F]">({pts}ن)</span>
                           </div>
                           {sched?.scheduledTime && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-200 border border-teal-500/40 font-mono font-bold flex items-center gap-1 self-start">
@@ -2186,15 +2211,19 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                             updateCurrentDay({ adhkar: updated });
                             if (!active) audioService.playChime('click', 0.3);
                           }}
-                          className={`w-full px-3 py-2.5 rounded-2xl text-xs font-bold flex flex-col items-start gap-1 transition-all cursor-pointer border ${active
-                              ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-teal-400 shadow-md shadow-teal-500/20'
-                              : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700'
+                          className={`w-full px-3.5 py-3 rounded-2xl text-xs font-bold flex flex-col items-start gap-1.5 transition-all cursor-pointer border ${active
+                              ? 'bg-gradient-to-r from-[#0d4a41] via-[#09352e] to-[#0d4a41] text-emerald-100 border border-[#D4AF37]/50 shadow-md shadow-emerald-950/40 ring-1 ring-[#D4AF37]/30'
+                              : 'bg-black/35 text-slate-400 border border-emerald-500/15 hover:border-emerald-500/35 hover:text-white'
                             }`}
                         >
-                          <div className="flex items-center gap-1.5 w-full">
-                            <Check className={`w-3.5 h-3.5 shrink-0 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                          <div className="flex items-center gap-2 w-full">
+                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                              active ? 'bg-[#D4AF37] text-slate-950 border-[#FFF2B2] shadow-sm' : 'border-white/10 bg-white/5 text-transparent'
+                            }`}>
+                              <Check className={`w-3.5 h-3.5 ${active ? 'opacity-100 stroke-[3]' : 'opacity-0'}`} />
+                            </div>
                             <span className="truncate flex-1 text-right">{ca.label}</span>
-                            <span className="text-[10px] opacity-75 font-mono">({ca.points}ن)</span>
+                            <span className="text-[10px] font-mono text-[#F5D77F]">({ca.points}ن)</span>
                           </div>
                           {ca.scheduledTime && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-200 border border-teal-500/40 font-mono font-bold flex items-center gap-1 self-start">
@@ -2245,14 +2274,20 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             {/* CARD 3: QURAN, SPORT, STUDY */}
             {shouldShowSection('card_qss') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-indigo-400" />
-                    <h3 className="text-sm font-bold text-white">القرآن والرياضة والتعلّم</h3>
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <BookOpen className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-white">القرآن والرياضة والتعلّم</h3>
+                      <p className="text-[11px] text-emerald-200/70">ورد التلاوة والتمارين وتطوير الذات</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    <span className="text-xs font-mono font-black px-2.5 py-1 rounded-xl bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
                       {Math.round(scoreResult.c.quran + scoreResult.c.sport + scoreResult.c.study)} / {scoreResult.maxByCat.quran + scoreResult.maxByCat.sport + scoreResult.maxByCat.study} نقطة
                     </span>
                     {isEditMode && (
@@ -2270,41 +2305,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {!hiddenSet.has('item_quran') && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                          <BookOpen className="w-4 h-4" />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-emerald-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                          <BookOpen className="w-4 h-4 text-[#F5D77F]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white block">ورد القرآن</span>
+                            <span className="text-xs sm:text-sm font-black text-white block">ورد القرآن الكريم</span>
                             {settings.builtInSchedules?.item_quran?.scheduledTime && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold flex items-center gap-1">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#5eead4] border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 <span>{settings.builtInSchedules.item_quran.scheduledTime}</span>
                                 {settings.builtInSchedules.item_quran.enableVoiceAlert !== false && <span>🔊</span>}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-400">الهدف: {settings.quran} صفحات (10ن)</span>
+                          <span className="text-[11px] text-emerald-200/70">الهدف: {settings.quran} صفحات (10ن)</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleStep('quran', -1, 1)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           -
                         </button>
-                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                        <span className="min-w-[56px] py-1 px-2.5 rounded-xl bg-black/60 border border-emerald-500/30 text-center font-mono font-black text-[#F5D77F] text-sm shadow-inner">
                           {dayRecord.quran} ص
                         </span>
                         <button
                           type="button"
                           onClick={() => handleStep('quran', 1, 1)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           +
                         </button>
@@ -2352,41 +2387,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {!hiddenSet.has('item_sport') && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <Activity className="w-4 h-4" />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-emerald-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                          <Activity className="w-4 h-4 text-[#F5D77F]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white block">رياضة وحركة</span>
+                            <span className="text-xs sm:text-sm font-black text-white block">رياضة وحركة</span>
                             {settings.builtInSchedules?.item_sport?.scheduledTime && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#5eead4] border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 <span>{settings.builtInSchedules.item_sport.scheduledTime}</span>
                                 {settings.builtInSchedules.item_sport.enableVoiceAlert !== false && <span>🔊</span>}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-400">الهدف: {settings.sport} دقيقة (10ن)</span>
+                          <span className="text-[11px] text-emerald-200/70">الهدف: {settings.sport} دقيقة (10ن)</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleStep('sport', -1, 5)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           -
                         </button>
-                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                        <span className="min-w-[56px] py-1 px-2.5 rounded-xl bg-black/60 border border-emerald-500/30 text-center font-mono font-black text-[#F5D77F] text-sm shadow-inner">
                           {dayRecord.sport} د
                         </span>
                         <button
                           type="button"
                           onClick={() => handleStep('sport', 1, 5)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           +
                         </button>
@@ -2435,41 +2470,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {!hiddenSet.has('item_study') && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          <GraduationCap className="w-4 h-4" />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-emerald-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                          <GraduationCap className="w-4 h-4 text-[#F5D77F]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white block">تعلّم / مذاكرة</span>
+                            <span className="text-xs sm:text-sm font-black text-white block">تعلّم / مذاكرة</span>
                             {settings.builtInSchedules?.item_study?.scheduledTime && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold flex items-center gap-1">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#5eead4] border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 <span>{settings.builtInSchedules.item_study.scheduledTime}</span>
                                 {settings.builtInSchedules.item_study.enableVoiceAlert !== false && <span>🔊</span>}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-400">الهدف: {settings.study} دقيقة (15ن)</span>
+                          <span className="text-[11px] text-emerald-200/70">الهدف: {settings.study} دقيقة (15ن)</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleStep('study', -1, 15)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           -
                         </button>
-                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                        <span className="min-w-[56px] py-1 px-2.5 rounded-xl bg-black/60 border border-emerald-500/30 text-center font-mono font-black text-[#F5D77F] text-sm shadow-inner">
                           {dayRecord.study} د
                         </span>
                         <button
                           type="button"
                           onClick={() => handleStep('study', 1, 15)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           +
                         </button>
@@ -2519,14 +2554,20 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             {/* CARD 4: HEALTH */}
             {shouldShowSection('card_health') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Droplets className="w-5 h-5 text-cyan-400" />
-                    <h3 className="text-sm font-bold text-white">الصحة والراحة</h3>
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <Droplets className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-white">الصحة والراحة</h3>
+                      <p className="text-[11px] text-emerald-200/70">ساعات النوم والماء والتغذية الصحية</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    <span className="text-xs font-mono font-black px-2.5 py-1 rounded-xl bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 shadow-sm">
                       {Math.round(scoreResult.c.health)} / {scoreResult.maxByCat.health} نقاط
                     </span>
                     {isEditMode && (
@@ -2544,41 +2585,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {!hiddenSet.has('item_sleep') && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                          <Moon className="w-4 h-4" />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-emerald-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                          <Moon className="w-4 h-4 text-[#F5D77F]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white block">النوم والراحة</span>
+                            <span className="text-xs sm:text-sm font-black text-white block">النوم والراحة</span>
                             {settings.builtInSchedules?.item_sleep?.scheduledTime && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold flex items-center gap-1">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#5eead4] border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 <span>{settings.builtInSchedules.item_sleep.scheduledTime}</span>
                                 {settings.builtInSchedules.item_sleep.enableVoiceAlert !== false && <span>🔊</span>}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-400">الهدف: {settings.sleep} ساعات (4ن)</span>
+                          <span className="text-[11px] text-emerald-200/70">الهدف: {settings.sleep} ساعات (4ن)</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleStep('sleep', -1, 0.5)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           -
                         </button>
-                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                        <span className="min-w-[56px] py-1 px-2.5 rounded-xl bg-black/60 border border-emerald-500/30 text-center font-mono font-black text-[#F5D77F] text-sm shadow-inner">
                           {dayRecord.sleep} س
                         </span>
                         <button
                           type="button"
                           onClick={() => handleStep('sleep', 1, 0.5)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           +
                         </button>
@@ -2626,41 +2667,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 {!hiddenSet.has('item_water') && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/50 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                          <Droplets className="w-4 h-4" />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-black/40 border border-emerald-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                          <Droplets className="w-4 h-4 text-[#F5D77F]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white block">شرب الماء</span>
+                            <span className="text-xs sm:text-sm font-black text-white block">شرب الماء والترطيب</span>
                             {settings.builtInSchedules?.item_water?.scheduledTime && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold flex items-center gap-1">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#5eead4] border border-emerald-500/40 font-mono font-bold flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 <span>{settings.builtInSchedules.item_water.scheduledTime}</span>
                                 {settings.builtInSchedules.item_water.enableVoiceAlert !== false && <span>🔊</span>}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-400">الهدف: {settings.water} أكواب (3ن)</span>
+                          <span className="text-[11px] text-emerald-200/70">الهدف: {settings.water} أكواب (3ن)</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleStep('water', -1, 1)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           -
                         </button>
-                        <span className="min-w-[48px] text-center font-mono font-black text-white text-sm">
+                        <span className="min-w-[56px] py-1 px-2.5 rounded-xl bg-black/60 border border-emerald-500/30 text-center font-mono font-black text-[#F5D77F] text-sm shadow-inner">
                           {dayRecord.water} كوب
                         </span>
                         <button
                           type="button"
                           onClick={() => handleStep('water', 1, 1)}
-                          className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold flex items-center justify-center border border-slate-700 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-base flex items-center justify-center border border-white/20 cursor-pointer transition-colors shadow-sm active:scale-95"
                         >
                           +
                         </button>
@@ -2947,17 +2988,25 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             {/* CARD 5: WORK - UNLIMITED AUTO-IMPORTED & CUSTOM TASKS */}
             {shouldShowSection('card_work') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-amber-400" />
-                    <h3 className="text-sm font-bold text-white">الشغل ومهام اليوم</h3>
-                    {settings.autoImportTasks && (
-                      <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
-                        <Zap className="w-3 h-3 text-emerald-400" />
-                        استيراد تلقائي نشط
-                      </span>
-                    )}
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <Briefcase className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-black text-white">الشغل ومهام اليوم</h3>
+                        {settings.autoImportTasks && (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 font-bold">
+                            <Zap className="w-3 h-3 text-[#F5D77F]" />
+                            استيراد تلقائي نشط
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-emerald-200/70">أولويات العمل والمهام التنفيذية</p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -3122,14 +3171,22 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             {/* CARD 5B: ALL WORK TASKS & ATTACHMENTS IN DAILY SYSTEM */}
             {shouldShowSection('card_all_tasks') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <CheckSquare className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-sm font-bold text-white">سجل مهام العمل الشامل والمرفقات</h3>
-                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                      {tasks.length} مهمة
-                    </span>
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <CheckSquare className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-black text-white">سجل مهام العمل الشامل والمرفقات</h3>
+                        <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40">
+                          {tasks.length} مهمة
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-200/70">كافة المهام التنفيذية والمرفقات والملفات</p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -3192,11 +3249,17 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
             {/* CARD 6: EVENING REVIEW / JOURNAL */}
             {shouldShowSection('card_notes') && (
-              <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-sm font-bold text-white">مراجعة آخر اليوم</h3>
+              <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+                <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                      <FileText className="w-4 h-4 text-[#F5D77F]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-white">مراجعة وتأملات آخر اليوم</h3>
+                      <p className="text-[11px] text-emerald-200/70">تقييم الإنجاز، رصد المعوقات، وتحديد أولويات الغد</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -3376,31 +3439,34 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
         {activeTab === 'month' && (
           <div className="mt-5 space-y-5">
             {/* Reports Studio Control Center */}
-            <div className="lux-card rounded-3xl p-4 sm:p-5 border border-indigo-500/30 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.07] pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
-                    <FileText className="w-5 h-5" />
+            <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/30 shadow-[0_15px_45px_rgba(4,21,18,0.5)] relative overflow-hidden text-white space-y-4">
+              {/* Soft Specular Reflection Highlight */}
+              <div className="absolute top-0 right-0 left-0 h-16 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-4 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="icon-squircle-gold w-11 h-11 shrink-0 shadow-md">
+                    <FileText className="w-5 h-5 text-[#F5D77F]" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-white">
-                      استخراج وتخصيص التقارير
+                    <h3 className="text-sm sm:text-base font-black text-[#F5D77F] tracking-wide">
+                      استوديو استخراج وتخصيص التقارير
                     </h3>
-                    <p className="text-[11px] text-slate-400">
-                      اختر يوماً معيناً أو حدد فترة زمنية مخصصة لعرض إحصائياتها وتصدير تقرير PDF
+                    <p className="text-[11px] text-emerald-200/80">
+                      اختر يوماً معيناً أو حدد فترة زمنية مخصصة لعرض إحصائياتها وتصدير تقرير PDF تنفيذي
                     </p>
                   </div>
                 </div>
 
                 {/* Sub-modes Toggle */}
-                <div className="flex items-center p-1 bg-slate-950/80 border border-slate-800 rounded-2xl gap-1">
+                <div className="flex items-center p-1.5 bg-black/40 border border-emerald-500/20 rounded-2xl gap-1.5">
                   <button
                     type="button"
                     onClick={() => setReportViewMode('range')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                       reportViewMode === 'range'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-900/40'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] text-slate-950 shadow-md border border-[#FFF2B2]'
+                        : 'text-emerald-200/70 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <Layers className="w-3.5 h-3.5" />
@@ -3410,10 +3476,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setReportViewMode('day')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                       reportViewMode === 'day'
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-900/40'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] text-slate-950 shadow-md border border-[#FFF2B2]'
+                        : 'text-emerald-200/70 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <Calendar className="w-3.5 h-3.5" />
@@ -3423,10 +3489,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setReportViewMode('month')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                       reportViewMode === 'month'
-                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md shadow-amber-900/40'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-[#D4AF37] to-[#F5D77F] text-slate-950 shadow-md border border-[#FFF2B2]'
+                        : 'text-emerald-200/70 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <Award className="w-3.5 h-3.5" />
@@ -3511,41 +3577,41 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                     return (
                       <div className="space-y-3 pt-1">
-                        {/* KPI Cards Row */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                          <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/25 text-center">
-                            <div className="text-lg font-black text-emerald-400 font-mono">
+                        {/* KPI Cards Row with Executive Luxury Glow */}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/30 text-center shadow-md">
+                            <div className="text-xl font-black text-[#5eead4] font-mono drop-shadow-[0_0_8px_rgba(94,234,212,0.3)]">
                               {Math.round(pStats.avg)}%
                             </div>
-                            <div className="text-[10px] text-slate-400 font-bold">متوسط الالتزام</div>
+                            <div className="text-[10px] text-emerald-200/80 font-bold mt-0.5">متوسط الالتزام</div>
                           </div>
 
-                          <div className="p-3 rounded-2xl bg-indigo-950/30 border border-indigo-500/25 text-center">
-                            <div className="text-lg font-black text-indigo-400 font-mono">
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#122b3b] via-[#0c1e2b] to-[#06121b] border border-indigo-400/30 text-center shadow-md">
+                            <div className="text-xl font-black text-[#F5D77F] font-mono drop-shadow-[0_0_8px_rgba(245,215,127,0.3)]">
                               {pStats.quran} ص
                             </div>
-                            <div className="text-[10px] text-slate-400 font-bold">إجمالي القرآن</div>
+                            <div className="text-[10px] text-indigo-200/80 font-bold mt-0.5">إجمالي القرآن</div>
                           </div>
 
-                          <div className="p-3 rounded-2xl bg-teal-950/30 border border-teal-500/25 text-center">
-                            <div className="text-lg font-black text-teal-400 font-mono">
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-teal-500/30 text-center shadow-md">
+                            <div className="text-xl font-black text-[#5eead4] font-mono drop-shadow-[0_0_8px_rgba(94,234,212,0.3)]">
                               {pStats.sportMin} د
                             </div>
-                            <div className="text-[10px] text-slate-400 font-bold">إجمالي الرياضة</div>
+                            <div className="text-[10px] text-teal-200/80 font-bold mt-0.5">إجمالي الرياضة</div>
                           </div>
 
-                          <div className="p-3 rounded-2xl bg-purple-950/30 border border-purple-500/25 text-center">
-                            <div className="text-lg font-black text-purple-400 font-mono">
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#231a38] via-[#171026] to-[#0d0917] border border-purple-400/30 text-center shadow-md">
+                            <div className="text-xl font-black text-[#F5D77F] font-mono drop-shadow-[0_0_8px_rgba(245,215,127,0.3)]">
                               {Math.round(pStats.onTime)}%
                             </div>
-                            <div className="text-[10px] text-slate-400 font-bold">صلوات بوقتها</div>
+                            <div className="text-[10px] text-purple-200/80 font-bold mt-0.5">صلوات بوقتها</div>
                           </div>
 
-                          <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/25 text-center col-span-2 sm:col-span-1">
-                            <div className="text-lg font-black text-amber-400 font-mono">
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#2e230d] via-[#1f1708] to-[#120d04] border border-[#D4AF37]/40 text-center shadow-md col-span-2 sm:col-span-1">
+                            <div className="text-xl font-black text-[#F5D77F] font-mono drop-shadow-[0_0_8px_rgba(245,215,127,0.3)]">
                               {pStats.n} / {pStats.totalDays}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-bold">أيام مسجلة</div>
+                            <div className="text-[10px] text-amber-200/80 font-bold mt-0.5">أيام مسجلة</div>
                           </div>
                         </div>
 
@@ -3599,9 +3665,9 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                           <button
                             type="button"
                             onClick={() => openPdfForRange(pStats.startDate, pStats.endDate)}
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-black shadow-lg shadow-indigo-900/40 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+                            className="px-5 py-2.5 rounded-2xl btn-lux-gold text-slate-950 text-xs font-black shadow-lg flex items-center gap-2 cursor-pointer transition-all shrink-0"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-4 h-4 stroke-[2]" />
                             <span>تصدير تقرير PDF لهذه الفترة</span>
                           </button>
                         </div>
@@ -3713,9 +3779,9 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                           <button
                             type="button"
                             onClick={() => openPdfForDay(customReportDay)}
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-900/40 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+                            className="px-5 py-2.5 rounded-2xl btn-lux-gold text-slate-950 text-xs font-black shadow-lg flex items-center gap-2 cursor-pointer transition-all shrink-0"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-4 h-4 stroke-[2]" />
                             <span>تصدير تقرير PDF لهذا اليوم</span>
                           </button>
                         </div>
@@ -3730,10 +3796,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             {(reportViewMode === 'month' || reportViewMode === 'range') && (
               <>
                 {/* Month Navigator */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-emerald-500/30 shadow-md">
               <button
                 onClick={() => navigateMonth(-1)}
-                className="p-2 sm:px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 text-xs font-bold cursor-pointer transition-colors"
+                className="p-2 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1.5 text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 title="الشهر السابق"
               >
                 <ArrowRight className="w-4 h-4" />
@@ -3741,15 +3807,15 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
               </button>
 
               <div className="text-center">
-                <span className="text-base sm:text-lg font-black text-white block">
-                  {AR_MONTHS[parseInt(currentMonthKey.split('-')[1], 10) - 1]} {currentMonthKey.split('-')[0]}
+                <span className="text-base sm:text-lg font-black text-white block font-serif text-[#F5D77F]">
+                  {AR_MONTHS[parseInt(currentMonthKey.split('-')[1], 10) - 1]} {currentMonthKey.split('-')[0]} م
                 </span>
-                <span className="text-[11px] text-slate-400 font-bold">التقرير الشهري الشامل</span>
+                <span className="text-[11px] text-emerald-300/80 font-bold">التقرير الشهري الشامل</span>
               </div>
 
               <button
                 onClick={() => navigateMonth(1)}
-                className="p-2 sm:px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 text-xs font-bold cursor-pointer transition-colors"
+                className="p-2 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1.5 text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 title="الشهر التالي"
               >
                 <span className="hidden sm:inline">الشهر التالي</span>
@@ -3758,24 +3824,32 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             </div>
 
             {/* Heatmap Calendar */}
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-amber-400" />
-                  <span>خريطة الالتزام الشهري (Heatmap)</span>
-                </h3>
-                <span className="text-[11px] text-slate-400">اضغط على أي يوم لفتحه</span>
+            <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+              <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                    <Flame className="w-4 h-4 text-[#F5D77F]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-white">خريطة الالتزام الشهري</h3>
+                    <p className="text-[11px] text-emerald-200/70">سجل إنجاز ونقاط كل يوم على مدار الشهر</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-[#F5D77F] px-2.5 py-1 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 shadow-sm">
+                  اضغط على أي يوم لفتحه 👆
+                </span>
               </div>
 
               {/* Saturday-First Grid Header */}
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[11px] text-slate-400 font-bold">
-                <div>سبت</div>
-                <div>أحد</div>
-                <div>اثنين</div>
-                <div>ثلاثاء</div>
-                <div>أربعاء</div>
-                <div>خميس</div>
-                <div>جمعة</div>
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs font-black border-b border-emerald-500/15 pb-2">
+                <div className="text-[#F5D77F]">سبت</div>
+                <div className="text-[#F5D77F]">أحد</div>
+                <div className="text-[#F5D77F]">اثنين</div>
+                <div className="text-[#F5D77F]">ثلاثاء</div>
+                <div className="text-[#F5D77F]">أربعاء</div>
+                <div className="text-[#F5D77F]">خميس</div>
+                <div className="text-emerald-400 font-extrabold">جمعة</div>
               </div>
 
               {/* Heatmap Grid Cells */}
@@ -4210,11 +4284,19 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
         {/* ======================================================== */}
         {activeTab === 'settings' && (
           <div className="mt-5 space-y-5">
-            <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-                <Award className="w-5 h-5 text-emerald-400" />
-                <span>أهدافك اليومية المخصصة</span>
-              </h3>
+            <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0c332c] via-[#07241e] to-[#041411] border border-emerald-500/30 shadow-[0_10px_35px_rgba(4,20,17,0.45)] relative overflow-hidden space-y-4 text-white">
+              <div className="absolute top-0 right-0 left-0 h-12 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="icon-squircle-gold w-9 h-9 shrink-0 shadow-sm">
+                    <Award className="w-4 h-4 text-[#F5D77F]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-white">أهدافك اليومية المخصصة</h3>
+                    <p className="text-[11px] text-emerald-200/70">تحديد المستهدفات اليومية ومواعيد التنبيه الصوتي</p>
+                  </div>
+                </div>
+              </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
@@ -4576,20 +4658,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
           onClick={() => setAddModalKind(null)}
         >
           <div
-            className="w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-700/80 shadow-2xl overflow-hidden"
+            className="w-full max-w-lg rounded-3xl bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/40 shadow-2xl overflow-hidden text-white relative"
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  {editingItemId ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+            <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+            <div className="flex items-center justify-between p-5 border-b border-emerald-500/20 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="icon-squircle-gold w-10 h-10 shrink-0 shadow-sm">
+                  {editingItemId ? <Edit3 className="w-5 h-5 text-[#F5D77F]" /> : <Plus className="w-5 h-5 text-[#F5D77F]" />}
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white">
+                  <h3 className="text-sm sm:text-base font-black text-white">
                     {editingItemId ? 'تعديل وتخصيص البند في نظامي' : 'إضافة بند جديد إلى نظامي'}
                   </h3>
-                  <p className="text-[11px] text-slate-400">خصّص عباداتك، أذكارك، عاداتك، وتوقيتات التنبيه الصوتي بحرية</p>
+                  <p className="text-[11px] text-emerald-200/70">خصّص عباداتك، أذكارك، عاداتك، وتوقيتات التنبيه الصوتي بحرية</p>
                 </div>
               </div>
               <button
@@ -4860,20 +4943,21 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
           onClick={() => setSubTaskModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden"
+            className="w-full max-w-md rounded-3xl bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/40 shadow-2xl overflow-hidden text-white relative"
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                  <Clock className="w-5 h-5" />
+            <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+            <div className="flex items-center justify-between p-5 border-b border-emerald-500/20 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="icon-squircle-gold w-10 h-10 shrink-0 shadow-sm">
+                  <Clock className="w-5 h-5 text-[#F5D77F]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white">
+                  <h3 className="text-sm sm:text-base font-black text-white">
                     {subTaskModal.subTask ? 'تعديل مهمة داخلية مجدولة' : 'إضافة مهمة داخلية مجدولة'}
                   </h3>
-                  <p className="text-[11px] text-slate-400">{subTaskModal.habitLabel}</p>
+                  <p className="text-[11px] text-emerald-200/70">{subTaskModal.habitLabel}</p>
                 </div>
               </div>
               <button
@@ -5014,18 +5098,19 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
           onClick={() => setBuiltInScheduleModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden"
+            className="w-full max-w-md rounded-3xl bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-emerald-500/40 shadow-2xl overflow-hidden text-white relative"
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/95">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                  <Clock className="w-5 h-5" />
+            <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+            <div className="flex items-center justify-between p-5 border-b border-emerald-500/20 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="icon-squircle-gold w-10 h-10 shrink-0 shadow-sm">
+                  <Clock className="w-5 h-5 text-[#F5D77F]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white">ضبط موعد وتنبيه صوتي مجدول</h3>
-                  <p className="text-[11px] text-slate-400">{builtInScheduleModal.label}</p>
+                  <h3 className="text-sm sm:text-base font-black text-white">ضبط موعد وتنبيه صوتي مجدول</h3>
+                  <p className="text-[11px] text-emerald-200/70">{builtInScheduleModal.label}</p>
                 </div>
               </div>
               <button

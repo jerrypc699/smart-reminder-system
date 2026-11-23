@@ -10,27 +10,28 @@ import {
   Moon, 
   Briefcase, 
   Compass,
-  Play,
-  Square,
-  Search,
-  Plus,
-  Trash2,
-  Edit3,
-  Copy,
-  CheckCheck,
-  Smartphone,
-  Bed,
-  ShieldCheck,
-  BookOpen,
-  HelpCircle,
-  Clock,
-  Settings,
-  X,
-  Sliders,
-  Smile,
-  Frown,
-  Activity,
-  Zap
+  Play, 
+  Square, 
+  Search, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  Copy, 
+  CheckCheck, 
+  Smartphone, 
+  Bed, 
+  ShieldCheck, 
+  BookOpen, 
+  HelpCircle, 
+  Clock, 
+  Settings, 
+  X, 
+  Sliders, 
+  Smile, 
+  Frown, 
+  Activity, 
+  Zap,
+  Bookmark
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AthkarItem, AthkarCategory } from '../types';
@@ -338,7 +339,7 @@ export const AthkarView: React.FC = () => {
         particleCount: 40,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399', '#f59e0b'],
+        colors: ['#10b981', '#34d399', '#f59e0b', '#D4AF37'],
       });
     }
   };
@@ -431,66 +432,95 @@ export const AthkarView: React.FC = () => {
     window.dispatchEvent(new Event('trigger-floating-dhikr'));
   };
 
+  // Calculate circular progress for Misbaha
+  const misbahaProgressRatio = useMemo(() => {
+    if (!tasbeehTarget || tasbeehTarget <= 0) return 0;
+    return Math.min(1, tasbeehCount / tasbeehTarget);
+  }, [tasbeehCount, tasbeehTarget]);
+
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-16 text-right dir-rtl select-none" dir="rtl">
+    <div className="space-y-6 sm:space-y-8 animate-fadeIn pb-16 text-right dir-rtl select-none" dir="rtl">
       
-      {/* 1. Header Banner & Main Controls */}
-      <div className="lux-card-emerald rounded-3xl p-5 sm:p-7 relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-5 relative z-10">
-          <div className="space-y-1.5 text-center lg:text-right">
-            <div className="flex items-center justify-center lg:justify-start gap-3">
-              <div className="icon-squircle-emerald w-10 h-10 shrink-0">
-                <Sparkles className="w-5 h-5" strokeWidth={1.75} />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                أذكاري وحصن المسلم
-              </h2>
+      {/* ======================================================== */}
+      {/* 1. LUXURY EXECUTIVE HEADER BANNER                        */}
+      {/* ======================================================== */}
+      <div className="rounded-3xl p-6 sm:p-7 bg-gradient-to-br from-[#0c4038] via-[#082e28] to-[#041a17] border border-emerald-400/40 shadow-[0_15px_45px_rgba(4,26,23,0.5)] relative overflow-hidden text-white">
+        {/* Soft Mosque Atmosphere Ambient Halo */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Decorative Islamic Star Ornaments */}
+        <div className="w-full flex items-center justify-between px-2 pointer-events-none absolute top-4 left-0 right-0 opacity-20">
+          <span className="text-[#D4AF37] text-base">❖</span>
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+          <span className="text-[#D4AF37] text-base">❖</span>
+        </div>
+
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-5 relative z-10 pt-1">
+          <div className="space-y-2 text-center lg:text-right">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[#F5D77F] text-[11px] font-extrabold shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-[#F5D77F]" />
+              <span>أذكاري وحصن المسلم التنفيذي</span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-              أذكار الصباح والمساء، الرقية الشرعية، أدعية تفريج الكرب، والمسبحة الإلكترونية مع الأذكار التلقائية.
+            
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug">
+              أذكاري وحصن المسلم المبارك
+            </h2>
+
+            <p className="text-xs sm:text-sm text-emerald-200/80 max-w-xl leading-relaxed">
+              أذكار الصباح والمساء، الرقية الشرعية، أدعية تفريج الكرب، والمسبحة الإلكترونية التفاعلية مع الأذكار التلقائية.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2.5">
+            {/* Screen Athkar Settings */}
             <button
               onClick={() => setIsSettingsModalOpen(true)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer shadow-sm ${
                 floatingSettings.enabled
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
-                  : 'lux-well text-slate-400 hover:text-white'
+                  ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/50 shadow-emerald-950/30'
+                  : 'bg-black/30 text-slate-300 border-white/10 hover:border-white/20 hover:text-white'
               }`}
               title="إعدادات ظهور الأذكار على الشاشة"
             >
-              <Smartphone className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
+              <Smartphone className="w-4 h-4 text-emerald-400" strokeWidth={1.8} />
               <span>أذكار الشاشة: {floatingSettings.enabled ? 'مفعلة' : 'معطلة'}</span>
             </button>
 
+            {/* Add Custom Dhikr Button */}
             <button
               onClick={handleOpenAddCustom}
-              className="btn-lux-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-amber-500/25 via-emerald-500/20 to-teal-500/25 hover:from-amber-500/35 hover:to-emerald-500/30 text-[#F5D77F] border border-amber-500/40 shadow-sm transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2} />
+              <Plus className="w-4 h-4 text-amber-300" strokeWidth={2.2} />
               <span>إضافة ذكر خاص</span>
             </button>
 
-            <div className="lux-well flex items-center rounded-xl p-1 text-xs">
+            {/* Font Size Segmented Control */}
+            <div className="flex items-center rounded-2xl p-1 bg-black/40 border border-white/10 text-xs">
               <button
                 onClick={() => setFontSize('md')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold ${fontSize === 'md' ? 'btn-lux-primary' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer font-bold ${
+                  fontSize === 'md' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
                 title="خط متوسط"
               >
                 A
               </button>
               <button
                 onClick={() => setFontSize('lg')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold text-sm ${fontSize === 'lg' ? 'btn-lux-primary' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer font-bold text-sm ${
+                  fontSize === 'lg' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
                 title="خط كبير"
               >
                 A+
               </button>
               <button
                 onClick={() => setFontSize('xl')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold text-base ${fontSize === 'xl' ? 'btn-lux-primary' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer font-bold text-base ${
+                  fontSize === 'xl' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
                 title="خط عريض"
               >
                 A++
@@ -500,34 +530,40 @@ export const AthkarView: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Calm Mood Selector */}
-      <div className="lux-card p-4 sm:p-5 rounded-3xl space-y-3">
+      {/* ======================================================== */}
+      {/* 2. CALM MOOD SELECTOR (SYMMETRICAL 5-COLUMN MATRIX)      */}
+      {/* ======================================================== */}
+      <div className="lux-card p-5 sm:p-6 rounded-3xl space-y-3.5 border border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="icon-squircle-emerald w-8 h-8">
-              <Activity className="w-4 h-4" strokeWidth={1.75} />
+            <div className="icon-squircle-emerald w-9 h-9 shrink-0">
+              <Activity className="w-4 h-4" strokeWidth={1.8} />
             </div>
-            <h4 className="text-xs sm:text-sm font-extrabold text-white">
-              أذكار مخصصة لحالتك الآن
-            </h4>
+            <div>
+              <h4 className="text-xs sm:text-sm font-extrabold text-white">
+                أذكار مخصصة لحالتك النفسية والروحية الآن
+              </h4>
+              <p className="text-[11px] text-slate-400 mt-0.5">اختر الحالة لعرض الأذكار النبوية المناسبة فوراً</p>
+            </div>
           </div>
+
           {activeMood && (
             <button
               onClick={() => setActiveMood(null)}
-              className="text-[11px] text-rose-400 hover:underline cursor-pointer font-semibold"
+              className="text-xs text-rose-400 hover:text-rose-300 font-bold px-3 py-1 rounded-xl bg-rose-500/10 border border-rose-500/20 transition-colors cursor-pointer"
             >
-              عرض الكل
+              عرض الكل ✕
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
           {[
-            { id: 'anxiety', label: 'قلق أو متوتر', desc: 'طمأنينة وسكينة' },
-            { id: 'distress', label: 'مهموم أو مكروب', desc: 'تفريج الكرب' },
-            { id: 'fatigue', label: 'مجهد أو متعب', desc: 'طلب العافية' },
-            { id: 'guidance', label: 'طلب الهداية', desc: 'استخارة وتيسير' },
-            { id: 'gratitude', label: 'حمد وشكر', desc: 'شكر النعم' },
+            { id: 'anxiety', label: 'قلق أو متوتر', desc: 'طمأنينة وسكينة', icon: '🕊️' },
+            { id: 'distress', label: 'مهموم أو مكروب', desc: 'تفريج الكرب', icon: '🤲' },
+            { id: 'fatigue', label: 'مجهد أو متعب', desc: 'طلب العافية', icon: '🌿' },
+            { id: 'guidance', label: 'طلب الهداية', desc: 'استخارة وتيسير', icon: '🧭' },
+            { id: 'gratitude', label: 'حمد وشكر', desc: 'شكر النعم', icon: '⭐' },
           ].map((m) => (
             <button
               key={m.id}
@@ -535,57 +571,63 @@ export const AthkarView: React.FC = () => {
                 setActiveMood(activeMood === m.id ? null : m.id);
                 setSearchQuery('');
               }}
-              className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+              className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[88px] ${
                 activeMood === m.id
-                  ? 'lux-card-emerald border-emerald-400/50 text-white font-bold'
-                  : 'lux-well hover:border-white/[0.12] text-slate-300'
+                  ? 'bg-gradient-to-b from-emerald-600/30 to-teal-700/20 border-emerald-400 text-white font-bold shadow-lg shadow-emerald-950/30 ring-1 ring-emerald-400/40'
+                  : 'lux-well hover:border-white/20 text-slate-300 hover:text-white'
               }`}
             >
+              <span className="text-lg mb-1">{m.icon}</span>
               <div className="text-xs font-extrabold">{m.label}</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">{m.desc}</div>
+              <div className="text-[10px] text-slate-400 mt-0.5 font-medium">{m.desc}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* 3. Luxury Electronic Misbaha */}
-      <div className="lux-card-emerald rounded-3xl p-6 sm:p-8 relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+      {/* ======================================================== */}
+      {/* 3. LUXURY ELECTRONIC MISBAHA (EXECUTIVE CHRONO SPHERE)   */}
+      {/* ======================================================== */}
+      <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-[#0c4038] via-[#082e28] to-[#041a17] border border-emerald-400/40 shadow-[0_15px_45px_rgba(4,26,23,0.5)] relative overflow-hidden text-white">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+          
+          {/* Left: Presets, Target Controls & Statistics */}
           <div className="space-y-4 flex-1 text-center lg:text-right w-full">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-[#E7C66C] tracking-wide flex items-center gap-2">
-                <Sparkles className="w-4 h-4" strokeWidth={1.75} />
+              <span className="text-xs font-extrabold text-[#F5D77F] tracking-wide flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#F5D77F]" strokeWidth={1.75} />
                 المسبحة الإلكترونية الذكية
               </span>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsTasbeehHapticEnabled(!isTasbeehHapticEnabled)}
-                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
                     isTasbeehHapticEnabled
-                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
-                      : 'lux-well text-slate-500'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-black/30 text-slate-400 border-white/10'
                   }`}
                 >
                   الاهتزاز {isTasbeehHapticEnabled ? '✓' : '✕'}
                 </button>
                 <button
                   onClick={() => setIsTasbeehSoundEnabled(!isTasbeehSoundEnabled)}
-                  className={`btn-lux-icon !w-8 !h-8 cursor-pointer ${
+                  className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                     isTasbeehSoundEnabled
-                      ? '!bg-emerald-500/15 !border-emerald-500/35 text-emerald-300'
-                      : 'text-slate-500'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-black/30 text-slate-400 border-white/10'
                   }`}
                 >
-                  {isTasbeehSoundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  {isTasbeehSoundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-extrabold text-white font-serif leading-relaxed">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-white font-serif leading-relaxed px-1">
               {selectedTasbeehText}
             </h3>
 
+            {/* Preset Selector Chips */}
             <div className="flex flex-wrap gap-2 pt-1 justify-center lg:justify-start max-h-36 overflow-y-auto scrollbar-none">
               {tasbeehPresets.map((p, idx) => (
                 <button
@@ -594,63 +636,117 @@ export const AthkarView: React.FC = () => {
                     setSelectedTasbeehText(p);
                     setTasbeehCount(0);
                   }}
-                  className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                  className={`text-xs px-3.5 py-1.5 rounded-xl border transition-all cursor-pointer ${
                     selectedTasbeehText === p
-                      ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/45 font-bold'
-                      : 'lux-well text-slate-300 hover:text-white hover:border-white/[0.15]'
+                      ? 'bg-gradient-to-r from-emerald-600/30 to-teal-600/30 text-emerald-200 border-emerald-400 font-bold shadow-sm'
+                      : 'bg-black/30 text-slate-300 border-white/10 hover:border-white/20 hover:text-white'
                   }`}
                 >
-                  {p.length > 32 ? p.substring(0, 32) + '...' : p}
+                  {p.length > 34 ? p.substring(0, 34) + '...' : p}
                 </button>
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 pt-2 justify-center lg:justify-start text-xs text-slate-300">
-              <span className="font-bold text-slate-400">الهدف:</span>
+            {/* Target Selector */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 justify-center lg:justify-start text-xs text-slate-300">
+              <span className="font-bold text-slate-400 text-xs">الهدف:</span>
               {[33, 100, 500, 1000, 0].map((t) => (
                 <button
                   key={t}
                   onClick={() => setTasbeehTarget(t)}
-                  className={`px-3 py-1 rounded-xl border text-xs font-bold cursor-pointer transition-all tabular-nums ${
+                  className={`px-3.5 py-1 rounded-xl border text-xs font-bold cursor-pointer transition-all tabular-nums ${
                     tasbeehTarget === t
-                      ? 'btn-lux-primary'
-                      : 'lux-well text-slate-300 hover:border-white/[0.15]'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 border-amber-400 font-extrabold shadow-sm'
+                      : 'bg-black/30 text-slate-300 border-white/10 hover:border-white/20'
                   }`}
                 >
-                  {t === 0 ? 'حر' : t}
+                  {t === 0 ? 'مفتوح' : t}
                 </button>
               ))}
+            </div>
 
-              <div className="flex items-center gap-3 mr-auto text-[11px] text-slate-400 tabular-nums">
-                <span>جلسة: <strong className="text-white">{totalTasbeehSession}</strong></span>
-                <span>اليوم: <strong className="text-emerald-400">{dailyTasbeeh}</strong></span>
-                <span>الإجمالي: <strong className="text-[#E7C66C]">{allTimeTasbeeh}</strong></span>
+            {/* Stat Badges Grid */}
+            <div className="grid grid-cols-3 gap-2.5 pt-2 max-w-md mx-auto lg:mx-0">
+              <div className="p-2.5 rounded-2xl bg-black/30 border border-white/10 text-center">
+                <span className="text-[10px] text-slate-400 block font-medium">جلسة حالية</span>
+                <strong className="text-sm font-mono font-black text-white tabular-nums">{totalTasbeehSession}</strong>
+              </div>
+              <div className="p-2.5 rounded-2xl bg-black/30 border border-white/10 text-center">
+                <span className="text-[10px] text-slate-400 block font-medium">اليوم</span>
+                <strong className="text-sm font-mono font-black text-emerald-400 tabular-nums">{dailyTasbeeh}</strong>
+              </div>
+              <div className="p-2.5 rounded-2xl bg-black/30 border border-white/10 text-center">
+                <span className="text-[10px] text-slate-400 block font-medium">الإجمالي الكلي</span>
+                <strong className="text-sm font-mono font-black text-[#F5D77F] tabular-nums">{allTimeTasbeeh}</strong>
               </div>
             </div>
           </div>
 
-          {/* Right: Luxury Sapphire & Gold Pearl Misbaha Sphere */}
+          {/* Right: Chrono Progress Ring Sphere Dial */}
           <div className="flex flex-col items-center shrink-0">
-            <button
-              onClick={handleTasbeehClick}
-              className="relative w-48 h-48 sm:w-52 sm:h-52 rounded-full bg-gradient-to-br from-[#D69E24] via-[#0071E3] to-[#0058B0] p-[3px] shadow-[0_16px_45px_-10px_rgba(0,113,227,0.38)] hover:scale-[1.03] active:scale-[0.96] transition-all cursor-pointer flex items-center justify-center group"
-            >
-              <div className="w-full h-full rounded-full bg-[var(--lux-surface)] border border-slate-200/30 flex flex-col items-center justify-center p-4">
-                <span className="text-5xl sm:text-6xl font-mono font-extrabold tabular-nums text-white group-hover:text-[var(--lux-accent)] transition-colors">
-                  {tasbeehCount}
-                </span>
-                <span className="text-xs text-slate-400 font-mono tabular-nums mt-1">
-                  {tasbeehTarget > 0 ? `/ ${tasbeehTarget}` : 'تسبيح مفتوح'}
-                </span>
-                <span className="text-[11px] text-[#E7C66C] font-bold mt-2.5 bg-[#D4AF37]/12 border border-[#D4AF37]/30 px-3 py-0.5 rounded-full">
-                  اضغط للتسبيح
-                </span>
-              </div>
-            </button>
+            <div className="relative flex items-center justify-center">
+              {/* Outer Circular SVG Progress Ring */}
+              <svg className="w-52 h-52 sm:w-56 sm:h-56 -rotate-90 pointer-events-none absolute" viewBox="0 0 200 200">
+                {/* Track circle */}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="92"
+                  fill="none"
+                  stroke="rgba(255, 255, 255, 0.08)"
+                  strokeWidth="5"
+                />
+                {/* Active progress arc */}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="92"
+                  fill="none"
+                  stroke="url(#misbahaGoldEmerald)"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 92}
+                  strokeDashoffset={(2 * Math.PI * 92) * (1 - misbahaProgressRatio)}
+                  className="transition-all duration-300"
+                />
+                <defs>
+                  <linearGradient id="misbahaGoldEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#D4AF37" />
+                    <stop offset="50%" stopColor="#10B981" />
+                    <stop offset="100%" stopColor="#F5D77F" />
+                  </linearGradient>
+                </defs>
+              </svg>
 
+              {/* Main Sphere Button */}
+              <button
+                type="button"
+                onClick={handleTasbeehClick}
+                className="w-44 h-44 sm:w-48 sm:h-48 rounded-full bg-gradient-to-br from-[#0e463e] via-[#06221d] to-[#041613] p-1 border-2 border-[#D4AF37]/50 shadow-[0_15px_40px_rgba(4,26,23,0.7)] hover:scale-[1.03] active:scale-[0.96] transition-all cursor-pointer flex items-center justify-center group relative overflow-hidden"
+              >
+                {/* Specular Dial Flare */}
+                <div className="absolute top-2 left-6 w-20 h-10 rounded-full bg-white/10 blur-[2px] pointer-events-none" />
+
+                <div className="flex flex-col items-center justify-center p-4 text-center z-10">
+                  <span className="text-5xl sm:text-6xl font-mono font-black tabular-nums text-white group-hover:text-[#F5D77F] transition-colors leading-none tracking-tight">
+                    {tasbeehCount}
+                  </span>
+                  
+                  <span className="text-xs text-emerald-300/80 font-mono tabular-nums mt-1 font-bold">
+                    {tasbeehTarget > 0 ? `/ ${tasbeehTarget}` : 'تسبيح حر'}
+                  </span>
+
+                  <span className="text-[11px] text-[#F5D77F] font-bold mt-2.5 bg-[#D4AF37]/15 border border-[#D4AF37]/40 px-3 py-0.5 rounded-full shadow-sm">
+                    اضغط للتسبيح ❖
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            {/* Reset Counter Button */}
             <button
               onClick={resetTasbeeh}
-              className="mt-3 flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+              className="mt-3 flex items-center gap-1.5 text-xs text-emerald-200/70 hover:text-rose-400 transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>تصفير العداد الحالي</span>
@@ -659,32 +755,36 @@ export const AthkarView: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Section Tabs (كافة أبواب أذكاري) */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
+      {/* ======================================================== */}
+      {/* 4. SECTION TABS (كافة أبواب أذكاري)                      */}
+      {/* ======================================================== */}
+      <div className="space-y-4">
+        {/* Actions Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-slate-300">أبواب وأقسام الأذكار:</span>
+            <span className="text-xs font-black text-white">أبواب وأقسام الأذكار:</span>
             <button
               onClick={() => {
                 setSelectedCategory('custom');
                 setActiveMood(null);
                 handleOpenAddCustom();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
               title="إضافة ذكر أو دعاء مخصص جديد"
             >
               <Plus className="w-3.5 h-3.5 text-amber-400" />
               <span>+ إضافة ذكر مخصص</span>
             </button>
           </div>
+
           <div className="flex items-center gap-2">
             {/* Auto Sequence Play Button */}
             <button
               onClick={handleToggleSequence}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border shadow-sm ${
                 isPlayingSequence
                   ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
-                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
+                  : 'lux-well text-slate-300 hover:text-white hover:border-white/20'
               }`}
             >
               {isPlayingSequence ? <Square className="w-3 h-3 text-rose-400" /> : <Play className="w-3 h-3 text-emerald-400" />}
@@ -694,7 +794,7 @@ export const AthkarView: React.FC = () => {
             {/* Reset Current Section Counters */}
             <button
               onClick={handleResetCategory}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs border border-slate-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl lux-well text-slate-400 hover:text-white text-xs border transition-colors cursor-pointer"
               title="إعادة تعيين عدادات هذا القسم"
             >
               <RotateCcw className="w-3 h-3" />
@@ -703,8 +803,8 @@ export const AthkarView: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Buttons Bar - Multi-row wrap so no category is ever hidden or truncated */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        {/* Tab Buttons Bar - Symmetrical wrapping grid */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-1">
           {[
             { id: 'morning', label: 'أذكار الصباح ☀️', icon: Sun },
             { id: 'evening', label: 'أذكار المساء 🌙', icon: Moon },
@@ -728,14 +828,14 @@ export const AthkarView: React.FC = () => {
                   setSelectedCategory(tab.id as any);
                   setActiveMood(null);
                 }}
-                className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
                   isActive
                     ? (isFeaturedCustom
                         ? 'bg-amber-500/25 text-amber-200 border-amber-500/60 shadow-md shadow-amber-500/20 ring-1 ring-amber-500/40'
-                        : 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20')
+                        : 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/30')
                     : (isFeaturedCustom
-                        ? 'bg-amber-950/30 text-amber-300 border-amber-500/40 hover:bg-amber-900/40 hover:border-amber-400'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700')
+                        ? 'lux-well text-amber-300 border-amber-500/40 hover:bg-amber-900/30 hover:border-amber-400'
+                        : 'lux-well text-slate-400 hover:text-slate-200 hover:border-white/15')
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isFeaturedCustom ? 'text-amber-400' : ''}`} />
@@ -746,7 +846,7 @@ export const AthkarView: React.FC = () => {
         </div>
 
         {/* Search & Completion Progress Bar */}
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+        <div className="p-4 sm:p-5 rounded-3xl lux-card border border-white/10 space-y-3.5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             {/* Search Input */}
             <div className="relative w-full sm:w-80">
@@ -756,23 +856,23 @@ export const AthkarView: React.FC = () => {
                 placeholder="ابحث في أي ذكر أو دعاء أو فضل..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-500"
+                className="lux-input w-full pr-10 pl-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
               />
             </div>
 
             {/* Section Progress Counter */}
             <div className="flex items-center gap-3 text-xs w-full sm:w-auto justify-between sm:justify-end">
-              <span className="text-slate-400">
-                إنجاز هذا الورد: <strong className="text-emerald-400">{sectionStats.completed}</strong> من <strong className="text-white">{sectionStats.total}</strong> ذكر
+              <span className="text-slate-400 font-medium">
+                إنجاز هذا الورد: <strong className="text-emerald-400 font-mono">{sectionStats.completed}</strong> من <strong className="text-white font-mono">{sectionStats.total}</strong> ذكر
               </span>
-              <span className="font-mono font-bold text-emerald-300 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+              <span className="font-mono font-extrabold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
                 {sectionStats.percent}%
               </span>
             </div>
           </div>
 
           {/* Visual Progress Bar */}
-          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-800/80 h-2.5 rounded-full overflow-hidden p-[1px] border border-white/5">
             <div
               className="bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 h-full transition-all duration-300 rounded-full"
               style={{ width: `${sectionStats.percent}%` }}
@@ -780,14 +880,14 @@ export const AthkarView: React.FC = () => {
           </div>
 
           {/* Voice Recitation Toggle */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/[0.06]">
             <button
               type="button"
               onClick={() => setIsVoiceReciteEnabled(!isVoiceReciteEnabled)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 ${
                 isVoiceReciteEnabled
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                  : 'bg-slate-800 text-slate-400 border-slate-700'
+                  : 'lux-well text-slate-400 hover:text-white'
               }`}
               title="تلاوة صوتية واضحة ومسموعة عند النقر على أي بطاقة ذكر"
             >
@@ -803,16 +903,16 @@ export const AthkarView: React.FC = () => {
 
       {/* Custom Category Top CTA Banner */}
       {selectedCategory === 'custom' && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/30 shadow-lg animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-              <Sparkles className="w-5 h-5" />
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/30 shadow-lg animate-fadeIn">
+          <div className="flex items-center gap-3.5">
+            <div className="icon-squircle-gold w-11 h-11 shrink-0">
+              <Sparkles className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h4 className="font-bold text-white text-sm sm:text-base">
+              <h4 className="font-extrabold text-white text-sm sm:text-base">
                 أبواب وأقسام أذكارك وأدعيتك المخصصة ✍️
               </h4>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 أضف أذكارك وأدعيتك الخاصة لسعادة الدكتور عبد العزيز وحدد عدد التسبيحات والفضل ليتم حفظها ومزامنتها سحابياً.
               </p>
             </div>
@@ -820,7 +920,7 @@ export const AthkarView: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenAddCustom}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-105 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-105 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>إضافة ذكر مخصص جديد</span>
@@ -828,8 +928,10 @@ export const AthkarView: React.FC = () => {
         </div>
       )}
 
-      {/* 5. Athkar Cards Grid (نظام بطاقات أذكاري التفاعلية) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* ======================================================== */}
+      {/* 5. ATHKAR CARDS GRID (SYMMETRICAL 2-COLUMN LUXURY CARDS) */}
+      {/* ======================================================== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
         {filteredAthkar.map((item, index) => {
           const remaining = athkarProgress[item.id] !== undefined ? athkarProgress[item.id] : item.count;
           const isDone = remaining === 0;
@@ -842,135 +944,138 @@ export const AthkarView: React.FC = () => {
             <div
               key={item.id}
               onClick={() => handleDhikrProgress(item)}
-              className={`p-6 rounded-3xl border transition-all cursor-pointer select-none relative overflow-hidden group ${
+              className={`p-6 rounded-3xl border transition-all duration-200 cursor-pointer select-none relative overflow-hidden group flex flex-col justify-between ${
                 isDone
-                  ? 'bg-slate-900/40 border-emerald-500/40 shadow-inner'
+                  ? 'bg-slate-900/50 border-emerald-500/40 shadow-inner'
                   : (isCurrentlyPlaying
                       ? 'bg-slate-900 border-amber-500/60 shadow-xl shadow-amber-500/20 ring-1 ring-amber-500/40'
-                      : 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-xl')
+                      : 'lux-card border-white/10 hover:border-emerald-500/40 hover:shadow-xl')
               }`}
             >
-              {/* Card Header (Title & Badges) */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] font-mono font-bold text-emerald-400">
-                    {index + 1}
-                  </span>
-                  <h4 className="font-bold text-white text-xs sm:text-sm">
-                    {item.title || 'ذكر نبوي شريف'}
-                  </h4>
-                  {(item.category === 'custom' || item.isCustom) && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      مخصص ✨
+              <div>
+                {/* Card Header (Index, Title, Actions) */}
+                <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.08] mb-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-7 h-7 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-[11px] font-mono font-black text-emerald-400">
+                      {index + 1}
                     </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                  {/* Edit Custom Dhikr */}
-                  {(item.category === 'custom' || item.isCustom) && (
-                    <button
-                      onClick={(e) => handleOpenEditCustom(item, e)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors cursor-pointer"
-                      title="تعديل هذا الذكر المخصص"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                  )}
-
-                  {/* Delete Custom Dhikr */}
-                  {(item.category === 'custom' || item.isCustom) && (
-                    <button
-                      onClick={(e) => handleDeleteCustomDhikr(item.id, e)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
-                      title="حذف هذا الذكر المخصص"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-
-                  {/* Favorite Toggle */}
-                  <button
-                    onClick={(e) => handleToggleFavorite(item.id, e)}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                      isFav ? 'text-rose-400 bg-rose-500/10' : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                    title={isFav ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
-                  >
-                    <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-400' : ''}`} />
-                  </button>
-
-                  {/* Copy Text */}
-                  <button
-                    onClick={(e) => handleCopyText(item.id, item.text, e)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                    title="نسخ الذكر"
-                  >
-                    {copiedId === item.id ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                  </button>
-
-                  {/* Single Audio Read */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleReadDhikr(item, e)}
-                    className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-                      playingDhikrId === item.id
-                        ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-md shadow-emerald-500/30 scale-110 ring-2 ring-emerald-500/40'
-                        : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80'
-                    }`}
-                    title={playingDhikrId === item.id ? 'إيقاف القراءة الصوتية' : 'استماع صوتي واضح للذكر'}
-                  >
-                    {playingDhikrId === item.id ? (
-                      <Square className="w-4 h-4 fill-emerald-400 text-emerald-400 animate-pulse" />
-                    ) : (
-                      <Volume2 className="w-4 h-4" />
+                    <h4 className="font-extrabold text-white text-xs sm:text-sm">
+                      {item.title || 'ذكر نبوي شريف'}
+                    </h4>
+                    {(item.category === 'custom' || item.isCustom) && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        مخصص ✨
+                      </span>
                     )}
-                  </button>
+                  </div>
+
+                  {/* Toolbar Actions */}
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {/* Edit Custom Dhikr */}
+                    {(item.category === 'custom' || item.isCustom) && (
+                      <button
+                        onClick={(e) => handleOpenEditCustom(item, e)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                        title="تعديل هذا الذكر المخصص"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {/* Delete Custom Dhikr */}
+                    {(item.category === 'custom' || item.isCustom) && (
+                      <button
+                        onClick={(e) => handleDeleteCustomDhikr(item.id, e)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                        title="حذف هذا الذكر المخصص"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {/* Favorite Toggle */}
+                    <button
+                      onClick={(e) => handleToggleFavorite(item.id, e)}
+                      className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+                        isFav ? 'text-rose-400 bg-rose-500/15' : 'text-slate-500 hover:text-slate-300'
+                      }`}
+                      title={isFav ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                    >
+                      <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-400' : ''}`} />
+                    </button>
+
+                    {/* Copy Text */}
+                    <button
+                      onClick={(e) => handleCopyText(item.id, item.text, e)}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                      title="نسخ الذكر"
+                    >
+                      {copiedId === item.id ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+
+                    {/* Single Audio Read */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleReadDhikr(item, e)}
+                      className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                        playingDhikrId === item.id
+                          ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-md shadow-emerald-500/30 scale-105 ring-2 ring-emerald-500/40'
+                          : 'text-slate-400 hover:text-emerald-400 hover:bg-white/[0.06]'
+                      }`}
+                      title={playingDhikrId === item.id ? 'إيقاف القراءة الصوتية' : 'استماع صوتي واضح للذكر'}
+                    >
+                      {playingDhikrId === item.id ? (
+                        <Square className="w-4 h-4 fill-emerald-400 text-emerald-400 animate-pulse" />
+                      ) : (
+                        <Volume2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Dhikr Body Text with Elegant Tashkeel */}
+                <p className={`${textSizeClass} text-white font-serif leading-loose my-3 select-text`} dir="rtl">
+                  {item.text}
+                </p>
+
+                {/* Reward & Reference Box */}
+                {item.reward && (
+                  <div className="text-xs text-emerald-200/90 bg-emerald-500/10 p-3.5 rounded-2xl border border-emerald-500/20 my-3 leading-relaxed">
+                    <span className="font-extrabold text-emerald-400">الفضل:</span> {item.reward}
+                    {item.reference && (
+                      <span className="text-slate-400 mr-2 text-[11px] block sm:inline mt-1 sm:mt-0 font-sans">
+                        [{item.reference}]
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Dhikr Body Text with Tashkeel */}
-              <p className={`${textSizeClass} text-white font-serif leading-loose my-3 select-text`} dir="rtl">
-                {item.text}
-              </p>
-
-              {/* Reward & Reference Box */}
-              {item.reward && (
-                <div className="text-xs text-emerald-300/95 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20 my-3 leading-relaxed">
-                  <span className="font-bold text-emerald-400">الفضل:</span> {item.reward}
-                  {item.reference && (
-                    <span className="text-slate-400 mr-2 text-[11px] block sm:inline mt-1 sm:mt-0 font-sans">
-                      [{item.reference}]
-                    </span>
-                  )}
-                </div>
-              )}
-
               {/* Card Footer: Interactive Counter Dial */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
-                <span className="text-[11px] text-slate-400">
+              <div className="flex items-center justify-between pt-3.5 border-t border-white/[0.08] text-xs mt-2">
+                <span className="text-[11px] text-slate-400 font-medium">
                   {isDone ? 'اكتمل هذا الذكر بحمد الله' : 'المس البطاقة في أي مكان للتسبيح'}
                 </span>
 
                 <div
                   className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-bold transition-all border ${
                     isDone
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
-                      : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 group-hover:bg-emerald-500/20'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-md shadow-emerald-950/40'
+                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 group-hover:bg-emerald-500/25 group-hover:border-emerald-500/50'
                   }`}
                 >
                   {isDone ? (
                     <>
-                      <Check className="w-4 h-4" />
+                      <Check className="w-4 h-4 text-white stroke-[2.5]" />
                       <span>تم بحمد الله ✅</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-slate-400">المتبقي:</span>
+                      <span className="text-slate-400 text-[11px]">المتبقي:</span>
                       <span className="font-mono text-base font-black text-white">
                         {remaining}
                       </span>
-                      <span className="text-[10px] text-slate-400">/ {item.count}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">/ {item.count}</span>
                     </>
                   )}
                 </div>
@@ -982,14 +1087,16 @@ export const AthkarView: React.FC = () => {
 
       {/* Empty State */}
       {filteredAthkar.length === 0 && (
-        <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-          <Sparkles className="w-10 h-10 text-emerald-400 mx-auto" />
-          <h4 className="text-base font-bold text-white">
+        <div className="p-12 text-center rounded-3xl lux-card border border-white/10 space-y-4">
+          <div className="icon-squircle-emerald w-12 h-12 mx-auto">
+            <Sparkles className="w-6 h-6 text-emerald-400" />
+          </div>
+          <h4 className="text-base font-extrabold text-white">
             {selectedCategory === 'custom'
               ? 'لا توجد أذكار مخصصة مضافة بعد'
               : 'لا توجد أذكار في هذا القسم'}
           </h4>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
+          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
             {selectedCategory === 'custom'
               ? 'يمكن لسعادة الدكتور عبد العزيز إضافة أذكاره وأدعيته الخاصة هنا، مع تحديد عدد التكرار والفضل ليتم حفظها ومزامنتها سحابياً.'
               : 'جرّب تغيير خيارات البحث أو استعراض أبواب أخرى من الأذكار.'}
@@ -998,7 +1105,7 @@ export const AthkarView: React.FC = () => {
             <button
               type="button"
               onClick={handleOpenAddCustom}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 inline-flex items-center gap-2 cursor-pointer transition-all"
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 inline-flex items-center gap-2 cursor-pointer transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>إضافة أول ذكر مخصص للدكتور عبد العزيز ✍️</span>
@@ -1007,20 +1114,24 @@ export const AthkarView: React.FC = () => {
         </div>
       )}
 
-      {/* 6. Settings Modal: Floating Dhikr On-Screen Controls */}
+      {/* ======================================================== */}
+      {/* 6. SETTINGS MODAL: FLOATING DHIKR ON-SCREEN              */}
+      {/* ======================================================== */}
       {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-5 text-right" dir="rtl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-base font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-5 text-right" dir="rtl">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className="icon-squircle-emerald w-8 h-8">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-extrabold text-white">
                   إعدادات أذكار الشاشة التلقائية 🕊️
                 </h3>
               </div>
               <button
                 onClick={() => setIsSettingsModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1028,7 +1139,7 @@ export const AthkarView: React.FC = () => {
 
             <div className="space-y-4 text-xs text-slate-300">
               {/* Enable Toggle */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                 <div>
                   <div className="font-bold text-white text-sm">تفعيل الأذكار العائمة على الشاشة</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">ظهور أذكار نبوية دورية تلقائياً دون مقاطعة العمل</div>
@@ -1051,8 +1162,8 @@ export const AthkarView: React.FC = () => {
                       onClick={() => handleSaveFloatingSettings({ intervalMinutes: mins })}
                       className={`py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
                         floatingSettings.intervalMinutes === mins
-                          ? 'bg-emerald-600 text-white border-emerald-500'
-                          : 'bg-slate-800 text-slate-300 border-slate-700'
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
+                          : 'bg-white/[0.03] text-slate-300 border-white/[0.08] hover:border-white/20'
                       }`}
                     >
                       {mins} دقيقة
@@ -1071,8 +1182,8 @@ export const AthkarView: React.FC = () => {
                       onClick={() => handleSaveFloatingSettings({ durationSeconds: secs })}
                       className={`py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
                         floatingSettings.durationSeconds === secs
-                          ? 'bg-emerald-600 text-white border-emerald-500'
-                          : 'bg-slate-800 text-slate-300 border-slate-700'
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
+                          : 'bg-white/[0.03] text-slate-300 border-white/[0.08] hover:border-white/20'
                       }`}
                     >
                       {secs} ثوانٍ
@@ -1082,7 +1193,7 @@ export const AthkarView: React.FC = () => {
               </div>
 
               {/* Sound on popup */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-800/80 border border-slate-700">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                 <span>تنبيه بنقرة صوتية خفيفة عند ظهور الذكر</span>
                 <input
                   type="checkbox"
@@ -1095,7 +1206,7 @@ export const AthkarView: React.FC = () => {
               {/* Preview Button */}
               <button
                 onClick={triggerTestFloatingDhikr}
-                className="w-full py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold border border-emerald-500/40 transition-all cursor-pointer"
+                className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 text-emerald-200 font-extrabold border border-emerald-500/40 transition-all cursor-pointer shadow-sm"
               >
                 تجربة ظهور الذكر على الشاشة الآن 🚀
               </button>
@@ -1104,24 +1215,28 @@ export const AthkarView: React.FC = () => {
         </div>
       )}
 
-      {/* 7. Custom Dhikr Modal (إضافة ذكر ودعاء خاص للدكتور عبد العزيز) */}
+      {/* ======================================================== */}
+      {/* 7. CUSTOM DHIKR MODAL (إضافة ذكر ودعاء خاص)             */}
+      {/* ======================================================== */}
       {isCustomModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-4 text-right" dir="rtl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                {editingCustomId ? (
-                  <Edit3 className="w-5 h-5 text-amber-400" />
-                ) : (
-                  <Plus className="w-5 h-5 text-emerald-400" />
-                )}
-                <h3 className="text-base font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-7 space-y-4 text-right" dir="rtl">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className={editingCustomId ? "icon-squircle-gold w-8 h-8" : "icon-squircle-emerald w-8 h-8"}>
+                  {editingCustomId ? (
+                    <Edit3 className="w-4 h-4 text-amber-400" />
+                  ) : (
+                    <Plus className="w-4 h-4 text-emerald-400" />
+                  )}
+                </div>
+                <h3 className="text-base font-extrabold text-white">
                   {editingCustomId ? 'تعديل الذكر أو الدعاء المخصص' : 'إضافة ذكر أو دعاء مخصص للدكتور عبد العزيز'}
                 </h3>
               </div>
               <button
                 onClick={() => setIsCustomModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1135,7 +1250,7 @@ export const AthkarView: React.FC = () => {
                   placeholder="مثال: دعاء دخول العيادة أو قبل العمليات"
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="lux-input w-full px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none"
                 />
               </div>
 
@@ -1147,7 +1262,7 @@ export const AthkarView: React.FC = () => {
                   placeholder="اكتب نص الدعاء هنا..."
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="lux-input w-full px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none font-serif text-sm leading-relaxed"
                 />
               </div>
 
@@ -1160,7 +1275,7 @@ export const AthkarView: React.FC = () => {
                     max={1000}
                     value={customCount}
                     onChange={(e) => setCustomCount(parseInt(e.target.value, 10) || 1)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-emerald-500"
+                    className="lux-input w-full px-4 py-2.5 text-white focus:outline-none font-mono"
                   />
                 </div>
 
@@ -1171,22 +1286,22 @@ export const AthkarView: React.FC = () => {
                     placeholder="مثال: تيسير وشفاء بإذن الله"
                     value={customReward}
                     onChange={(e) => setCustomReward(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="lux-input w-full px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+              <div className="pt-3.5 border-t border-white/[0.08] flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsCustomModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                  className="px-4 py-2.5 rounded-2xl bg-white/[0.06] text-slate-300 hover:text-white cursor-pointer transition-colors"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/30 cursor-pointer"
+                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-105 text-white font-extrabold shadow-lg shadow-emerald-600/30 cursor-pointer transition-all"
                 >
                   {editingCustomId ? 'حفظ التعديلات ✅' : 'حفظ في أذكاري ✅'}
                 </button>

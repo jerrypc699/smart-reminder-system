@@ -151,6 +151,11 @@ export class NativeAlarmService {
           try {
             const extra = notification.extra;
             if (extra?.type === 'task') {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('native_notification_fired', {
+                  detail: extra
+                }));
+              }
               const audioSrc = extra.cloudUrl || '/audio/dr_abdelaziz_task_alert.mp3';
               const audio = new Audio(audioSrc);
               audio.volume = 1.0;
@@ -370,10 +375,15 @@ export class NativeAlarmService {
         if (task.status === 'snoozed' && task.snoozeUntil) {
           const snoozeDate = new Date(task.snoozeUntil);
           if (snoozeDate.getTime() > now.getTime()) {
+            const taskTitle = task.title.trim();
+            const taskBody = task.voiceMessage && task.voiceMessage.includes(taskTitle)
+              ? task.voiceMessage
+              : `يا دكتور عبد العزيز: حان الآن موعد مهمة ${taskTitle}. ${task.voiceMessage ? task.voiceMessage.replace(/^يا دكتور عبد العزيز[،:]?\s*/, '') : 'يرجى المتابعة والتنفيذ الآن.'}`;
+
             notificationsToSchedule.push({
               id: numericId + 500000,
-              title: `📋 تذكير بمهمة مؤجلة: ${task.title}`,
-              body: task.voiceMessage || `يا دكتور عبد العزيز: حان موعد متابعة مهمة ${task.title}.`,
+              title: `📋 تذكير بمهمة مؤجلة: ${taskTitle}`,
+              body: taskBody,
               schedule: {
                 at: snoozeDate,
                 allowWhileIdle: true
@@ -385,8 +395,8 @@ export class NativeAlarmService {
               extra: {
                 taskId: task.id,
                 type: 'task',
-                title: task.title,
-                voiceMessage: task.voiceMessage || '',
+                title: taskTitle,
+                voiceMessage: taskBody,
                 customAudioId: task.customAudioId || '',
                 cloudUrl: task.cloudUrl || ''
               }
@@ -401,12 +411,17 @@ export class NativeAlarmService {
           const [hour, min] = task.dueTime.split(':').map(Number);
           const exactDueDate = new Date(year, month - 1, day, hour, min, 0, 0);
 
-          // 1. Primary Alarm AT EXACT DUE TIME
+          // 1. Primary Alarm AT EXACT DUE TIME - Prominently announces task name!
           if (exactDueDate.getTime() > now.getTime()) {
+            const taskTitle = task.title.trim();
+            const taskBody = task.voiceMessage && task.voiceMessage.includes(taskTitle)
+              ? task.voiceMessage
+              : `يا دكتور عبد العزيز: حان الآن موعد مهمة ${taskTitle}. ${task.voiceMessage ? task.voiceMessage.replace(/^يا دكتور عبد العزيز[،:]?\s*/, '') : (task.description || 'يرجى المتابعة والتنفيذ الآن.')}`;
+
             notificationsToSchedule.push({
               id: numericId,
-              title: `📋 موعد مهمة: ${task.title}`,
-              body: task.voiceMessage || `يا دكتور عبد العزيز: ${task.description || 'حان الآن موعد تنفيذ ومتابعة هذه المهمة.'}`,
+              title: `📋 موعد مهمة الآن: ${taskTitle}`,
+              body: taskBody,
               schedule: {
                 at: exactDueDate,
                 allowWhileIdle: true
@@ -418,8 +433,8 @@ export class NativeAlarmService {
               extra: {
                 taskId: task.id,
                 type: 'task',
-                title: task.title,
-                voiceMessage: task.voiceMessage || '',
+                title: taskTitle,
+                voiceMessage: taskBody,
                 customAudioId: task.customAudioId || '',
                 cloudUrl: task.cloudUrl || ''
               }
@@ -434,7 +449,7 @@ export class NativeAlarmService {
               notificationsToSchedule.push({
                 id: numericId + 1000000,
                 title: `⏳ اقترب موعد مهمة: ${task.title}`,
-                body: `يا دكتور عبد العزيز: باقي ${reminderMinutes} دقائق على موعد ${task.title}.`,
+                body: `يا دكتور عبد العزيز: باقي ${reminderMinutes} دقائق على موعد مهمة ${task.title}.`,
                 schedule: {
                   at: preReminderDate,
                   allowWhileIdle: true

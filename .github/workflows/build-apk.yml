@@ -53,33 +53,32 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.49.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.50.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.49.apk
-          path: DrAbdelaziz-Reminder-v1.0.49.apk
+          name: DrAbdelaziz-Reminder-v1.0.50.apk
+          path: DrAbdelaziz-Reminder-v1.0.50.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.49
+      - name: Create or Update GitHub Release v1.0.50
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.49
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.49"
+          tag_name: v1.0.50
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.50"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.49
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.50
             
             التحديثات الجديدة:
-            - إصلاح وبرمجة مواقيت صلاة الضحى وقيام الليل المخصصة في منبه الهاتف وهندسة التنبيهات
-            - ربط التعديل المخصص مباشرة بنظام المنبه العتادي للهاتف والأذان والتنبيه الصوتي
-            - إعادة الجدولة الفورية للتنبيهات بمجرد تعديل الوقت أو العودة للتوقيت الشرعي
-            - رسالة تأكيد مرئية (Toast) فور حفظ الموعد المخصص
+            - نطق اسم المهمة صراحة ووضوحاً في التنبيه الصوتي عند حلول موعد المهمة (يا دكتور عبد العزيز: حان الآن موعد مهمة [اسم المهمة])
+            - ربط التنبيهات اللحظية المباشرة في أندرويد والويب ببرمجية النطق الصوتي الفصيح فور استلام المنبه
+            - ترقية نصوص التنبيهات في الإشعارات والمنبه العتادي لتتضمن دائماً اسم المهمة صراحة
           files: |
-            DrAbdelaziz-Reminder-v1.0.49.apk
+            DrAbdelaziz-Reminder-v1.0.50.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -92,7 +91,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.49.apk
+            DrAbdelaziz-Reminder-v1.0.50.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
             app-debug.apk

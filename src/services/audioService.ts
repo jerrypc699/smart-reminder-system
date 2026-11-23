@@ -611,8 +611,8 @@ class AudioService {
       return;
     }
 
-    // 2. If it's a clinic task, play dedicated clinic audio
-    if (clean.includes('عيادة') || clean.includes('كشف') || clean.includes('مرضى')) {
+    // 2. If it's a clinic task sound only (without a specific task title to speak)
+    if ((clean.includes('عيادة') || clean.includes('كشف') || clean.includes('مرضى')) && !clean.includes('مهمة')) {
       this.playDoctorClinicAlert(options.volume ?? 0.95, options.onEnd);
       return;
     }

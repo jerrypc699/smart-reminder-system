@@ -209,7 +209,7 @@ export function parseArabicVoiceTask(transcript: string): ParsedVoiceTask {
   // Format HH:mm
   const dueTime = `${String(targetHour).padStart(2, '0')}:${String(targetMin).padStart(2, '0')}`;
 
-  const voiceMessage = `يا دكتور عبد العزيز، ${title}`;
+  const voiceMessage = `يا دكتور عبد العزيز، حان الآن موعد مهمة ${title}. يرجى المتابعة والتنفيذ الآن.`;
 
   return {
     title,

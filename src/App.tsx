@@ -630,11 +630,21 @@ export function App() {
       // 3. Play luxury doctor task alert chime
       audioService.playDoctorTaskAlert(audioSettings.masterVolume);
 
-      // 4. Speak the recorded voice message or personalized title alert
+      // 4. Speak the recorded voice message or personalized title alert - GUARANTEED TO PROMINENTLY SAY TASK NAME!
       if (audioSettings.enableTts) {
-        const textToSpeak = voiceMsg
-          ? (voiceMsg.startsWith('يا دكتور') ? voiceMsg : `يا دكتور عبد العزيز: ${voiceMsg}`)
-          : `يا دكتور عبد العزيز: حان الآن موعد تنفيذ مهمة ${taskTitle}. يرجى المتابعة الآن.`;
+        const cleanTitle = (taskTitle || task?.title || 'عمل').trim();
+        let textToSpeak = '';
+
+        if (voiceMsg && voiceMsg.trim()) {
+          const cleanMsg = voiceMsg.trim().replace(/^يا دكتور عبد العزيز[،:]?\s*/, '').trim();
+          if (cleanMsg.includes(cleanTitle)) {
+            textToSpeak = `يا دكتور عبد العزيز: ${cleanMsg}`;
+          } else {
+            textToSpeak = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. ${cleanMsg}`;
+          }
+        } else {
+          textToSpeak = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. يرجى المتابعة والتنفيذ الآن.`;
+        }
 
         setTimeout(() => {
           audioService.speakAlert(textToSpeak, {
@@ -643,7 +653,7 @@ export function App() {
             pitch: audioSettings.ttsPitch,
             voiceURI: audioSettings.ttsVoiceURI,
           });
-        }, 1600);
+        }, 1200);
       }
     } catch (err) {
       console.warn('handleTriggerTaskVoiceAlert error:', err);
@@ -960,7 +970,11 @@ export function App() {
       }
     };
     window.addEventListener('native_notification_tapped', handleNativeTap);
-    return () => window.removeEventListener('native_notification_tapped', handleNativeTap);
+    window.addEventListener('native_notification_fired', handleNativeTap);
+    return () => {
+      window.removeEventListener('native_notification_tapped', handleNativeTap);
+      window.removeEventListener('native_notification_fired', handleNativeTap);
+    };
   }, [audioSettings.masterVolume, prayerSettings.azanReciter, audioSettings.enableTts]);
 
   // Update clock every second
@@ -1186,8 +1200,9 @@ export function App() {
           setTasks(taskService.getTasks());
 
           // Show Native Notification
+          const taskNotificationMsg = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${task.title}. ${task.voiceMessage ? task.voiceMessage.replace(/^يا دكتور عبد العزيز[،:]?\s*/, '') : (task.description || 'يرجى المتابعة والتنفيذ الآن.')}`;
           notificationService.showNotification(`📋 موعد مهمة الآن: ${task.title}`, {
-            body: `يا دكتور عبد العزيز: ${task.description || task.voiceMessage || 'حان موعد تنفيذ ومتابعة هذه المهمة الآن.'}`,
+            body: taskNotificationMsg,
             tag: `task-${task.id}`,
           });
 
@@ -1204,7 +1219,7 @@ export function App() {
             id: `alert-task-${task.id}-${Date.now()}`,
             type: 'task',
             title: `يا دكتور عبد العزيز: ${task.title}`,
-            message: task.description || task.voiceMessage || 'حان وقت تنفيذ ومتابعة هذه المهمة الآن.',
+            message: taskNotificationMsg,
             priority: task.priority,
             timestamp: now.toISOString(),
             taskId: task.id,
@@ -1478,9 +1493,18 @@ export function App() {
 
     audioService.playDoctorTaskAlert(audioSettings.masterVolume);
     if (audioSettings.enableTts) {
-      const msg = task.voiceMessage
-        ? (task.voiceMessage.startsWith('يا دكتور') ? task.voiceMessage : `يا دكتور عبد العزيز: ${task.voiceMessage}`)
-        : `يا دكتور عبد العزيز: تذكير بمهمة ${task.title}. يرجى المتابعة الآن.`;
+      const cleanTitle = task.title.trim();
+      let msg = '';
+      if (task.voiceMessage && task.voiceMessage.trim()) {
+        const cleanMsg = task.voiceMessage.trim().replace(/^يا دكتور عبد العزيز[،:]?\s*/, '').trim();
+        if (cleanMsg.includes(cleanTitle)) {
+          msg = `يا دكتور عبد العزيز: ${cleanMsg}`;
+        } else {
+          msg = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. ${cleanMsg}`;
+        }
+      } else {
+        msg = `يا دكتور عبد العزيز: حان الآن موعد مهمة ${cleanTitle}. يرجى المتابعة والتنفيذ الآن.`;
+      }
 
       setTimeout(() => {
         audioService.speakAlert(msg, {
@@ -1489,7 +1513,7 @@ export function App() {
           pitch: audioSettings.ttsPitch,
           voiceURI: audioSettings.ttsVoiceURI,
         });
-      }, 1600);
+      }, 1200);
     }
   };
 

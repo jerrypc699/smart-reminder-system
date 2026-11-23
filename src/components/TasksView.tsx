@@ -747,9 +747,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const prefix = 'يا دكتور عبد العزيز، ';
     let finalVoiceMessage = cleanVoiceMsg;
     if (!finalVoiceMessage) {
-      finalVoiceMessage = `${prefix}تنبيه لمهمة عمل: ${title.trim()}. ${
+      finalVoiceMessage = `${prefix}حان الآن موعد مهمة: ${title.trim()}. ${
         priority === 'urgent' ? 'هذه المهمة عاجلة جداً.' : priority === 'high' ? 'أولوية مرتفعة.' : ''
-      } يرجى المتابعة الآن.`;
+      } يرجى المتابعة والتنفيذ الآن.`;
+    } else if (!finalVoiceMessage.includes(title.trim())) {
+      finalVoiceMessage = `${prefix}حان الآن موعد مهمة ${title.trim()}. ${finalVoiceMessage.replace(/^يا دكتور عبد العزيز[،:]?\s*/, '')}`;
     } else if (!finalVoiceMessage.startsWith('يا دكتور عبد العزيز') && !finalVoiceMessage.startsWith('دكتور عبد العزيز')) {
       finalVoiceMessage = `${prefix}${finalVoiceMessage}`;
     }
@@ -3011,13 +3013,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="اتركه فارغاً للتوليد الذكي التلقائي..."
+                  placeholder="سيقوم النظام بنطق اسم المهمة تلقائياً: حان الآن موعد مهمة..."
                   value={voiceMessage}
                   onChange={(e) => setVoiceMessage(e.target.value)}
                   className="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-500"
                 />
                 <span className="text-[11px] text-slate-500 mt-1 block">
-                  سيقوم النظام بنطق هذا النص بصوت عربي فصيح عند حلول الموعد.
+                  ينطق النظام تلقائياً اسم المهمة «{title.trim() || 'اسم المهمة'}» عند الموعد، ويمكنك إضافة أي توجيه صوتي إضافي هنا.
                 </span>
               </div>
 

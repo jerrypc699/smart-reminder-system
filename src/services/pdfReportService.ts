@@ -25,8 +25,11 @@ export interface PdfReportOptions {
   includeDailySystemStats: boolean;
   includeReflections: boolean;
   includeAttachmentsDetails: boolean;
+  includeWorkTasks?: boolean;
   openOrShare?: 'open' | 'share';
 }
+
+export type ExecutivePdfReportOptions = PdfReportOptions;
 
 export interface PdfExportResult {
   success: boolean;
@@ -186,7 +189,7 @@ function buildTasksTableShell(rowsHtml: string, sectionTitle: string): string {
 }
 
 export async function generateExecutivePdfReport(
-  options: PdfReportOptions
+  options: ExecutivePdfReportOptions
 ): Promise<PdfExportResult> {
   const {
     reportTitle,
@@ -197,6 +200,7 @@ export async function generateExecutivePdfReport(
     includeDailySystemStats,
     includeReflections,
     includeAttachmentsDetails,
+    includeWorkTasks,
     openOrShare = 'open',
   } = options;
 
@@ -222,6 +226,12 @@ export async function generateExecutivePdfReport(
   const [mYear, mMonth] = currentMonthKey.split('-').map(Number);
   const monthLabel = `${AR_MONTHS[(mMonth || 1) - 1]} ${mYear}`;
 
+  const sDate = options.startDateKey || currentDateKey;
+  const eDate = options.endDateKey || currentDateKey;
+  const periodStats = scope === 'date_range'
+    ? calculatePeriodStats(sDate, eDate, allDays, settings)
+    : null;
+
   const totalSelected = selectedTasks.length;
   const completedCount = selectedTasks.filter((t) => t.status === 'completed').length;
   const pendingCount = selectedTasks.filter((t) => t.status !== 'completed').length;
@@ -229,6 +239,7 @@ export async function generateExecutivePdfReport(
   const attachmentsTotal = selectedTasks.reduce((sum, t) => sum + (t.attachments?.length || 0), 0);
 
   const showSystemSection = includeDailySystemStats && scope !== 'tasks_only';
+  const shouldRenderTasks = scope === 'tasks_only' ? true : (includeWorkTasks !== false);
 
   // Daily System HTML Block
   let systemSummaryHtml = '';
@@ -293,19 +304,17 @@ export async function generateExecutivePdfReport(
           </div>
         </div>
       `;
-    } else if (scope === 'date_range') {
-      const sDate = options.startDateKey || currentDateKey;
-      const eDate = options.endDateKey || currentDateKey;
-      const periodStats = calculatePeriodStats(sDate, eDate, allDays, settings);
+    } else if (scope === 'date_range' && periodStats) {
+      const pStats = periodStats;
 
       const pdfCats = [
         ...CATEGORIES_LIST,
-        ...(periodStats.logged[0]?.s.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'عادات مخصصة', max: periodStats.logged[0]?.s.maxByCat.custom }] : []),
+        ...(pStats.logged[0]?.s.maxByCat?.custom > 0 ? [{ key: 'custom', label: 'عادات مخصصة', max: pStats.logged[0]?.s.maxByCat.custom }] : []),
       ];
 
       const catBarsHtml = pdfCats
         .map(({ key, label }) => {
-          const pct = Math.round(periodStats.cats[key] || 0);
+          const pct = Math.round(pStats.cats[key] || 0);
           return `
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
               <span style="width: 72px; font-size: 10px; font-weight: 700; color: #334155;">${escapeHtml(label)}</span>
@@ -318,7 +327,7 @@ export async function generateExecutivePdfReport(
         })
         .join('');
 
-      const periodDaysRows = periodStats.logged
+      const periodDaysRows = pStats.logged
         .slice(0, 31)
         .map((item, idx) => {
           const rowBg = idx % 2 === 1 ? '#f8fafc' : '#ffffff';
@@ -354,9 +363,9 @@ export async function generateExecutivePdfReport(
         })
         .join('');
 
-      const daysTableHtml = periodStats.logged.length > 0 ? `
+      const daysTableHtml = pStats.logged.length > 0 ? `
         <div style="margin-top: 10px;">
-          <h4 style="margin: 0 0 6px 0; font-size: 11px; font-weight: 800; color: #0f172a;">سجل أيام الفترة بالتفصيل (${periodStats.logged.length} يوم مسجل):</h4>
+          <h4 style="margin: 0 0 6px 0; font-size: 11px; font-weight: 800; color: #0f172a;">سجل أيام الفترة بالتفصيل (${pStats.logged.length} يوم مسجل):</h4>
           <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
             <thead>
               <tr style="background: #1e293b; color: #ffffff;">
@@ -380,33 +389,33 @@ export async function generateExecutivePdfReport(
         <div style="margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: #f8fafc; border: 1px solid #cbd5e1;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
             <h3 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #0f172a;">
-              📅 مؤشرات أداء الفترة (${escapeHtml(periodStats.startDate)} إلى ${escapeHtml(periodStats.endDate)})
+              📅 مؤشرات أداء الفترة (${escapeHtml(pStats.startDate)} إلى ${escapeHtml(pStats.endDate)})
             </h3>
             <span style="padding: 3px 10px; border-radius: 99px; background: #d1fae5; color: #047857; font-size: 11px; font-weight: 800;">
-              متوسط الالتزام: ${Math.round(periodStats.avg)} / 100 (${periodStats.n} يوم مسجل من ${periodStats.totalDays})
+              متوسط الالتزام: ${Math.round(pStats.avg)} / 100 (${pStats.n} يوم مسجل من ${pStats.totalDays})
             </span>
           </div>
 
           <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
               <div style="font-size: 9px; color: #64748b;">صلوات بوقتها</div>
-              <div style="font-size: 13px; font-weight: 900; color: #059669;">${Math.round(periodStats.onTime)}%</div>
+              <div style="font-size: 13px; font-weight: 900; color: #059669;">${Math.round(pStats.onTime)}%</div>
             </div>
             <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
               <div style="font-size: 9px; color: #64748b;">إجمالي القرآن</div>
-              <div style="font-size: 13px; font-weight: 900; color: #4338ca;">${periodStats.quran} ص</div>
+              <div style="font-size: 13px; font-weight: 900; color: #4338ca;">${pStats.quran} ص</div>
             </div>
             <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
               <div style="font-size: 9px; color: #64748b;">إجمالي الرياضة</div>
-              <div style="font-size: 13px; font-weight: 900; color: #059669;">${periodStats.sportMin} د</div>
+              <div style="font-size: 13px; font-weight: 900; color: #059669;">${pStats.sportMin} د</div>
             </div>
             <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
               <div style="font-size: 9px; color: #64748b;">ساعات التعلّم</div>
-              <div style="font-size: 13px; font-weight: 900; color: #7c3aed;">${periodStats.studyH.toFixed(1)}س</div>
+              <div style="font-size: 13px; font-weight: 900; color: #7c3aed;">${pStats.studyH.toFixed(1)}س</div>
             </div>
             <div style="flex: 1; padding: 7px 8px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; text-align: center;">
               <div style="font-size: 9px; color: #64748b;">أيام الحد الأدنى</div>
-              <div style="font-size: 13px; font-weight: 900; color: #d97706;">${periodStats.minDays} يوم</div>
+              <div style="font-size: 13px; font-weight: 900; color: #d97706;">${pStats.minDays} يوم</div>
             </div>
           </div>
 
@@ -473,17 +482,58 @@ export async function generateExecutivePdfReport(
   // Reflections Block (optional)
   let reflectionsHtml = '';
   if (includeReflections && scope !== 'tasks_only') {
-    const notesPairs = (scope === 'daily_and_tasks' || scope === 'specific_day')
-      ? [
-        { label: 'أبرز إنجازات اليوم', val: dayRecord.notes.good },
-        { label: 'المعوقات', val: dayRecord.notes.block },
-        { label: 'أولوية الغد', val: dayRecord.notes.tomorrow },
-      ].filter((n) => n.val && n.val.trim())
-      : [
+    let notesPairs: { label: string; val: string }[] = [];
+
+    if (scope === 'daily_and_tasks' || scope === 'specific_day') {
+      const targetDateKey = currentDateKey;
+      const targetDayRecord = dailySystemService.getDay(targetDateKey);
+      notesPairs = [
+        { label: 'أبرز إنجازات اليوم', val: targetDayRecord.notes.good },
+        { label: 'المعوقات', val: targetDayRecord.notes.block },
+        { label: 'أولوية الغد', val: targetDayRecord.notes.tomorrow },
+      ].filter((n) => n.val && n.val.trim());
+    } else if (scope === 'date_range') {
+      const pStats = periodStats || calculatePeriodStats(sDate, eDate, allDays, settings);
+
+      const goodNotes = pStats.logged
+        .filter(({ d }) => d.notes?.good && d.notes.good.trim())
+        .map(({ id, d }) => `[${id}]: ${d.notes.good.trim()}`);
+
+      const blockNotes = pStats.blocks && pStats.blocks.length > 0
+        ? pStats.blocks.map((b) => `[${b.id}]: ${b.t}`)
+        : pStats.logged
+            .filter(({ d }) => d.notes?.block && d.notes.block.trim())
+            .map(({ id, d }) => `[${id}]: ${d.notes.block.trim()}`);
+
+      const tomorrowNotes = pStats.logged
+        .filter(({ d }) => d.notes?.tomorrow && d.notes.tomorrow.trim())
+        .map(({ id, d }) => `[${id}]: ${d.notes.tomorrow.trim()}`);
+
+      if (goodNotes.length > 0) {
+        notesPairs.push({
+          label: 'إنجازات ونجاحات الفترة',
+          val: goodNotes.join(' • '),
+        });
+      }
+      if (blockNotes.length > 0) {
+        notesPairs.push({
+          label: 'المعوقات والتحديات المسجلة',
+          val: blockNotes.join(' • '),
+        });
+      }
+      if (tomorrowNotes.length > 0) {
+        notesPairs.push({
+          label: 'الأولويات والخطط القادمة',
+          val: tomorrowNotes.join(' • '),
+        });
+      }
+    } else if (scope === 'comprehensive') {
+      notesPairs = [
         { label: 'أهم إنجازات الشهر', val: monthReview.wins },
         { label: 'الدرس المستفاد', val: monthReview.lesson },
         { label: 'هدف الشهر القادم', val: monthReview.goal },
       ].filter((n) => n.val && n.val.trim());
+    }
 
     if (notesPairs.length > 0) {
       reflectionsHtml = `
@@ -507,7 +557,7 @@ export async function generateExecutivePdfReport(
   const nextPageBatchSize = 11;
 
   const taskChunks: Task[][] = [];
-  if (selectedTasks.length === 0) {
+  if (!shouldRenderTasks || selectedTasks.length === 0) {
     taskChunks.push([]);
   } else {
     taskChunks.push(selectedTasks.slice(0, firstPageBatchSize));
@@ -535,8 +585,19 @@ export async function generateExecutivePdfReport(
     taskChunks.forEach((chunk, pageIdx) => {
       const isFirst = pageIdx === 0;
       const isLast = pageIdx === totalPages - 1;
-      const rowsHtml = buildTaskRowsHtml(chunk, runningIndex, includeAttachmentsDetails);
+      const rowsHtml = shouldRenderTasks ? buildTaskRowsHtml(chunk, runningIndex, includeAttachmentsDetails) : '';
       runningIndex += chunk.length;
+
+      let headerBadgeLabel = '';
+      if (scope === 'date_range') {
+        headerBadgeLabel = `فترة: ${options.startDateKey || ''} إلى ${options.endDateKey || ''}`;
+      } else if (scope === 'specific_day' || scope === 'daily_and_tasks') {
+        headerBadgeLabel = `يوم ${currentDateKey}`;
+      } else if (scope === 'tasks_only') {
+        headerBadgeLabel = 'مهام العمل';
+      } else {
+        headerBadgeLabel = `التقرير الشهري الشامل — ${monthLabel}`;
+      }
 
       const headerHtml = isFirst
         ? `
@@ -548,7 +609,7 @@ export async function generateExecutivePdfReport(
             </div>
             <div style="text-align: left; padding: 8px 14px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
               <div style="font-size: 11px; font-weight: 800; color: #fde68a;">تقرير معتمد</div>
-              <div style="font-size: 10px; color: #e2e8f0;">${scope === 'tasks_only' ? 'مهام العمل' : scope === 'daily_and_tasks' ? `يوم ${escapeHtml(currentDateKey)}` : escapeHtml(monthLabel)}</div>
+              <div style="font-size: 10px; color: #e2e8f0;">${escapeHtml(headerBadgeLabel)}</div>
             </div>
           </div>
         `
@@ -566,8 +627,8 @@ export async function generateExecutivePdfReport(
       pageEl.innerHTML = `
         ${headerHtml}
         ${isFirst ? systemSummaryHtml : ''}
-        ${isFirst ? tasksKpiHtml : ''}
-        ${buildTasksTableShell(rowsHtml, isFirst ? 'سجل مهام العمل والتفاصيل' : 'تابع سجل مهام العمل')}
+        ${shouldRenderTasks && isFirst ? tasksKpiHtml : ''}
+        ${shouldRenderTasks ? buildTasksTableShell(rowsHtml, isFirst ? 'سجل مهام العمل والتفاصيل' : 'تابع سجل مهام العمل') : ''}
         ${isLast ? reflectionsHtml : ''}
         <div style="position: absolute; bottom: 20px; left: 36px; right: 36px; border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; color: #64748b;">
           <span>صادر من نظام المتابعة الذكي — د. عبد العزيز</span>
@@ -606,7 +667,7 @@ export async function generateExecutivePdfReport(
     let fileNameScope = 'نظامي';
     if (scope === 'tasks_only') fileNameScope = 'مهام_العمل';
     else if (scope === 'specific_day' || scope === 'daily_and_tasks') fileNameScope = `يوم_${currentDateKey}`;
-    else if (scope === 'date_range') fileNameScope = `فترة_${options.startDateKey || 'بدء'}_إلى_${options.endDateKey || 'انتهاء'}`;
+    else if (scope === 'date_range') fileNameScope = `فترة_${options.startDateKey}_إلى_${options.endDateKey}`;
 
     const fileName = `تقرير_${fileNameScope}_${getLocalDateStr(now)}.pdf`;
 

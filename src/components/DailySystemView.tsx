@@ -1492,7 +1492,23 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             <button
               type="button"
               onClick={() => {
-                setPdfModalScope(activeTab === 'day' ? 'specific_day' : 'date_range');
+                if (activeTab === 'day') {
+                  setPdfModalScope('specific_day');
+                  setCustomReportDay(currentDateKey);
+                } else if (activeTab === 'month') {
+                  if (reportViewMode === 'range') {
+                    setPdfModalScope('date_range');
+                    setPdfModalStartDate(customReportStart);
+                    setPdfModalEndDate(customReportEnd);
+                  } else if (reportViewMode === 'day') {
+                    setPdfModalScope('specific_day');
+                    setCustomReportDay(customReportDay);
+                  } else if (reportViewMode === 'month') {
+                    setPdfModalScope('comprehensive');
+                  }
+                } else {
+                  setPdfModalScope('comprehensive');
+                }
                 setIsPdfModalOpen(true);
               }}
               className="btn-lux-gold flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black cursor-pointer shrink-0 shadow-lg"
@@ -5212,7 +5228,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
       {/* PDF Report Export Studio Modal */}
       <PdfExportModal
         isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
+        onClose={() => {
+          setIsPdfModalOpen(false);
+          setPdfModalStartDate('');
+          setPdfModalEndDate('');
+        }}
         tasks={tasks}
         currentDateKey={pdfModalScope === 'specific_day' ? customReportDay : currentDateKey}
         currentMonthKey={currentMonthKey}

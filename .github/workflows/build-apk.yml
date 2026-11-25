@@ -53,33 +53,34 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.55.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.56.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.55.apk
-          path: DrAbdelaziz-Reminder-v1.0.55.apk
+          name: DrAbdelaziz-Reminder-v1.0.56.apk
+          path: DrAbdelaziz-Reminder-v1.0.56.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.55
+      - name: Create or Update GitHub Release v1.0.56
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.55
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.55"
+          tag_name: v1.0.56
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.56"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.55
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.56
             
             التحديثات الجديدة:
-            - إعادة تصميم شاملة وتوحيد التناسق والسمترية الملكية الفاخرة لكافة واجهات النظام لتطابق شاشة مواقيت الصلاة (الزمرد الداكن والذهب الخالص)
-            - تناغم هندسي في بطاقات نظامي، شريط الأيام الأسبوعي، وحافظات إنجاز الموظفين، واستوديو جدولة الوسائط الصوتية والمرئية
-            - ترقية مظهر الأذكار مع المسبحة الدائرية التفاعلية الفاخرة ومصفوفة الحالات الشعورية
-            - ترقية بطاقات التمارين الرياضية ومشغل الفيديو مع بطاقات الإحصائيات المتناسقة رباعية الأعمدة
+            - إصلاح وتخصيص تقارير الفترات الزمنية المحددة في «نظامي» لتعزل بيانات الفترة بدقة تامة وبدون تسريب أو الخلط مع التقرير الشهري الشامل
+            - إضافة خيار تفاعلي صريح للتحكم في تضمين مهام العمل في التقارير (إلغاء التضمين تلقائياً لتقارير الفترات والأيام، أو تفعيله بفلترة مقتصرة على مهام الفترة فقط)
+            - تصحيح شارة الهيدر العلوي لملف PDF لتعكس تاريخ ونطاق الفترة المحددة بالتفصيل
+            - عزل مراجعات الشهر عن تقارير الفترات وقصر الملاحظات على ما تم تسجيله داخل أيام الفترة فقط
+            - ضبط زر تصدير PDF في أعلى «نظامي» ليتعرف تلقائياً على التبويب والوضع المعروض (فترة مخصصة، يوم محدد، أو خريطة الشهر)
           files: |
-            DrAbdelaziz-Reminder-v1.0.55.apk
+            DrAbdelaziz-Reminder-v1.0.56.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -92,7 +93,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.55.apk
+            DrAbdelaziz-Reminder-v1.0.56.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

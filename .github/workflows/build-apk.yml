@@ -53,34 +53,33 @@ jobs:
 
       - name: Prepare Versioned APK Files
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.56.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder-v1.0.57.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk DrAbdelaziz-Reminder.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DrAbdelaziz-Reminder-v1.0.56.apk
-          path: DrAbdelaziz-Reminder-v1.0.56.apk
+          name: DrAbdelaziz-Reminder-v1.0.57.apk
+          path: DrAbdelaziz-Reminder-v1.0.57.apk
           retention-days: 30
 
-      - name: Create or Update GitHub Release v1.0.56
+      - name: Create or Update GitHub Release v1.0.57
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.56
-          name: "Dr. Abdelaziz Smart Reminder App v1.0.56"
+          tag_name: v1.0.57
+          name: "Dr. Abdelaziz Smart Reminder App v1.0.57"
           body: |
-            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.56
+            تطبيق نظام التذكير الذكي ومواقيت الصلاة للدكتور عبد العزيز — الإصدار v1.0.57
             
             التحديثات الجديدة:
-            - إصلاح وتخصيص تقارير الفترات الزمنية المحددة في «نظامي» لتعزل بيانات الفترة بدقة تامة وبدون تسريب أو الخلط مع التقرير الشهري الشامل
-            - إضافة خيار تفاعلي صريح للتحكم في تضمين مهام العمل في التقارير (إلغاء التضمين تلقائياً لتقارير الفترات والأيام، أو تفعيله بفلترة مقتصرة على مهام الفترة فقط)
-            - تصحيح شارة الهيدر العلوي لملف PDF لتعكس تاريخ ونطاق الفترة المحددة بالتفصيل
-            - عزل مراجعات الشهر عن تقارير الفترات وقصر الملاحظات على ما تم تسجيله داخل أيام الفترة فقط
-            - ضبط زر تصدير PDF في أعلى «نظامي» ليتعرف تلقائياً على التبويب والوضع المعروض (فترة مخصصة، يوم محدد، أو خريطة الشهر)
+            - إضافة مكتبة فيديوهات متكاملة داخل «أذكاري» مع رفع وتشغيل وتعديل أسماء الفيديوهات أو إرفاق فيديو مباشرة بكل ذكر
+            - إتاحة تعديل كافة الأذكار (الأساسية والمخصصة) نصاً وعنواناً وتكراراً وفضلاً، مع إمكانية تعديل عناوين أقسام وأبواب الأذكار مباشرة
+            - إضافة محرر كامل لبطاقة التكليف الرسمية قبل إرسالها كصورة على واتساب (تعديل العنوان والموضوع والمرسل والتاريخ والتحية والمهمة والمطلوب والتوجيه والختام) مع تحديث الصورة تلقائياً
+            - إضافة القواعد والممنوعات الغذائية بتنبيه صوتي مجدول تحت «الصحة والراحة» في «نظامي» مع أمثلة جاهزة (ممنوع العيش بعد الساعة ٨ مساءً، وممنوع السكريات والحلويات) وإمكانية إضافة وتعديل أي قاعدة صحية أخرى
           files: |
-            DrAbdelaziz-Reminder-v1.0.56.apk
+            DrAbdelaziz-Reminder-v1.0.57.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:
@@ -93,7 +92,7 @@ jobs:
           tag_name: latest
           name: "Dr. Abdelaziz Smart Reminder App (Latest)"
           files: |
-            DrAbdelaziz-Reminder-v1.0.56.apk
+            DrAbdelaziz-Reminder-v1.0.57.apk
             DrAbdelaziz-Reminder.apk
             app-debug.apk
         env:

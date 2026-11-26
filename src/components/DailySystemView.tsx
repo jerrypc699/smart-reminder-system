@@ -628,6 +628,13 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
     audioService.playChime('success', 0.5);
   };
 
+  const handleGenerateHealthRulesSchedule = () => {
+    const defs = dailySystemService.generateDefaultHealthRulesSchedule();
+    dailySystemService.setSubTasksForHabit('item_food', defs);
+    showToast('✓ تم استعادة القواعد الصحية والتنبيهات الصوتية بنجاح (ممنوع العيش بعد ٨، ممنوع السكريات)!');
+    audioService.playChime('success', 0.5);
+  };
+
   const toggleExpandSubTasks = (habitKey: string) => {
     setExpandedSubTasks((prev) => ({ ...prev, [habitKey]: !prev[habitKey] }));
   };
@@ -690,7 +697,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
             className="flex items-center gap-1.5 font-bold text-white hover:text-slate-200 cursor-pointer"
           >
             <span className="font-mono text-sm">{isExpanded ? '▾' : '▸'}</span>
-            <span>المهام والمواعيد الداخلية المجدولة</span>
+            <span>
+              {habitKey === 'item_food'
+                ? 'قواعد وممنوعات غذائية بتنبيه صوتي 🔊'
+                : 'المهام والمواعيد الداخلية المجدولة'}
+            </span>
             {subTasks.length > 0 && (
               <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-black ${colorClasses.badge}`}>
                 {doneCount} / {subTasks.length} منجز
@@ -707,6 +718,16 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                 title="توزيع أوقات الـ 8 أكواب تلقائياً على مدار ساعات اليوم"
               >
                 <span>⚡ توزيع الـ 8 أكواب</span>
+              </button>
+            )}
+            {habitKey === 'item_food' && (
+              <button
+                type="button"
+                onClick={handleGenerateHealthRulesSchedule}
+                className="text-[10px] px-2.5 py-1 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1 cursor-pointer transition-all"
+                title="استعادة أمثلة القواعد الصحية (ممنوع العيش بعد الساعة ٨ وممنوع السكريات)"
+              >
+                <span>⚡ استعادة الأمثلة الصحية</span>
               </button>
             )}
             <button
@@ -2765,11 +2786,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   {!hiddenSet.has('item_food') && (
-                    <div className="relative">
+                    <div className="relative flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => updateCurrentDay({ food: !dayRecord.food })}
-                        className={`w-full p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${dayRecord.food
+                        className={`flex-1 p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer border ${dayRecord.food
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
                             : 'bg-slate-950/50 text-slate-400 border-slate-800 hover:border-slate-700'
                           }`}
@@ -2777,6 +2798,11 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                         <div className="flex items-center gap-2">
                           <Utensils className="w-4 h-4 text-emerald-400" />
                           <span className="text-xs font-bold">أكل نضيف ومنتظم (3ن)</span>
+                          {settings.builtInSchedules?.item_food?.scheduledTime && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-[#5eead4] border border-emerald-500/40 font-mono font-bold">
+                              {settings.builtInSchedules.item_food.scheduledTime} 🔊
+                            </span>
+                          )}
                         </div>
                         <div
                           className={`w-6 h-6 rounded-lg border flex items-center justify-center ${dayRecord.food ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-700'
@@ -2785,6 +2811,33 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                           {dayRecord.food && <Check className="w-4 h-4" />}
                         </div>
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBuiltInSchedule('item_food', 'الالتزام بالغذاء الصحي')}
+                        className={`p-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
+                          settings.builtInSchedules?.item_food?.scheduledTime
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-slate-900 text-slate-500 hover:text-purple-300 border-slate-800'
+                        }`}
+                        title="ضبط موعد وتنبيه صوتي للغذاء الصحي"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      {settings.builtInSchedules?.item_food?.scheduledTime && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handlePreviewVoice(
+                              settings.builtInSchedules?.item_food?.voiceMessage ||
+                                'يا دكتور عبد العزيز، تذكير بالالتزام بالغذاء الصحي والنظيف اليوم.'
+                            )
+                          }
+                          className="p-2 rounded-xl bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 cursor-pointer shrink-0"
+                          title="تجربة التنبيه الصوتي"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isEditMode && (
                         <button
                           type="button"
@@ -2826,6 +2879,10 @@ export const DailySystemView: React.FC<DailySystemViewProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Health & Dietary Voice Rules under الصحة والراحة (e.g. ممنوع العيش بعد الساعة ٨، ممنوع السكريات) */}
+                {!hiddenSet.has('item_food') &&
+                  renderHabitSubTasks('item_food', 'الالتزام الغذائي والقواعد الصحية', 'emerald')}
               </div>
             )}
 

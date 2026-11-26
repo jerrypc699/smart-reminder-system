@@ -8,7 +8,10 @@ import {
   Share2,
   Sparkles,
   Loader2,
-  ImageIcon
+  ImageIcon,
+  Edit3,
+  RotateCcw,
+  Save
 } from 'lucide-react';
 import html2canvas from 'html2canvas-pro';
 import { Share } from '@capacitor/share';
@@ -21,6 +24,7 @@ import {
   getArabicHonorific,
   whatsappService
 } from '../services/whatsappService';
+import { taskService } from '../services/taskService';
 
 interface OfficialTaskDispatchModalProps {
   task: Task | null;
@@ -88,10 +92,97 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
 
   const [isSendingRecipientPhone, setIsSendingRecipientPhone] = useState<string | null>(null);
 
-  const messageText = task ? buildTaskWhatsAppMessage(task) : '';
+  // Editable Card Fields State (Pre-send editing before PNG capture)
+  const defaultSalutation = isGroup
+    ? `السادة الأفاضل المحترمون / ${groupDisplayName}،`
+    : `${honorific}،`;
 
-  // Background Pre-rendering: As soon as the modal opens and DOM settles,
-  // render the card into a File and Base64 so it can be shared instantly on tap
+  const [isEditingCard, setIsEditingCard] = useState(false);
+  const [persistToTask, setPersistToTask] = useState(false);
+  const [editDocTitle, setEditDocTitle] = useState('أمر تكليف بمهمة رسمية');
+  const [editTopic, setEditTopic] = useState(taskTitle);
+  const [editSender, setEditSender] = useState('مكتب د/ عبد العزيز شطا');
+  const [editDate, setEditDate] = useState(formattedDate);
+  const [editSalutation, setEditSalutation] = useState(defaultSalutation);
+  const [editGreeting, setEditGreeting] = useState('تحية طيبة وبعد،');
+  const [editMissionTitle, setEditMissionTitle] = useState(taskTitle);
+  const [editRequired, setEditRequired] = useState(taskRequired);
+  const [editDirective, setEditDirective] = useState(
+    'يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.'
+  );
+  const [editClosing, setEditClosing] = useState('مع خالص الشكر والتقدير،');
+  const [editSignature, setEditSignature] = useState('مكتب د/ عبد العزيز شطا');
+
+  // Sync editable fields whenever task or modal open state changes
+  useEffect(() => {
+    if (!isOpen || !task) return;
+    setEditDocTitle('أمر تكليف بمهمة رسمية');
+    setEditTopic(taskTitle);
+    setEditSender('مكتب د/ عبد العزيز شطا');
+    setEditDate(formattedDate);
+    setEditSalutation(defaultSalutation);
+    setEditGreeting('تحية طيبة وبعد،');
+    setEditMissionTitle(taskTitle);
+    setEditRequired(taskRequired);
+    setEditDirective('يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.');
+    setEditClosing('مع خالص الشكر والتقدير،');
+    setEditSignature('مكتب د/ عبد العزيز شطا');
+    setIsEditingCard(false);
+    setPersistToTask(false);
+  }, [isOpen, task?.id, taskTitle, taskRequired, formattedDate, defaultSalutation]);
+
+  const handleResetCardEdits = () => {
+    setEditDocTitle('أمر تكليف بمهمة رسمية');
+    setEditTopic(taskTitle);
+    setEditSender('مكتب د/ عبد العزيز شطا');
+    setEditDate(formattedDate);
+    setEditSalutation(defaultSalutation);
+    setEditGreeting('تحية طيبة وبعد،');
+    setEditMissionTitle(taskTitle);
+    setEditRequired(taskRequired);
+    setEditDirective('يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.');
+    setEditClosing('مع خالص الشكر والتقدير،');
+    setEditSignature('مكتب د/ عبد العزيز شطا');
+    displayToast('✓ تم استعادة النص الأصلي للبطاقة');
+  };
+
+  const handleSaveEditsToTaskIfRequested = () => {
+    if (!task || !persistToTask) return;
+    try {
+      taskService.updateTask(task.id, {
+        title: editMissionTitle.trim() || task.title,
+        description: editRequired.trim() || task.description,
+      });
+    } catch (e) {
+      console.warn('Could not persist card edits to task:', e);
+    }
+  };
+
+  const editedMessageText = task
+    ? [
+        `*${editDocTitle}*`,
+        editTopic ? `الموضوع: ${editTopic}` : '',
+        `من: ${editSender}`,
+        `التاريخ: ${editDate}`,
+        '',
+        editSalutation,
+        editGreeting,
+        '',
+        `*المهمة:* ${editMissionTitle}`,
+        `*المطلوب:* ${editRequired}`,
+        '',
+        editDirective,
+        '',
+        editClosing,
+        `*${editSignature}*`,
+      ]
+        .filter((line, idx, arr) => !(line === '' && arr[idx - 1] === ''))
+        .join('\n')
+    : '';
+
+  const messageText = editedMessageText || (task ? buildTaskWhatsAppMessage(task) : '');
+
+  // Background Pre-rendering: Re-render PNG cleanly (debounced) whenever card content changes
   useEffect(() => {
     if (!isOpen || !task) {
       setReadyImage(null);
@@ -100,16 +191,15 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     }
 
     let isCancelled = false;
+    setReadyImage(null);
     setIsPreRendering(true);
 
-    const renderCard = async () => {
-      // Allow browser to render DOM node and web fonts cleanly
+    const timer = setTimeout(async () => {
       if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
         try {
           await (document as any).fonts.ready;
         } catch { }
       }
-      await new Promise((res) => setTimeout(res, 250));
       if (isCancelled || !cardRef.current) return;
 
       try {
@@ -131,7 +221,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
               setIsPreRendering(false);
               return;
             }
-            const safeTitle = taskTitle.replace(/[\\/:*?"<>|]/g, '_');
+            const safeTitle = (editMissionTitle || taskTitle).replace(/[\\/:*?"<>|]/g, '_');
             const fileName = `تكليف_رسمي_${safeTitle}.png`;
             const file = new File([blob], fileName, { type: 'image/png' });
 
@@ -150,20 +240,26 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
         console.warn('Failed to pre-render card:', err);
         setIsPreRendering(false);
       }
-    };
-
-    renderCard();
+    }, 350);
 
     return () => {
       isCancelled = true;
+      clearTimeout(timer);
     };
   }, [
     isOpen,
     task?.id,
-    task?.title,
-    task?.description,
-    task?.dueDate,
-    recipientName
+    editDocTitle,
+    editTopic,
+    editSender,
+    editDate,
+    editSalutation,
+    editGreeting,
+    editMissionTitle,
+    editRequired,
+    editDirective,
+    editClosing,
+    editSignature
   ]);
 
   if (!isOpen || !task) return null;
@@ -207,6 +303,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
   // 1. Primary Action: Send As Image to WhatsApp across Android, iOS & Web
   const handleSendAsWhatsAppImage = async () => {
     setIsSharingImage(true);
+    handleSaveEditsToTaskIfRequested();
 
     try {
       const img = await ensureImageReady();
@@ -458,21 +555,195 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
     >
       <div className="relative w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-3xl p-4 sm:p-6 shadow-2xl my-auto">
         {/* Header Controls */}
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 text-slate-300">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-sm sm:text-base font-extrabold text-white">
+        <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800 text-slate-300">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-5 h-5 text-emerald-400 shrink-0" />
+            <h3 className="text-sm sm:text-base font-extrabold text-white truncate">
               بطاقة تكليف مهمة رسمية (صورة الواتساب)
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsEditingCard((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                isEditingCard
+                  ? 'bg-[#D4AF37]/25 text-[#F5D77F] border-[#D4AF37]/60 shadow-sm'
+                  : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/40'
+              }`}
+              title="تعديل نص البطاقة قبل إرسالها كصورة"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{isEditingCard ? 'إخفاء التعديل ✓' : 'تعديل قبل الإرسال ✏️'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Collapsible Pre-Send Card Editor Panel */}
+        {isEditingCard && (
+          <div
+            className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] border border-[#D4AF37]/40 space-y-3 text-right text-xs shadow-lg"
+            dir="rtl"
+          >
+            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+              <span className="font-black text-[#F5D77F] flex items-center gap-1.5">
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>تعديل نصوص البطاقة مباشرة (يتم تحديث الصورة تلقائياً)</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleResetCardEdits}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>استعادة الأصلي</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">عنوان الخطاب:</label>
+                <input
+                  type="text"
+                  value={editDocTitle}
+                  onChange={(e) => setEditDocTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">الموضوع:</label>
+                <input
+                  type="text"
+                  value={editTopic}
+                  onChange={(e) => setEditTopic(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">من (المرسل):</label>
+                <input
+                  type="text"
+                  value={editSender}
+                  onChange={(e) => setEditSender(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">التاريخ:</label>
+                <input
+                  type="text"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">التحية / المخاطب:</label>
+                <input
+                  type="text"
+                  value={editSalutation}
+                  onChange={(e) => setEditSalutation(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">عبارة التحية:</label>
+                <input
+                  type="text"
+                  value={editGreeting}
+                  onChange={(e) => setEditGreeting(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">عنوان المهمة داخل الصندوق:</label>
+              <input
+                type="text"
+                value={editMissionTitle}
+                onChange={(e) => setEditMissionTitle(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">المطلوب / تفاصيل التكليف:</label>
+              <textarea
+                rows={3}
+                value={editRequired}
+                onChange={(e) => setEditRequired(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37] leading-relaxed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">التوجيه الختامي:</label>
+              <input
+                type="text"
+                value={editDirective}
+                onChange={(e) => setEditDirective(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">عبارة الختام:</label>
+                <input
+                  type="text"
+                  value={editClosing}
+                  onChange={(e) => setEditClosing(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-emerald-200/80 mb-1">التوقيع:</label>
+                <input
+                  type="text"
+                  value={editSignature}
+                  onChange={(e) => setEditSignature(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/45 border border-emerald-500/30 text-white focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-500/20">
+              <label className="flex items-center gap-2 text-[11px] text-slate-200 font-bold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={persistToTask}
+                  onChange={(e) => setPersistToTask(e.target.checked)}
+                  className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                />
+                <span>حفظ تعديل المهمة والمطلوب في أصل المهمة عند الإرسال</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  if (task) {
+                    taskService.updateTask(task.id, {
+                      title: editMissionTitle.trim() || task.title,
+                      description: editRequired.trim() || task.description,
+                    });
+                    displayToast('✅ تم حفظ التعديلات في المهمة وتحديث البطاقة!');
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/45 text-emerald-200 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>حفظ في المهمة الآن</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Status Toast */}
         {showStatusToast && (
@@ -501,14 +772,14 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                 style={{ letterSpacing: '0px', wordSpacing: 'normal' }}
                 className="text-xl sm:text-2xl font-black text-[#17375E] text-center leading-snug"
               >
-                أمر تكليف بمهمة رسمية
+                {editDocTitle}
               </h2>
-              {taskTitle && (
+              {editTopic && (
                 <p
                   style={{ letterSpacing: '0px', wordSpacing: 'normal' }}
                   className="text-sm sm:text-base font-extrabold text-[#0d4a41] text-center"
                 >
-                  الموضوع: {taskTitle}
+                  الموضوع: {editTopic}
                 </p>
               )}
             </div>
@@ -520,14 +791,14 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                   من:
                 </span>
                 <span className="font-black text-[#17375E]">
-                  مكتب د/ عبد العزيز شطا
+                  {editSender}
                 </span>
               </div>
               <div className="flex items-center justify-start text-right">
                 <span className="font-bold text-slate-500 w-16 text-right shrink-0">
                   التاريخ:
                 </span>
-                <span className="font-bold text-slate-800">{formattedDate}</span>
+                <span className="font-bold text-slate-800">{editDate}</span>
               </div>
             </div>
 
@@ -535,9 +806,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             <div className="space-y-1.5 text-right pt-1">
               <div className="flex items-center gap-2">
                 <p className="text-base sm:text-lg font-black text-slate-900">
-                  {isGroup
-                    ? `السادة الأفاضل المحترمون / ${groupDisplayName}،`
-                    : `${honorific}،`}
+                  {editSalutation}
                 </p>
                 {isGroup && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
@@ -561,7 +830,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                 </div>
               )}
               <p className="text-xs sm:text-sm font-semibold text-slate-700">
-                تحية طيبة وبعد،
+                {editGreeting}
               </p>
             </div>
 
@@ -572,7 +841,7 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                   المهمة
                 </span>
                 <p className="text-base sm:text-lg font-black text-[#17375E] leading-snug">
-                  {taskTitle}
+                  {editMissionTitle}
                 </p>
               </div>
 
@@ -580,15 +849,15 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
                 <span className="block text-[11px] text-slate-500 font-bold mb-1">
                   المطلوب
                 </span>
-                <p className="text-sm sm:text-base font-extrabold text-[#17375E] leading-relaxed">
-                  {taskRequired}
+                <p className="text-sm sm:text-base font-extrabold text-[#17375E] leading-relaxed whitespace-pre-line">
+                  {editRequired}
                 </p>
               </div>
             </div>
 
             {/* 5. Directive */}
             <p className="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed text-right pt-1">
-              يُرجى البدء في التنفيذ، وموافاتنا بإشعار التأكيد فور الانتهاء.
+              {editDirective}
             </p>
 
             {/* 6. Subtle Separator Line */}
@@ -597,10 +866,10 @@ export const OfficialTaskDispatchModal: React.FC<OfficialTaskDispatchModalProps>
             {/* 7. Closing Signature (Right-aligned matching original letterhead) */}
             <div className="text-right space-y-1 pt-1 pr-1">
               <p className="text-xs sm:text-sm text-slate-600 font-semibold">
-                مع خالص الشكر والتقدير،
+                {editClosing}
               </p>
               <p className="text-sm sm:text-base font-black text-[#17375E]">
-                مكتب د/ عبد العزيز شطا
+                {editSignature}
               </p>
             </div>
           </div>

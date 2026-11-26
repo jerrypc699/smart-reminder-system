@@ -1127,6 +1127,12 @@ class DailySystemService {
       this.setSubTasksForHabit('item_water', defs);
       return defs;
     }
+    // If food/health rules and never initialized yet, auto-seed default health voice rules
+    if (habitKey === 'item_food' && list === undefined) {
+      const defs = this.generateDefaultHealthRulesSchedule();
+      this.setSubTasksForHabit('item_food', defs);
+      return defs;
+    }
     return [];
   }
 
@@ -1222,6 +1228,29 @@ class DailySystemService {
     }
 
     return cups;
+  }
+
+  public generateDefaultHealthRulesSchedule(): HabitSubTaskDef[] {
+    return [
+      {
+        id: 'health_rule_no_bread_8pm',
+        title: 'ممنوع العيش بعد الساعة ٨ مساءً',
+        scheduledTime: '20:00',
+        enableVoiceAlert: true,
+        voiceMessage:
+          'يا دكتور عبد العزيز، تنبيه صحي هام: الساعة الآن الثامنة مساءً، ممنوع تناول العيش بعد الساعة الثامنة للحفاظ على صحتك ورشاقتك.',
+        order: 0,
+      },
+      {
+        id: 'health_rule_no_sugar',
+        title: 'ممنوع السكريات والحلويات طوال اليوم',
+        scheduledTime: '13:00',
+        enableVoiceAlert: true,
+        voiceMessage:
+          'يا دكتور عبد العزيز، تذكير صحي هام: ممنوع السكريات والحلويات اليوم للحفاظ على صحتك ونشاطك.',
+        order: 1,
+      },
+    ];
   }
 
   public getScheduledDailyItems(dateKey?: string): ScheduledDailyItem[] {
@@ -1362,7 +1391,7 @@ class DailySystemService {
       item_study: 'التعلّم والمذاكرة',
       item_sleep: 'النوم والراحة',
       item_water: 'شرب الماء',
-      item_food: 'الغذاء الصحي',
+      item_food: 'القواعد الصحية والغذاء',
       ...builtInLabels,
     };
 

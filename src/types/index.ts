@@ -242,6 +242,18 @@ export type AthkarCategory =
   | 'custom'
   | 'favorites';
 
+export interface AthkarVideoItem {
+  id: string;
+  name: string;
+  mediaId: string;
+  cloudUrl?: string;
+  duration?: number;
+  size?: number;
+  thumbnail?: string;
+  category?: AthkarCategory;
+  createdAt: string;
+}
+
 export interface AthkarItem {
   id: string;
   category: 'morning' | 'evening' | 'prayer' | 'sleep' | 'wake' | 'ruqyah' | 'work' | 'distress' | 'quranic' | 'custom';
@@ -251,6 +263,11 @@ export interface AthkarItem {
   reward?: string;
   reference?: string;
   audioUrl?: string;
+  videoMediaId?: string;
+  videoCloudUrl?: string;
+  videoName?: string;
+  videoDuration?: number;
+  videoSize?: number;
   mood?: 'anxiety' | 'distress' | 'gratitude' | 'fatigue' | 'guidance';
   isCustom?: boolean;
 }

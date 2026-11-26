@@ -1,4 +1,4 @@
-import { AthkarItem } from '../types';
+import { AthkarItem, AthkarVideoItem } from '../types';
 import { ATHKAR_DATA } from '../data/athkar';
 
 export interface FloatingDhikrSettings {
@@ -25,11 +25,166 @@ class AthkarStorageService {
   private readonly CUSTOM_PRESETS_KEY = 'dr_abdelaziz_custom_tasbeeh_presets';
   private readonly PROGRESS_KEY = 'dr_abdelaziz_athkar_progress';
   private readonly FLOATING_SETTINGS_KEY = 'dr_abdelaziz_floating_dhikr_settings';
+  private readonly ATHKAR_VIDEOS_KEY = 'dr_abdelaziz_athkar_videos';
+  private readonly ATHKAR_OVERRIDES_KEY = 'dr_abdelaziz_athkar_overrides';
+  private readonly HIDDEN_ATHKAR_KEY = 'dr_abdelaziz_hidden_athkar_ids';
+  private readonly CATEGORY_TITLES_KEY = 'dr_abdelaziz_athkar_category_titles';
 
-  // 1. Get Combined Athkar (Built-in + Custom)
+  // 1. Get Combined Athkar (Built-in with overrides & hidden filtered + Custom)
   public getAllAthkar(): AthkarItem[] {
     const custom = this.getCustomAthkar();
-    return [...ATHKAR_DATA, ...custom];
+    const overrides = this.getAthkarOverrides();
+    const hiddenSet = new Set(this.getHiddenAthkarIds());
+    const builtIn = ATHKAR_DATA
+      .filter((item) => !hiddenSet.has(item.id))
+      .map((item) => (overrides[item.id] ? { ...item, ...overrides[item.id] } : item));
+    return [...builtIn, ...custom];
+  }
+
+  // 1b. Built-in Athkar Overrides, Hiding & Category Titles
+  public getAthkarOverrides(): Record<string, Partial<AthkarItem>> {
+    try {
+      const raw = localStorage.getItem(this.ATHKAR_OVERRIDES_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  public isBuiltInModified(id: string): boolean {
+    return Boolean(this.getAthkarOverrides()[id]);
+  }
+
+  public getHiddenAthkarIds(): string[] {
+    try {
+      const raw = localStorage.getItem(this.HIDDEN_ATHKAR_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public updateAnyDhikr(id: string, updates: Partial<AthkarItem>): boolean {
+    // Check if it's a custom dhikr first
+    const customList = this.getCustomAthkar();
+    const customIdx = customList.findIndex((item) => item.id === id);
+    if (customIdx !== -1) {
+      return this.updateCustomDhikr(id, updates);
+    }
+    // Otherwise save as an override for a built-in dhikr
+    const overrides = this.getAthkarOverrides();
+    overrides[id] = { ...(overrides[id] || {}), ...updates };
+    try {
+      localStorage.setItem(this.ATHKAR_OVERRIDES_KEY, JSON.stringify(overrides));
+      this.triggerCloudSync();
+      return true;
+    } catch (e) {
+      console.warn('Failed updating built-in dhikr override:', e);
+      return false;
+    }
+  }
+
+  public deleteOrHideDhikr(id: string): void {
+    const customList = this.getCustomAthkar();
+    if (customList.some((item) => item.id === id)) {
+      this.deleteCustomDhikr(id);
+      return;
+    }
+    const hidden = this.getHiddenAthkarIds();
+    if (!hidden.includes(id)) {
+      hidden.push(id);
+      try {
+        localStorage.setItem(this.HIDDEN_ATHKAR_KEY, JSON.stringify(hidden));
+      } catch (e) {
+        console.warn('Failed hiding built-in dhikr:', e);
+      }
+      this.triggerCloudSync();
+    }
+  }
+
+  public resetBuiltInDhikr(id: string): void {
+    const overrides = this.getAthkarOverrides();
+    if (overrides[id]) {
+      delete overrides[id];
+      try {
+        localStorage.setItem(this.ATHKAR_OVERRIDES_KEY, JSON.stringify(overrides));
+      } catch { }
+      this.triggerCloudSync();
+    }
+  }
+
+  public getCategoryTitles(): Record<string, string> {
+    try {
+      const raw = localStorage.getItem(this.CATEGORY_TITLES_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  public updateCategoryTitle(categoryId: string, newTitle: string): Record<string, string> {
+    const titles = this.getCategoryTitles();
+    const trimmed = newTitle.trim();
+    if (trimmed) {
+      titles[categoryId] = trimmed;
+    } else {
+      delete titles[categoryId];
+    }
+    try {
+      localStorage.setItem(this.CATEGORY_TITLES_KEY, JSON.stringify(titles));
+    } catch { }
+    this.triggerCloudSync();
+    return titles;
+  }
+
+  public resetCategoryTitle(categoryId: string): Record<string, string> {
+    const titles = this.getCategoryTitles();
+    delete titles[categoryId];
+    try {
+      localStorage.setItem(this.CATEGORY_TITLES_KEY, JSON.stringify(titles));
+    } catch { }
+    this.triggerCloudSync();
+    return titles;
+  }
+
+  // 1c. Athkar Videos Studio CRUD
+  public getAthkarVideos(): AthkarVideoItem[] {
+    try {
+      const raw = localStorage.getItem(this.ATHKAR_VIDEOS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public addAthkarVideo(video: AthkarVideoItem): AthkarVideoItem {
+    const list = this.getAthkarVideos();
+    list.unshift(video);
+    try {
+      localStorage.setItem(this.ATHKAR_VIDEOS_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn('Failed saving athkar video:', e);
+    }
+    this.triggerCloudSync();
+    return video;
+  }
+
+  public updateAthkarVideo(id: string, updates: Partial<AthkarVideoItem>): void {
+    const list = this.getAthkarVideos().map((v) => (v.id === id ? { ...v, ...updates } : v));
+    try {
+      localStorage.setItem(this.ATHKAR_VIDEOS_KEY, JSON.stringify(list));
+    } catch { }
+    this.triggerCloudSync();
+  }
+
+  public deleteAthkarVideo(id: string): void {
+    const list = this.getAthkarVideos().filter((v) => v.id !== id);
+    try {
+      localStorage.setItem(this.ATHKAR_VIDEOS_KEY, JSON.stringify(list));
+    } catch { }
+    this.triggerCloudSync();
   }
 
   // 2. Custom Athkar CRUD
@@ -289,6 +444,10 @@ class AthkarStorageService {
     customPresets: string[];
     progress: Record<string, number>;
     floatingSettings: FloatingDhikrSettings;
+    athkarVideos: AthkarVideoItem[];
+    athkarOverrides: Record<string, Partial<AthkarItem>>;
+    hiddenAthkarIds: string[];
+    categoryTitles: Record<string, string>;
   } {
     return {
       customAthkar: this.getCustomAthkar(),
@@ -298,6 +457,10 @@ class AthkarStorageService {
       customPresets: this.getCustomTasbeehPresets(),
       progress: this.getProgress(),
       floatingSettings: this.getFloatingSettings(),
+      athkarVideos: this.getAthkarVideos(),
+      athkarOverrides: this.getAthkarOverrides(),
+      hiddenAthkarIds: this.getHiddenAthkarIds(),
+      categoryTitles: this.getCategoryTitles(),
     };
   }
 
@@ -337,6 +500,27 @@ class AthkarStorageService {
       }
       if (data.floatingSettings) {
         this.saveFloatingSettings(data.floatingSettings);
+      }
+      if (Array.isArray(data.athkarVideos)) {
+        const existingVideos = this.getAthkarVideos();
+        const vMap = new Map<string, AthkarVideoItem>();
+        existingVideos.forEach((v) => vMap.set(v.id, v));
+        data.athkarVideos.forEach((v: AthkarVideoItem) => {
+          if (v && v.id) vMap.set(v.id, v);
+        });
+        localStorage.setItem(this.ATHKAR_VIDEOS_KEY, JSON.stringify(Array.from(vMap.values())));
+      }
+      if (data.athkarOverrides && typeof data.athkarOverrides === 'object') {
+        const mergedOverrides = { ...this.getAthkarOverrides(), ...data.athkarOverrides };
+        localStorage.setItem(this.ATHKAR_OVERRIDES_KEY, JSON.stringify(mergedOverrides));
+      }
+      if (Array.isArray(data.hiddenAthkarIds)) {
+        const mergedHidden = Array.from(new Set([...this.getHiddenAthkarIds(), ...data.hiddenAthkarIds]));
+        localStorage.setItem(this.HIDDEN_ATHKAR_KEY, JSON.stringify(mergedHidden));
+      }
+      if (data.categoryTitles && typeof data.categoryTitles === 'object') {
+        const mergedTitles = { ...this.getCategoryTitles(), ...data.categoryTitles };
+        localStorage.setItem(this.CATEGORY_TITLES_KEY, JSON.stringify(mergedTitles));
       }
     } catch (e) {
       console.warn('Failed importing athkar state:', e);

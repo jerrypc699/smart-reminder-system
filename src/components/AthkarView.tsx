@@ -31,12 +31,22 @@ import {
   Frown, 
   Activity, 
   Zap,
-  Bookmark
+  Bookmark,
+  Film,
+  Video,
+  UploadCloud,
+  FolderPlus,
+  ChevronDown,
+  ChevronUp,
+  Save
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { AthkarItem, AthkarCategory } from '../types';
+import { AthkarItem, AthkarCategory, AthkarVideoItem, StoredMediaMeta } from '../types';
 import { athkarStorageService, FloatingDhikrSettings } from '../services/athkarStorageService';
 import { audioService } from '../services/audioService';
+import { audioStorageService } from '../services/audioStorageService';
+import { vercelCloudSync } from '../services/vercelCloudSync';
+import { VideoPlayerModal, VideoPreviewData } from './VideoPlayerModal';
 
 const DEFAULT_TASBEEH_PRESETS = [
   'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ',
@@ -86,14 +96,55 @@ export const AthkarView: React.FC = () => {
   const [floatingSettings, setFloatingSettings] = useState<FloatingDhikrSettings>(() => athkarStorageService.getFloatingSettings());
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
 
-  // Custom Dhikr Modal State
+  // Custom & Built-in Dhikr Edit Modal State
   const [isCustomModalOpen, setIsCustomModalOpen] = useState<boolean>(false);
   const [editingCustomId, setEditingCustomId] = useState<string | null>(null);
+  const [editingIsBuiltIn, setEditingIsBuiltIn] = useState<boolean>(false);
   const [customTitle, setCustomTitle] = useState<string>('');
   const [customText, setCustomText] = useState<string>('');
   const [customCount, setCustomCount] = useState<number>(1);
   const [customReward, setCustomReward] = useState<string>('');
+  const [customReference, setCustomReference] = useState<string>('');
+  const [customCategory, setCustomCategory] = useState<AthkarItem['category']>('custom');
+  const [customVideoMediaId, setCustomVideoMediaId] = useState<string | undefined>(undefined);
+  const [customVideoCloudUrl, setCustomVideoCloudUrl] = useState<string | undefined>(undefined);
+  const [customVideoName, setCustomVideoName] = useState<string | undefined>(undefined);
+  const [customVideoDuration, setCustomVideoDuration] = useState<number | undefined>(undefined);
+  const [customVideoSize, setCustomVideoSize] = useState<number | undefined>(undefined);
+  const [isUploadingDhikrVideo, setIsUploadingDhikrVideo] = useState<boolean>(false);
   const [newPresetText, setNewPresetText] = useState<string>('');
+
+  // Category Title Editing State
+  const [categoryTitles, setCategoryTitles] = useState<Record<string, string>>({});
+  const [isEditingCategoryTitles, setIsEditingCategoryTitles] = useState<boolean>(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryInput, setEditingCategoryInput] = useState<string>('');
+
+  // Athkar Videos Studio State
+  const [athkarVideos, setAthkarVideos] = useState<AthkarVideoItem[]>([]);
+  const [isVideosExpanded, setIsVideosExpanded] = useState<boolean>(true);
+  const [isUploadingAthkarVideo, setIsUploadingAthkarVideo] = useState<boolean>(false);
+  const [athkarVideoUploadMsg, setAthkarVideoUploadMsg] = useState<string | null>(null);
+  const [activeAthkarVideo, setActiveAthkarVideo] = useState<VideoPreviewData | null>(null);
+  const [isPickMediaModalOpen, setIsPickMediaModalOpen] = useState<boolean>(false);
+  const [pickMediaTarget, setPickMediaTarget] = useState<'studio' | 'dhikr'>('studio');
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [renameVideoInput, setRenameVideoInput] = useState<string>('');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const athkarVideoFileInputRef = useRef<HTMLInputElement>(null);
+  const dhikrVideoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const formatVideoDuration = (seconds?: number): string => {
+    if (!seconds || seconds <= 0) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const customAthkarCount = useMemo(() => {
     return allAthkar.filter((item) => item.category === 'custom' || item.isCustom).length;
@@ -110,6 +161,8 @@ export const AthkarView: React.FC = () => {
     setFavoriteIds(athkarStorageService.getFavorites());
     setAllTimeTasbeeh(athkarStorageService.getTotalTasbeeh());
     setDailyTasbeeh(athkarStorageService.getDailyTasbeeh().count);
+    setCategoryTitles(athkarStorageService.getCategoryTitles());
+    setAthkarVideos(athkarStorageService.getAthkarVideos());
 
     // Load custom presets
     const customPresets = athkarStorageService.getCustomTasbeehPresets();
@@ -362,63 +415,286 @@ export const AthkarView: React.FC = () => {
   // Open modal to add custom dhikr
   const handleOpenAddCustom = () => {
     setEditingCustomId(null);
+    setEditingIsBuiltIn(false);
     setCustomTitle('');
     setCustomText('');
     setCustomCount(1);
     setCustomReward('');
+    setCustomReference('');
+    setCustomCategory(
+      selectedCategory !== 'all' && selectedCategory !== 'favorites'
+        ? (selectedCategory as AthkarItem['category'])
+        : 'custom'
+    );
+    setCustomVideoMediaId(undefined);
+    setCustomVideoCloudUrl(undefined);
+    setCustomVideoName(undefined);
+    setCustomVideoDuration(undefined);
+    setCustomVideoSize(undefined);
     setIsCustomModalOpen(true);
   };
 
-  // Open modal to edit existing custom dhikr
+  // Open modal to edit ANY existing dhikr (built-in or custom)
   const handleOpenEditCustom = (item: AthkarItem, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingCustomId(item.id);
+    setEditingIsBuiltIn(!item.isCustom);
     setCustomTitle(item.title || '');
     setCustomText(item.text || '');
     setCustomCount(item.count || 1);
     setCustomReward(item.reward || '');
+    setCustomReference(item.reference || '');
+    setCustomCategory(item.category || 'custom');
+    setCustomVideoMediaId(item.videoMediaId);
+    setCustomVideoCloudUrl(item.videoCloudUrl);
+    setCustomVideoName(item.videoName);
+    setCustomVideoDuration(item.videoDuration);
+    setCustomVideoSize(item.videoSize);
     setIsCustomModalOpen(true);
   };
 
-  // Delete custom dhikr
-  const handleDeleteCustomDhikr = (id: string, e: React.MouseEvent) => {
+  // Delete custom dhikr or hide built-in dhikr
+  const handleDeleteCustomDhikr = (item: AthkarItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('هل أنت متأكد من حذف هذا الذكر المخصص نهائياً؟')) {
-      athkarStorageService.deleteCustomDhikr(id);
+    const confirmMsg = item.isCustom
+      ? 'هل أنت متأكد من حذف هذا الذكر المخصص نهائياً؟'
+      : 'هل أنت متأكد من إخفاء هذا الذكر من القائمة؟';
+    if (window.confirm(confirmMsg)) {
+      athkarStorageService.deleteOrHideDhikr(item.id);
       loadData();
+      showToast(item.isCustom ? '✓ تم حذف الذكر المخصص' : '✓ تم إخفاء الذكر من القائمة');
     }
   };
 
-  // Save new or edited custom dhikr
+  // Save new or edited dhikr (built-in or custom)
   const handleSaveCustomDhikr = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customText.trim()) return;
 
+    const payload: Partial<AthkarItem> = {
+      title: customTitle.trim() || 'ذكر مبارك',
+      text: customText.trim(),
+      count: customCount || 1,
+      reward: customReward.trim() || undefined,
+      reference: customReference.trim() || undefined,
+      category: customCategory,
+      videoMediaId: customVideoMediaId,
+      videoCloudUrl: customVideoCloudUrl,
+      videoName: customVideoName,
+      videoDuration: customVideoDuration,
+      videoSize: customVideoSize,
+    };
+
     if (editingCustomId) {
-      athkarStorageService.updateCustomDhikr(editingCustomId, {
-        title: customTitle.trim() || 'دعاء خاص',
-        text: customText.trim(),
-        count: customCount || 1,
-        reward: customReward.trim() || undefined,
-      });
+      athkarStorageService.updateAnyDhikr(editingCustomId, payload);
+      showToast('✓ تم حفظ تعديلات الذكر بنجاح!');
     } else {
       athkarStorageService.saveCustomDhikr({
-        category: 'custom',
+        category: customCategory,
         title: customTitle.trim() || 'دعاء خاص',
         text: customText.trim(),
         count: customCount || 1,
         reward: customReward.trim() || undefined,
+        reference: customReference.trim() || undefined,
+        videoMediaId: customVideoMediaId,
+        videoCloudUrl: customVideoCloudUrl,
+        videoName: customVideoName,
+        videoDuration: customVideoDuration,
+        videoSize: customVideoSize,
       });
+      showToast('✓ تمت إضافة الذكر الجديد بنجاح!');
     }
 
     setIsCustomModalOpen(false);
     setEditingCustomId(null);
-    setCustomTitle('');
-    setCustomText('');
-    setCustomCount(1);
-    setCustomReward('');
+    setEditingIsBuiltIn(false);
     loadData();
-    setSelectedCategory('custom');
+    if (!editingCustomId) {
+      setSelectedCategory(customCategory === 'custom' ? 'custom' : customCategory);
+    }
+  };
+
+  // Reset a modified built-in dhikr back to its original text
+  const handleResetBuiltInDhikr = () => {
+    if (!editingCustomId) return;
+    athkarStorageService.resetBuiltInDhikr(editingCustomId);
+    setIsCustomModalOpen(false);
+    setEditingCustomId(null);
+    loadData();
+    showToast('✓ تم استعادة النص الأصلي للذكر');
+  };
+
+  // --- Athkar Video Handlers ---
+  const handleUploadAthkarVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingAthkarVideo(true);
+    setAthkarVideoUploadMsg('جاري حفظ ملف الفيديو واستخراج الخصائص...');
+    try {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      const meta = await audioStorageService.saveMediaFile(file, cleanName, 'custom');
+      const added = athkarStorageService.addAthkarVideo({
+        id: meta.id,
+        name: meta.name,
+        mediaId: meta.id,
+        cloudUrl: meta.cloudUrl,
+        duration: meta.duration,
+        size: meta.size,
+        thumbnail: meta.thumbnail,
+        category: selectedCategory,
+        createdAt: meta.createdAt,
+      });
+      setAthkarVideos(athkarStorageService.getAthkarVideos());
+
+      vercelCloudSync
+        .uploadMediaFile(file, meta.name, undefined, 'media')
+        .then((cloudUrl) => {
+          if (cloudUrl) {
+            athkarStorageService.updateAthkarVideo(added.id, { cloudUrl });
+            setAthkarVideos(athkarStorageService.getAthkarVideos());
+          }
+        })
+        .catch((err) => console.warn('Athkar video cloud sync skipped:', err));
+
+      showToast(`✓ تم حفظ فيديو الأذكار "${meta.name}" بنجاح!`);
+      audioService.playChime('success', 0.5);
+    } catch (err) {
+      console.error('Error uploading athkar video:', err);
+      showToast('تعذر حفظ الفيديو، يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsUploadingAthkarVideo(false);
+      setAthkarVideoUploadMsg(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleUploadDhikrAttachmentVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingDhikrVideo(true);
+    try {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      const meta = await audioStorageService.saveMediaFile(file, cleanName, 'custom');
+      setCustomVideoMediaId(meta.id);
+      setCustomVideoCloudUrl(meta.cloudUrl);
+      setCustomVideoName(meta.name);
+      setCustomVideoDuration(meta.duration);
+      setCustomVideoSize(meta.size);
+
+      vercelCloudSync
+        .uploadMediaFile(file, meta.name, undefined, 'media')
+        .then((cloudUrl) => {
+          if (cloudUrl) setCustomVideoCloudUrl(cloudUrl);
+        })
+        .catch(() => { });
+
+      showToast(`✓ تم إرفاق الفيديو "${meta.name}" بالذكر!`);
+    } catch (err) {
+      console.error('Error attaching video to dhikr:', err);
+      showToast('تعذر إرفاق الفيديو.');
+    } finally {
+      setIsUploadingDhikrVideo(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handlePickMediaVideo = (media: StoredMediaMeta) => {
+    if (pickMediaTarget === 'dhikr') {
+      setCustomVideoMediaId(media.id);
+      setCustomVideoCloudUrl(media.cloudUrl);
+      setCustomVideoName(media.name);
+      setCustomVideoDuration(media.duration);
+      setCustomVideoSize(media.size);
+      setIsPickMediaModalOpen(false);
+      showToast(`✓ تم ربط الفيديو "${media.name}" بالذكر`);
+      return;
+    }
+
+    const list = athkarStorageService.getAthkarVideos();
+    if (list.some((v) => v.mediaId === media.id)) {
+      showToast('هذا الفيديو مضاف بالفعل في مكتبة فيديوهات الأذكار');
+      return;
+    }
+    athkarStorageService.addAthkarVideo({
+      id: `athkar_vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name: media.name,
+      mediaId: media.id,
+      cloudUrl: media.cloudUrl,
+      duration: media.duration,
+      size: media.size,
+      thumbnail: media.thumbnail,
+      category: selectedCategory,
+      createdAt: new Date().toISOString(),
+    });
+    setAthkarVideos(athkarStorageService.getAthkarVideos());
+    setIsPickMediaModalOpen(false);
+    showToast(`✓ تمت إضافة "${media.name}" إلى فيديوهات الأذكار!`);
+    audioService.playChime('click', 0.4);
+  };
+
+  const handlePlayVideoByMedia = async (
+    mediaId?: string,
+    cloudUrl?: string,
+    title?: string,
+    size?: number,
+    e?: React.MouseEvent
+  ) => {
+    if (e) e.stopPropagation();
+    let playUrl: string | null = cloudUrl || null;
+    if (mediaId) {
+      try {
+        const objUrl = await audioStorageService.getMediaObjectUrl(mediaId, cloudUrl);
+        if (objUrl) playUrl = objUrl;
+      } catch (err) {
+        console.warn('Error loading video object url:', err);
+      }
+    }
+    if (!playUrl) {
+      showToast('عذراً، لم نتمكن من تشغيل هذا الفيديو حالياً');
+      return;
+    }
+    setActiveAthkarVideo({
+      url: playUrl,
+      title: title || 'فيديو ذكر',
+      size,
+    });
+  };
+
+  const handleDeleteAthkarVideo = (video: AthkarVideoItem) => {
+    athkarStorageService.deleteAthkarVideo(video.id);
+    setAthkarVideos(athkarStorageService.getAthkarVideos());
+    showToast(`تم حذف فيديو "${video.name}"`);
+  };
+
+  const handleSaveRenameAthkarVideo = (id: string) => {
+    const trimmed = renameVideoInput.trim();
+    if (trimmed) {
+      athkarStorageService.updateAthkarVideo(id, { name: trimmed });
+      setAthkarVideos(athkarStorageService.getAthkarVideos());
+      showToast('✓ تم تعديل اسم الفيديو');
+    }
+    setEditingVideoId(null);
+  };
+
+  // --- Category Title Editing Handlers ---
+  const handleStartEditCategoryTitle = (catId: string, currentLabel: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCategoryId(catId);
+    setEditingCategoryInput(categoryTitles[catId] || currentLabel);
+  };
+
+  const handleSaveCategoryTitle = (catId: string) => {
+    const updated = athkarStorageService.updateCategoryTitle(catId, editingCategoryInput);
+    setCategoryTitles(updated);
+    setEditingCategoryId(null);
+    showToast('✓ تم تحديث عنوان القسم بنجاح!');
+  };
+
+  const handleResetCategoryTitle = (catId: string) => {
+    const updated = athkarStorageService.resetCategoryTitle(catId);
+    setCategoryTitles(updated);
+    setEditingCategoryId(null);
+    showToast('✓ تم استعادة العنوان الافتراضي للقسم');
   };
 
   // Update floating settings
@@ -755,13 +1031,213 @@ export const AthkarView: React.FC = () => {
         </div>
       </div>
 
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-2xl bg-emerald-950/95 border border-[#D4AF37]/60 text-[#F5D77F] text-xs font-extrabold shadow-2xl animate-fadeIn">
+          {toastMsg}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 3B. ATHKAR VIDEOS STUDIO (مكتبة فيديوهات الأذكار والرقية) */}
+      {/* ======================================================== */}
+      <div className="rounded-3xl border border-emerald-500/35 bg-gradient-to-br from-[#0c3830] via-[#082620] to-[#041512] p-5 sm:p-6 space-y-4 shadow-[0_12px_35px_rgba(4,26,23,0.45)] relative overflow-hidden text-white">
+        <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
+          <button
+            type="button"
+            onClick={() => setIsVideosExpanded((prev) => !prev)}
+            className="flex items-center gap-3 text-right group cursor-pointer"
+          >
+            <div className="icon-squircle-gold w-10 h-10 shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <Film className="w-5 h-5 text-[#F5D77F]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm sm:text-base font-black text-white">
+                  مكتبة فيديوهات الأذكار والرقية والتلاوات
+                </span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 font-mono font-bold shadow-sm">
+                  {athkarVideos.length} فيديو
+                </span>
+              </div>
+              <span className="text-[11px] text-emerald-200/75 block font-medium mt-0.5">
+                أضف مقاطع فيديو للأذكار والأدعية والرقية الشرعية وشغّلها مباشرة داخل التطبيق
+              </span>
+            </div>
+            <div className="text-[#F5D77F] mr-1">
+              {isVideosExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 mr-auto">
+            <label
+              className={`px-3.5 py-2 rounded-xl btn-lux-gold text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md transition-all ${
+                isUploadingAthkarVideo ? 'opacity-60 pointer-events-none' : ''
+              }`}
+            >
+              <UploadCloud className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>{isUploadingAthkarVideo ? 'جاري الرفع...' : 'رفع فيديو'}</span>
+              <input
+                ref={athkarVideoFileInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleUploadAthkarVideo}
+                className="hidden"
+                disabled={isUploadingAthkarVideo}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPickMediaTarget('studio');
+                setIsPickMediaModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-emerald-200 border border-white/20 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
+              title="اختيار فيديو من مكتبة الوسائط"
+            >
+              <FolderPlus className="w-3.5 h-3.5 text-[#F5D77F]" />
+              <span>من الوسائط</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Upload Status */}
+        {isUploadingAthkarVideo && athkarVideoUploadMsg && (
+          <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2 animate-pulse">
+            <div className="w-4 h-4 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin shrink-0" />
+            <span>{athkarVideoUploadMsg}</span>
+          </div>
+        )}
+
+        {/* Video Cards Grid */}
+        {isVideosExpanded && (
+          <div className="space-y-2 pt-1 relative z-10">
+            {athkarVideos.length === 0 ? (
+              <div className="text-center py-6 px-3 rounded-2xl border border-dashed border-emerald-500/25 bg-black/25">
+                <Video className="w-8 h-8 text-emerald-400/40 mx-auto mb-2" />
+                <p className="text-xs text-slate-200 font-bold mb-1">
+                  لا توجد فيديوهات أذكار مضافة بعد
+                </p>
+                <p className="text-[11px] text-slate-400 max-w-md mx-auto mb-3">
+                  ارفع مقاطع الأذكار أو الرقية أو الأدعية المصورة مباشرة أو اخترها من مكتبة الوسائط لتكون جاهزة للتشغيل في أي وقت.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => athkarVideoFileInputRef.current?.click()}
+                  className="px-4 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>رفع أول فيديو أذكار</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {athkarVideos.map((vid) => {
+                  const isEditingThis = editingVideoId === vid.id;
+                  return (
+                    <div
+                      key={vid.id}
+                      className="p-3.5 rounded-2xl bg-black/40 border border-emerald-500/25 hover:border-[#D4AF37]/50 transition-all flex flex-col justify-between gap-3 shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => handlePlayVideoByMedia(vid.mediaId, vid.cloudUrl, vid.name, vid.size)}
+                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8C5D14] border border-[#FFF4C2] hover:scale-105 flex items-center justify-center text-slate-950 shrink-0 cursor-pointer transition-transform shadow-md"
+                            title="تشغيل الفيديو"
+                          >
+                            <Play className="w-4 h-4 fill-slate-950" />
+                          </button>
+
+                          <div className="min-w-0 flex-1">
+                            {isEditingThis ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={renameVideoInput}
+                                  onChange={(e) => setRenameVideoInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveRenameAthkarVideo(vid.id);
+                                    if (e.key === 'Escape') setEditingVideoId(null);
+                                  }}
+                                  autoFocus
+                                  className="w-full px-2 py-1 rounded-lg bg-slate-900 border border-[#D4AF37]/60 text-white text-xs focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveRenameAthkarVideo(vid.id)}
+                                  className="p-1.5 rounded-lg bg-emerald-600 text-white cursor-pointer"
+                                  title="حفظ الاسم"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <h5 className="text-xs font-extrabold text-white truncate">{vid.name}</h5>
+                                <span className="text-[10px] text-emerald-300/75 font-mono">
+                                  {vid.duration ? `⏱ ${formatVideoDuration(vid.duration)}` : '🎬 فيديو أذكار'}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {!isEditingThis && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingVideoId(vid.id);
+                                setRenameVideoInput(vid.name);
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/10 cursor-pointer"
+                              title="تعديل عنوان الفيديو"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAthkarVideo(vid)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 cursor-pointer"
+                              title="حذف الفيديو"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePlayVideoByMedia(vid.mediaId, vid.cloudUrl, vid.name, vid.size)}
+                        className="w-full py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                      >
+                        <Play className="w-3 h-3" />
+                        <span>تشغيل المقطع</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ======================================================== */}
       {/* 4. SECTION TABS (كافة أبواب أذكاري)                      */}
       {/* ======================================================== */}
       <div className="space-y-4">
         {/* Actions Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-black text-white">أبواب وأقسام الأذكار:</span>
             <button
               onClick={() => {
@@ -774,6 +1250,23 @@ export const AthkarView: React.FC = () => {
             >
               <Plus className="w-3.5 h-3.5 text-amber-400" />
               <span>+ إضافة ذكر مخصص</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditingCategoryTitles((prev) => !prev);
+                setEditingCategoryId(null);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                isEditingCategoryTitles
+                  ? 'bg-[#D4AF37]/25 text-[#F5D77F] border-[#D4AF37]/60 shadow-sm'
+                  : 'lux-well text-slate-300 hover:text-amber-300 hover:border-amber-500/30'
+              }`}
+              title="تعديل أسماء وعناوين أقسام الأذكار"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{isEditingCategoryTitles ? 'إنهاء تعديل العناوين ✓' : 'تعديل عناوين الأقسام'}</span>
             </button>
           </div>
 
@@ -803,44 +1296,103 @@ export const AthkarView: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Buttons Bar - Symmetrical wrapping grid */}
+        {/* Tab Buttons Bar - Symmetrical wrapping grid with optional inline title editing */}
         <div className="flex flex-wrap items-center gap-2.5 pt-1">
           {[
-            { id: 'morning', label: 'أذكار الصباح ☀️', icon: Sun },
-            { id: 'evening', label: 'أذكار المساء 🌙', icon: Moon },
-            { id: 'custom', label: `أذكار مخصصة (${customAthkarCount}) ✍️`, icon: Sparkles, featured: true },
-            { id: 'prayer', label: 'أذكار الصلاة 🕌', icon: Compass },
-            { id: 'sleep', label: 'النوم والاستيقاظ 🛏️', icon: Bed },
-            { id: 'work', label: 'العمل والبركة 💼', icon: Briefcase },
-            { id: 'distress', label: 'تفريج الكرب والهم 🤲', icon: ShieldCheck },
-            { id: 'ruqyah', label: 'الرقية الشرعية 🌿', icon: Sparkles },
-            { id: 'quranic', label: 'أدعية قرآنية 📖', icon: BookOpen },
-            { id: 'favorites', label: `المفضلة (${favoriteIds.length}) ⭐`, icon: Heart },
-            { id: 'all', label: 'كافة الأذكار 📋', icon: Sparkles },
+            { id: 'morning', defaultLabel: 'أذكار الصباح ☀️', icon: Sun },
+            { id: 'evening', defaultLabel: 'أذكار المساء 🌙', icon: Moon },
+            { id: 'custom', defaultLabel: `أذكار مخصصة ✍️`, suffix: ` (${customAthkarCount})`, icon: Sparkles, featured: true },
+            { id: 'prayer', defaultLabel: 'أذكار الصلاة 🕌', icon: Compass },
+            { id: 'sleep', defaultLabel: 'النوم والاستيقاظ 🛏️', icon: Bed },
+            { id: 'work', defaultLabel: 'العمل والبركة 💼', icon: Briefcase },
+            { id: 'distress', defaultLabel: 'تفريج الكرب والهم 🤲', icon: ShieldCheck },
+            { id: 'ruqyah', defaultLabel: 'الرقية الشرعية 🌿', icon: Sparkles },
+            { id: 'quranic', defaultLabel: 'أدعية قرآنية 📖', icon: BookOpen },
+            { id: 'favorites', defaultLabel: `المفضلة ⭐`, suffix: ` (${favoriteIds.length})`, icon: Heart },
+            { id: 'all', defaultLabel: 'كافة الأذكار 📋', icon: Sparkles },
           ].map((tab: any) => {
             const Icon = tab.icon;
             const isActive = selectedCategory === tab.id && !activeMood;
             const isFeaturedCustom = tab.id === 'custom';
+            const displayLabel = `${categoryTitles[tab.id] || tab.defaultLabel}${tab.suffix || ''}`;
+            const isEditingThisTab = editingCategoryId === tab.id;
+
+            if (isEditingThisTab) {
+              return (
+                <div
+                  key={tab.id}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl bg-slate-900 border border-[#D4AF37]/60 shadow-lg"
+                >
+                  <input
+                    type="text"
+                    value={editingCategoryInput}
+                    onChange={(e) => setEditingCategoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveCategoryTitle(tab.id);
+                      if (e.key === 'Escape') setEditingCategoryId(null);
+                    }}
+                    autoFocus
+                    className="w-36 px-2 py-1 rounded-lg bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSaveCategoryTitle(tab.id)}
+                    className="p-1.5 rounded-lg bg-emerald-600 text-white cursor-pointer"
+                    title="حفظ العنوان"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  {categoryTitles[tab.id] && (
+                    <button
+                      type="button"
+                      onClick={() => handleResetCategoryTitle(tab.id)}
+                      className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 cursor-pointer"
+                      title="استعادة العنوان الافتراضي"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEditingCategoryId(null)}
+                    className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                    title="إلغاء"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            }
+
             return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setSelectedCategory(tab.id as any);
-                  setActiveMood(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
-                  isActive
-                    ? (isFeaturedCustom
-                        ? 'bg-amber-500/25 text-amber-200 border-amber-500/60 shadow-md shadow-amber-500/20 ring-1 ring-amber-500/40'
-                        : 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/30')
-                    : (isFeaturedCustom
-                        ? 'lux-well text-amber-300 border-amber-500/40 hover:bg-amber-900/30 hover:border-amber-400'
-                        : 'lux-well text-slate-400 hover:text-slate-200 hover:border-white/15')
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isFeaturedCustom ? 'text-amber-400' : ''}`} />
-                <span>{tab.label}</span>
-              </button>
+              <div key={tab.id} className="inline-flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    if (isEditingCategoryTitles) {
+                      handleStartEditCategoryTitle(tab.id, tab.defaultLabel, { stopPropagation: () => {} } as any);
+                    } else {
+                      setSelectedCategory(tab.id as any);
+                      setActiveMood(null);
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                    isEditingCategoryTitles
+                      ? 'bg-amber-500/15 text-amber-200 border-amber-500/50 hover:bg-amber-500/25'
+                      : isActive
+                      ? (isFeaturedCustom
+                          ? 'bg-amber-500/25 text-amber-200 border-amber-500/60 shadow-md shadow-amber-500/20 ring-1 ring-amber-500/40'
+                          : 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/30')
+                      : (isFeaturedCustom
+                          ? 'lux-well text-amber-300 border-amber-500/40 hover:bg-amber-900/30 hover:border-amber-400'
+                          : 'lux-well text-slate-400 hover:text-slate-200 hover:border-white/15')
+                  }`}
+                  title={isEditingCategoryTitles ? 'اضغط لتعديل عنوان هذا القسم' : undefined}
+                >
+                  <Icon className={`w-4 h-4 ${isFeaturedCustom ? 'text-amber-400' : ''}`} />
+                  <span>{displayLabel}</span>
+                  {isEditingCategoryTitles && <Edit3 className="w-3 h-3 text-amber-300" />}
+                </button>
+              </div>
             );
           })}
         </div>
@@ -970,28 +1522,47 @@ export const AthkarView: React.FC = () => {
                   </div>
 
                   {/* Toolbar Actions */}
-                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Edit Custom Dhikr */}
-                    {(item.category === 'custom' || item.isCustom) && (
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    {/* Play Attached Video if present */}
+                    {(item.videoMediaId || item.videoCloudUrl) && (
                       <button
-                        onClick={(e) => handleOpenEditCustom(item, e)}
-                        className="p-1.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
-                        title="تعديل هذا الذكر المخصص"
+                        type="button"
+                        onClick={(e) =>
+                          handlePlayVideoByMedia(
+                            item.videoMediaId,
+                            item.videoCloudUrl,
+                            item.videoName || item.title || 'فيديو الذكر',
+                            item.videoSize,
+                            e
+                          )
+                        }
+                        className="px-2 py-1 rounded-xl bg-[#D4AF37]/20 text-[#F5D77F] border border-[#D4AF37]/40 hover:bg-[#D4AF37]/30 transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                        title="تشغيل الفيديو المرفق بالذكر"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <Film className="w-3.5 h-3.5" />
+                        <span>فيديو</span>
                       </button>
                     )}
 
-                    {/* Delete Custom Dhikr */}
-                    {(item.category === 'custom' || item.isCustom) && (
-                      <button
-                        onClick={(e) => handleDeleteCustomDhikr(item.id, e)}
-                        className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
-                        title="حذف هذا الذكر المخصص"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    {/* Edit ANY Dhikr (Built-in or Custom) */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenEditCustom(item, e)}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                      title="تعديل هذا الذكر وعنوانه أو إرفاق فيديو"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+
+                    {/* Delete Custom or Hide Built-in Dhikr */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteCustomDhikr(item, e)}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                      title={item.isCustom ? 'حذف هذا الذكر المخصص' : 'إخفاء هذا الذكر'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
 
                     {/* Favorite Toggle */}
                     <button
@@ -1216,11 +1787,11 @@ export const AthkarView: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* 7. CUSTOM DHIKR MODAL (إضافة ذكر ودعاء خاص)             */}
+      {/* 7. ADD / EDIT ANY DHIKR MODAL (تعديل وإضافة الأذكار والفيديو) */}
       {/* ======================================================== */}
       {isCustomModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-7 space-y-4 text-right" dir="rtl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-7 space-y-4 text-right my-auto max-h-[92vh] overflow-y-auto" dir="rtl">
             <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.08]">
               <div className="flex items-center gap-2.5">
                 <div className={editingCustomId ? "icon-squircle-gold w-8 h-8" : "icon-squircle-emerald w-8 h-8"}>
@@ -1231,7 +1802,9 @@ export const AthkarView: React.FC = () => {
                   )}
                 </div>
                 <h3 className="text-base font-extrabold text-white">
-                  {editingCustomId ? 'تعديل الذكر أو الدعاء المخصص' : 'إضافة ذكر أو دعاء مخصص للدكتور عبد العزيز'}
+                  {editingCustomId
+                    ? (editingIsBuiltIn ? 'تعديل الذكر وعنوانه وإرفاق فيديو' : 'تعديل الذكر أو الدعاء المخصص')
+                    : 'إضافة ذكر أو دعاء جديد للدكتور عبد العزيز'}
                 </h3>
               </div>
               <button
@@ -1243,21 +1816,42 @@ export const AthkarView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveCustomDhikr} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1.5">عنوان الذكر أو المناسبة:</label>
-                <input
-                  type="text"
-                  placeholder="مثال: دعاء دخول العيادة أو قبل العمليات"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  className="lux-input w-full px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1.5">عنوان الذكر أو المناسبة:</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: دعاء دخول العيادة أو قبل العمليات"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    className="lux-input w-full px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1.5">القسم / الباب:</label>
+                  <select
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value as AthkarItem['category'])}
+                    className="lux-input w-full px-3 py-2.5 text-white bg-slate-950 focus:outline-none"
+                  >
+                    <option value="custom">{categoryTitles['custom'] || 'أذكار مخصصة'}</option>
+                    <option value="morning">{categoryTitles['morning'] || 'أذكار الصباح'}</option>
+                    <option value="evening">{categoryTitles['evening'] || 'أذكار المساء'}</option>
+                    <option value="prayer">{categoryTitles['prayer'] || 'أذكار الصلاة'}</option>
+                    <option value="sleep">{categoryTitles['sleep'] || 'النوم والاستيقاظ'}</option>
+                    <option value="work">{categoryTitles['work'] || 'العمل والبركة'}</option>
+                    <option value="distress">{categoryTitles['distress'] || 'تفريج الكرب والهم'}</option>
+                    <option value="ruqyah">{categoryTitles['ruqyah'] || 'الرقية الشرعية'}</option>
+                    <option value="quranic">{categoryTitles['quranic'] || 'أدعية قرآنية'}</option>
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label className="block text-slate-300 font-bold mb-1.5">نص الذكر أو الدعاء المبارك *:</label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   required
                   placeholder="اكتب نص الدعاء هنا..."
                   value={customText}
@@ -1266,9 +1860,9 @@ export const AthkarView: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1.5">عدد التكرار (الهدف):</label>
+                  <label className="block text-slate-300 font-bold mb-1.5">عدد التكرار:</label>
                   <input
                     type="number"
                     min={1}
@@ -1286,27 +1880,212 @@ export const AthkarView: React.FC = () => {
                     placeholder="مثال: تيسير وشفاء بإذن الله"
                     value={customReward}
                     onChange={(e) => setCustomReward(e.target.value)}
-                    className="lux-input w-full px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none"
+                    className="lux-input w-full px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1.5">المرجع / المصدر:</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: صحيح البخاري"
+                    value={customReference}
+                    onChange={(e) => setCustomReference(e.target.value)}
+                    className="lux-input w-full px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="pt-3.5 border-t border-white/[0.08] flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCustomModalOpen(false)}
-                  className="px-4 py-2.5 rounded-2xl bg-white/[0.06] text-slate-300 hover:text-white cursor-pointer transition-colors"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-105 text-white font-extrabold shadow-lg shadow-emerald-600/30 cursor-pointer transition-all"
-                >
-                  {editingCustomId ? 'حفظ التعديلات ✅' : 'حفظ في أذكاري ✅'}
-                </button>
+              {/* Optional Video Attachment on this Dhikr */}
+              <div className="p-3.5 rounded-2xl bg-black/35 border border-emerald-500/25 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                    <Film className="w-4 h-4 text-[#F5D77F]" />
+                    <span>فيديو مرفق بهذا الذكر (اختياري)</span>
+                  </span>
+                  {customVideoMediaId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomVideoMediaId(undefined);
+                        setCustomVideoCloudUrl(undefined);
+                        setCustomVideoName(undefined);
+                        setCustomVideoDuration(undefined);
+                        setCustomVideoSize(undefined);
+                      }}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-bold cursor-pointer"
+                    >
+                      إزالة الفيديو ✕
+                    </button>
+                  )}
+                </div>
+
+                {customVideoName ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30">
+                    <span className="text-white font-bold truncate">🎬 {customVideoName}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePlayVideoByMedia(customVideoMediaId, customVideoCloudUrl, customVideoName, customVideoSize)
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-[#D4AF37]/25 text-[#F5D77F] font-bold text-[11px] cursor-pointer shrink-0"
+                    >
+                      معاينة ▶
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/45 text-emerald-200 border border-emerald-500/40 font-bold flex items-center gap-1.5 cursor-pointer">
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>{isUploadingDhikrVideo ? 'جاري الرفع...' : 'رفع فيديو من الجهاز'}</span>
+                      <input
+                        ref={dhikrVideoFileInputRef}
+                        type="file"
+                        accept="video/*"
+                        onChange={handleUploadDhikrAttachmentVideo}
+                        className="hidden"
+                        disabled={isUploadingDhikrVideo}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPickMediaTarget('dhikr');
+                        setIsPickMediaModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 border border-white/15 font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5 text-[#F5D77F]" />
+                      <span>اختيار من الوسائط</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-3.5 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  {editingCustomId && editingIsBuiltIn && athkarStorageService.isBuiltInModified(editingCustomId) && (
+                    <button
+                      type="button"
+                      onClick={handleResetBuiltInDhikr}
+                      className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>استعادة النص الأصلي</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2.5 mr-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomModalOpen(false)}
+                    className="px-4 py-2.5 rounded-2xl bg-white/[0.06] text-slate-300 hover:text-white cursor-pointer transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-105 text-white font-extrabold shadow-lg shadow-emerald-600/30 cursor-pointer transition-all"
+                  >
+                    {editingCustomId ? 'حفظ التعديلات ✅' : 'حفظ في أذكاري ✅'}
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      <VideoPlayerModal video={activeAthkarVideo} onClose={() => setActiveAthkarVideo(null)} />
+
+      {/* Pick Video from Media Library Modal */}
+      {isPickMediaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 rounded-3xl p-5 shadow-2xl space-y-4 text-right" dir="rtl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Film className="w-5 h-5 text-[#F5D77F]" />
+                <h3 className="text-sm sm:text-base font-black text-white">
+                  اختيار فيديو من مكتبة الوسائط
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPickMediaModalOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {(() => {
+              const allMedia = audioStorageService
+                .getMetaRegistry()
+                .filter((m: StoredMediaMeta) => m.mediaType === 'video');
+
+              if (allMedia.length === 0) {
+                return (
+                  <div className="text-center py-8 space-y-3">
+                    <Video className="w-10 h-10 text-slate-600 mx-auto" />
+                    <p className="text-xs text-slate-400">
+                      لا توجد فيديوهات محفوظة في مكتبة الوسائط حالياً. يمكنك رفع فيديو مباشرة من جهازك.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPickMediaModalOpen(false);
+                        if (pickMediaTarget === 'dhikr') {
+                          dhikrVideoFileInputRef.current?.click();
+                        } else {
+                          athkarVideoFileInputRef.current?.click();
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <UploadCloud className="w-4 h-4" />
+                      <span>رفع فيديو من الجهاز</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {allMedia.map((media) => (
+                    <div
+                      key={media.id}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 transition-all"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-white truncate">{media.name}</h4>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {media.duration ? `⏱ ${formatVideoDuration(media.duration)}` : '🎬 فيديو'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handlePickMediaVideo(media)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 cursor-pointer"
+                      >
+                        اختيار ✓
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsPickMediaModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}

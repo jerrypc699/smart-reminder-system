@@ -372,23 +372,37 @@ async function handlePushSubscribe(request, env) {
 async function proxyFrontend(request) {
   const url = new URL(request.url);
   const path = url.pathname === '/' ? '/index.html' : url.pathname;
-  const targetUrl = `${PAGES_ORIGIN}${path}${url.search}`;
+  const isHtmlOrManifest =
+    path === '/index.html' ||
+    path === '/sw.js' ||
+    path === '/manifest.json' ||
+    !path.includes('.');
+
+  const cacheBust = isHtmlOrManifest ? `${url.search ? '&' : '?'}_cf=${Date.now()}` : '';
+  const targetUrl = `${PAGES_ORIGIN}${path}${url.search}${cacheBust}`;
 
   let upstream = await fetch(targetUrl, {
     headers: { 'User-Agent': 'Cloudflare-Worker-SmartReminder' },
-    cf: { cacheEverything: true, cacheTtl: 120 },
+    cf: isHtmlOrManifest ? { cacheTtl: 0 } : { cacheEverything: true, cacheTtl: 86400 },
   });
 
   // SPA fallback to index.html for client-side routes
   if (upstream.status === 404 && !path.includes('.')) {
-    upstream = await fetch(`${PAGES_ORIGIN}/index.html`, {
+    upstream = await fetch(`${PAGES_ORIGIN}/index.html?_cf=${Date.now()}`, {
       headers: { 'User-Agent': 'Cloudflare-Worker-SmartReminder' },
-      cf: { cacheEverything: true, cacheTtl: 120 },
+      cf: { cacheTtl: 0 },
     });
   }
 
   const headers = new Headers(upstream.headers);
   headers.set('X-Powered-By', 'Cloudflare-Workers-DrAbdelaziz');
+  if (isHtmlOrManifest) {
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    headers.delete('Expires');
+    headers.delete('ETag');
+  } else if (path.startsWith('/assets/')) {
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  }
   return new Response(upstream.body, {
     status: upstream.status,
     headers,
@@ -431,3 +445,4 @@ export default {
     }
   },
 };
+

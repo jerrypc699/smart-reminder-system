@@ -94,7 +94,7 @@ function playAudioAndNotify(audioFile, title, message, durationSec = 0) {
  */
 async function syncFromCloud() {
   try {
-    const fetchUrl = `https://smart-reminder-system-nu.vercel.app/api/sync?t=${Date.now()}`;
+    const fetchUrl = `https://smart-reminder-system.ahmedelgayar2016.workers.dev/api/sync?t=${Date.now()}`;
     const res = await fetch(fetchUrl);
     if (res.ok) {
       const data = await res.json();
@@ -177,7 +177,7 @@ function checkPrayers() {
 
       // Broadcast Web Push to mobile devices via cloud API
       try {
-        fetch('https://smart-reminder-system-nu.vercel.app/api/push-broadcast', {
+        fetch('https://smart-reminder-system.ahmedelgayar2016.workers.dev/api/push-broadcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -207,7 +207,7 @@ function checkPrayers() {
 
         // Broadcast pre-azan notification to mobile
         try {
-          fetch('https://smart-reminder-system-nu.vercel.app/api/push-broadcast', {
+          fetch('https://smart-reminder-system.ahmedelgayar2016.workers.dev/api/push-broadcast', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -285,7 +285,7 @@ function checkTasks() {
 
       // Broadcast task notification to mobile
       try {
-        fetch('https://smart-reminder-system-nu.vercel.app/api/push-broadcast', {
+        fetch('https://smart-reminder-system.ahmedelgayar2016.workers.dev/api/push-broadcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -313,7 +313,7 @@ function checkTasks() {
             ? customMsg
             : `📋 *تذكير مهمة: ${task.title}*\n⏰ الموعد: ${task.dueDate || ''} — الساعة ${task.dueTime || ''}${task.description ? `\n📝 التفاصيل: ${task.description}` : ''}\n\n— مرسل تلقائياً من نظام د. عبد العزيز الذكي`;
 
-          fetch('https://smart-reminder-system-nu.vercel.app/api/whatsapp-send', {
+          fetch('https://smart-reminder-system.ahmedelgayar2016.workers.dev/api/whatsapp-send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json; charset=utf-8' },
             body: JSON.stringify({

@@ -282,7 +282,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             </div>
             <div className="shrink-0 bg-white p-1.5 rounded-xl shadow-lg ring-2 ring-emerald-500/30">
               <img
-                src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https://smart-reminder-system-nu.vercel.app"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https://smart-reminder-system.ahmedelgayar2016.workers.dev"
                 alt="QR Code"
                 className="w-20 h-20"
                 loading="lazy"
@@ -314,7 +314,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
         {/* Footer */}
         <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
           <span className="text-[11px] text-slate-400">
-            رابط التطبيق: <strong className="text-emerald-400 font-mono">smart-reminder-system-nu.vercel.app</strong>
+            رابط التطبيق: <strong className="text-emerald-400 font-mono">smart-reminder-system.ahmedelgayar2016.workers.dev</strong>
           </span>
           <button
             onClick={onClose}

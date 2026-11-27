@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 
-export const REMOTE_API_ORIGIN = 'https://smart-reminder-system-nu.vercel.app';
+export const REMOTE_API_ORIGIN = 'https://smart-reminder-system.ahmedelgayar2016.workers.dev';
 
 export function getApiUrl(path: string): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -12,6 +12,7 @@ export function getApiUrl(path: string): string {
     if (
       origin.includes('localhost') || 
       origin.includes('127.0.0.1') || 
+      origin.includes('github.io') ||
       origin.startsWith('capacitor://') || 
       origin.startsWith('file://')
     ) {

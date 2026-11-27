@@ -95,12 +95,12 @@ class VercelCloudSyncService {
       // Immediate fetch on mount
       this.fetchFromCloud();
 
-      // Fast 2.0s polling for instant sync between PC & Mobile
+      // Balanced 15s polling for fast sync between PC & Mobile while staying well within free cloud quotas
       this.pollingInterval = setInterval(() => {
         if (typeof document !== 'undefined' && !document.hidden) {
           this.fetchFromCloud();
         }
-      }, 2000);
+      }, 15000);
     } else {
       this.fetchFromCloud();
     }
@@ -326,22 +326,9 @@ class VercelCloudSyncService {
     const safeExt = ext || fallbackExt;
     const safeFilename = filename.includes('.') ? filename : `${filename}.${safeExt}`;
 
-    // 1. First attempt: Direct Client Upload via @vercel/blob/client
+    // 1. Primary upload: Direct binary upload to Cloudflare Workers KV (/api/upload)
     try {
-      const newBlob = await upload(`dr-abdelaziz/${folder}/${Date.now()}_${safeFilename}`, file, {
-        access: 'public',
-        handleUploadUrl: getApiUrl('/api/blob-upload'),
-        onUploadProgress: (progress) => {
-          onProgress?.(Math.round(progress.percentage));
-        },
-      });
-      return newBlob.url;
-    } catch (directErr) {
-      console.warn('Direct blob client upload failed, attempting serverless fallback...', directErr);
-    }
-
-    // 2. Second attempt: Serverless binary upload fallback
-    try {
+      onProgress?.(25);
       const res = await fetch(getApiUrl('/api/upload'), {
         method: 'POST',
         headers: {
@@ -351,13 +338,27 @@ class VercelCloudSyncService {
         body: file,
       });
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'فشل رفع الملف إلى السحابة');
+      if (res.ok) {
+        onProgress?.(100);
+        const data = await res.json();
+        return data.url;
       }
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || 'فشل رفع الملف إلى السحابة');
+    } catch (directErr) {
+      console.warn('Primary /api/upload failed, attempting legacy blob fallback...', directErr);
+    }
 
-      const data = await res.json();
-      return data.url;
+    // 2. Legacy fallback: Vercel Blob client upload
+    try {
+      const newBlob = await upload(`dr-abdelaziz/${folder}/${Date.now()}_${safeFilename}`, file, {
+        access: 'public',
+        handleUploadUrl: getApiUrl('/api/blob-upload'),
+        onUploadProgress: (progress) => {
+          onProgress?.(Math.round(progress.percentage));
+        },
+      });
+      return newBlob.url;
     } catch (err: any) {
       console.warn('All upload methods failed:', err);
       throw err;
